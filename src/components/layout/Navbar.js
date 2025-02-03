@@ -9,11 +9,35 @@ import {
   IconButton
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  console.log('현재 사용자:', user);  // 디버깅용
+
+  const handleLogoClick = () => {
+    if (user) {
+      // 사용자 역할에 따른 리다이렉트
+      switch (user.role) {
+        case 'ADMIN':
+          navigate('/admin');
+          break;
+        case 'PROFESSOR':
+        case 'ASSISTANT':
+          navigate('/watcher');
+          break;
+        case 'STUDENT':
+          navigate('/jcode');
+          break;
+        default:
+          navigate('/');
+      }
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <AppBar position="fixed">
@@ -22,16 +46,15 @@ const Navbar = () => {
           {/* 로고 */}
           <Typography
             variant="h6"
-            component={RouterLink}
-            to="/"
-            sx={{
-              mr: 4,
-              display: 'flex',
-              fontWeight: 700,
-              color: 'primary.main',
-              textDecoration: 'none',
-              alignItems: 'center',
+            noWrap
+            component="div"
+            sx={{ 
+              mr: 2, 
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              color: 'black'
             }}
+            onClick={handleLogoClick}
           >
             JHub
           </Typography>
@@ -55,7 +78,7 @@ const Navbar = () => {
               </Button>
 
               {/* Watcher - 교수/조교/관리자만 접근 가능 */}
-              {(user.role === 'professor' || user.role === 'assistant' || user.role === 'admin') && (
+              {(user.role === 'PROFESSOR' || user.role === 'ASSISTANT' || user.role === 'ADMIN') && (
                 <Button
                   component={RouterLink}
                   to="/watcher"
@@ -71,8 +94,8 @@ const Navbar = () => {
                 </Button>
               )}
 
-              {/* Admin 전용 메뉴 */}
-              {user.role === 'admin' && (
+              {/* 관리자 메뉴 */}
+              {user.role === 'ADMIN' && (
                 <Button
                   component={RouterLink}
                   to="/admin"

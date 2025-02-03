@@ -8,14 +8,15 @@ import {
   Box 
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from '../../api/axios';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
+    name: '',
+    student_num: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    studentId: ''
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -31,6 +32,11 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
+    if (!/^\d{9}$/.test(formData.student_num)) {
+      setError('학번은 9자리 숫자여야 합니다.');
+      return;
+    }
+
     if (!formData.email.endsWith('@jbnu.ac.kr')) {
       setError('전북대학교 이메일(@jbnu.ac.kr)만 사용 가능합니다.');
       return;
@@ -42,33 +48,50 @@ const Register = () => {
     }
 
     try {
-      // TODO: API 구현 필요 - POST /api/auth/register
-      // Request: { 
-      //   email: string,
-      //   password: string,
-      //   name: string,
-      //   studentId?: string,
-      //   employeeId?: string,
-      //   role: 'student' | 'professor' | 'assistant'
-      // }
-      // Response: { success: boolean, message: string }
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const requestData = {
+        email: formData.email,
+        name: formData.name,
+        student_num: parseInt(formData.student_num),
+        role: 'STUDENT',
+        password: formData.password
+      };
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        setError(data.message);
+      // 회원가입 API 호출
+      const response = await axios.post('/api/auth/signup', requestData);
+
+      // 성공 시 로그인 페이지로 이동
+      if (response.status === 200 || response.status === 201) {
+        navigate('/login', { 
+          state: { 
+            message: '회원가입이 완료되었습니다! 이메일과 비밀번호로 로그인해주세요.',
+            type: 'success'
+          }
+        }, {
+          replace: true // history stack에서 현재 페이지를 대체
+        });
+        return; // 함수 종료
       }
     } catch (err) {
-      setError('회원가입 중 오류가 발생했습니다.');
+      // 에러 처리
+      if (err.response) {
+        // 서버에서 응답한 에러
+        switch (err.response.status) {
+          case 400:
+            setError(err.response.data.error || '입력 정보를 확인해주세요.');
+            break;
+          case 409:
+            setError('이미 등록된 이메일입니다.');
+            break;
+          default:
+            setError('회원가입 중 오류가 발생했습니다.');
+        }
+      } else if (err.request) {
+        // 서버에 요청이 도달하지 못한 경우
+        setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        // 요청 설정 중 에러 발생
+        setError('회원가입을 처리할 수 없습니다.');
+      }
     }
   };
 
@@ -82,6 +105,18 @@ const Register = () => {
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
+            label="이메일"
+            name="email"
+            type="email"
+            margin="normal"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            helperText="@jbnu.ac.kr 이메일만 사용 가능합니다"
+          />
+          
+          <TextField
+            fullWidth
             label="이름"
             name="name"
             margin="normal"
@@ -92,24 +127,17 @@ const Register = () => {
           
           <TextField
             fullWidth
-            label="학번"
-            name="studentId"
+            label="학번 (9자리)"
+            name="student_num"
             margin="normal"
-            value={formData.studentId}
+            value={formData.student_num}
             onChange={handleChange}
             required
-          />
-          
-          <TextField
-            fullWidth
-            label="이메일"
-            name="email"
-            type="email"
-            margin="normal"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            helperText="@jbnu.ac.kr 이메일만 사용 가능합니다"
+            inputProps={{ 
+              pattern: "\\d{9}",
+              maxLength: 9
+            }}
+            helperText="9자리 숫자로 입력해주세요"
           />
           
           <TextField

@@ -22,6 +22,7 @@ function App() {
           <Navbar />
           <Box sx={{ pt: 10 }}>
             <Routes>
+              <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route 
@@ -35,7 +36,7 @@ function App() {
               <Route 
                 path="/watcher/*" 
                 element={
-                  <PrivateRoute roles={['professor', 'assistant', 'admin']}>
+                  <PrivateRoute roles={['PROFESSOR', 'ASSISTANCE', 'ADMIN']}>
                     <Watcher />
                   </PrivateRoute>
                 } 
@@ -43,7 +44,7 @@ function App() {
               <Route
                 path="/admin/*"
                 element={
-                  <PrivateRoute roles={['admin']}>
+                  <PrivateRoute roles={['ADMIN']}>
                     <Admin />
                   </PrivateRoute>
                 }
