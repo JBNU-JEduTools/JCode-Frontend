@@ -1,11 +1,77 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
 import { jwtDecode } from 'jwt-decode';
 import { mockUsers } from '../mockData/users';
 import axios from '../api/axios';
+import { AUTH_CONFIG } from '../config/auth';
+import { logout as authLogout } from '../api/auth';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function AuthProvider({ children }) {
+  const [loading, setLoading] = useState(true);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setTokens = useAuthStore((state) => state.setTokens);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  useEffect(() => {
+    if (accessToken) {
+      try {
+        const decodedToken = jwtDecode(accessToken);
+        console.log('디코딩된 토큰:', decodedToken);
+
+        if (decodedToken.exp * 1000 < Date.now()) {
+          console.log('토큰이 만료되었습니다.');
+          clearAuth();
+        } else {
+          const userData = {
+            username: decodedToken.preferred_username || decodedToken.name,
+            email: decodedToken.email,
+            roles: decodedToken.realm_access?.roles || [],
+            sub: decodedToken.sub,
+            role: 'STUDENT'
+          };
+          console.log('설정된 사용자 정보:', userData);
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('토큰 디코딩 실패:', error);
+        clearAuth();
+      }
+    }
+    setLoading(false);
+  }, [accessToken, setUser, clearAuth]);
+
+  const logout = () => {
+    clearAuth();
+    authLogout();
+  };
+
+  const value = {
+    user,
+    isAuthenticated: !!accessToken && !!user,
+    loading,
+    logout
+  };
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const AuthProviderOld = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -173,6 +239,4 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => useContext(AuthContext); 
+}; 
