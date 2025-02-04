@@ -1,23 +1,17 @@
 import axios from 'axios';
+import { useAuthStore } from '../store/useAuthStore';
 
-const instance = axios.create({
-  baseURL: 'http://localhost:8080',
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
 });
 
-// 요청 인터셉터 - 토큰 추가
-instance.interceptors.request.use(
+// 요청 인터셉터 추가
+api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
-    config.headers['Access-Control-Allow-Credentials'] = 'true';
     return config;
   },
   (error) => {
@@ -25,21 +19,35 @@ instance.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터 - 에러 처리
-instance.interceptors.response.use(
+// 응답 인터셉터 추가 (토큰 만료 처리)
+api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // 토큰 만료 등의 인증 에러
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('userRole');
-      window.location.href = '/login';
-    } else if (error.response?.status === 0) {
-      // CORS 에러 또는 네트워크 에러
-      console.error('CORS 또는 네트워크 에러:', error);
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // 토큰이 만료되었고, 재시도하지 않은 요청인 경우
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = useAuthStore.getState().refreshToken;
+        const { refreshAccessToken } = await import('./auth');
+        const response = await refreshAccessToken(refreshToken);
+        
+        useAuthStore.getState().setTokens(response.access_token, response.refresh_token);
+        
+        originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
+        return api(originalRequest);
+      } catch (error) {
+        // 리프레시 토큰도 만료된 경우
+        useAuthStore.getState().clearTokens();
+        window.location.href = '/';
+        return Promise.reject(error);
+      }
     }
+    
     return Promise.reject(error);
   }
 );
 
-export default instance; 
+export default api; 
