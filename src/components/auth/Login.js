@@ -11,12 +11,13 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
+import { AUTH_CONFIG } from '../../config/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
@@ -30,10 +31,26 @@ const Login = () => {
     };
   }, [location, navigate]);
 
-  const handleSSOLogin = () => {
-    // 전체 URL로 수정
-    window.location.href = 'http://localhost:8080/api/auth/login/oidc/success';
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      // 사용자 역할에 따른 리다이렉션
+      const roles = user?.roles || [];
+      if (roles.includes('admin')) {
+        navigate('/admin');
+      } else if (roles.includes('professor') || roles.includes('assistant')) {
+        navigate('/watcher');
+      } else {
+        navigate('/jcode');
+      }
+    }
+  }, [isAuthenticated, navigate, user]);
+
+  const params = new URLSearchParams({
+    client_id: AUTH_CONFIG.clientId,
+    redirect_uri: AUTH_CONFIG.redirectUri,
+    response_type: "code",
+    scope: AUTH_CONFIG.scope
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,9 +96,14 @@ const Login = () => {
   return (
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          로그인
-        </Typography>
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Typography variant="h5" component="h1" gutterBottom>
+            JCodeHub 로그인
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            전북대학교 통합계정으로 로그인하세요
+          </Typography>
+        </Box>
         
         {successMessage && (
           <Typography 
@@ -103,18 +125,18 @@ const Login = () => {
           variant="contained"
           fullWidth
           startIcon={<SchoolIcon />}
-          onClick={handleSSOLogin}
+          href={`${AUTH_CONFIG.keycloakUrl}/auth?${params.toString()}`}
           sx={{ 
             mt: 2, 
             mb: 3,
             py: 1.5,
-            backgroundColor: '#004C9C', // 전북대 메인 컬러
+            backgroundColor: '#004C9C',
             '&:hover': {
               backgroundColor: '#003870'
             }
           }}
         >
-          전북대 통합 로그인으로 계속하기
+          전북대학교 통합로그인
         </Button>
         
         <Divider sx={{ my: 3 }}>
