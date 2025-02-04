@@ -13,8 +13,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   console.log('현재 사용자:', user);  // 디버깅용
 
   const handleLogoClick = () => {
