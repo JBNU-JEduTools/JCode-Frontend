@@ -1,5 +1,7 @@
 import { AUTH_CONFIG } from '../config/auth';
 import { useAuthStore } from '../store/useAuthStore';
+import api from './axios';
+import { jwtDecode } from 'jwt-decode';
 
 export const getLoginUrl = () => {
   const params = new URLSearchParams({
@@ -13,22 +15,33 @@ export const getLoginUrl = () => {
 };
 
 export const logout = async () => {
-  const idToken = useAuthStore.getState().idToken;
+  const authState = useAuthStore.getState();
+  console.log('Auth State:', authState); // 전체 상태 확인
+  const idToken = authState.idToken;
   
-  if (!idToken) {
-    console.warn('ID 토큰이 없습니다. 기본 로그아웃을 진행합니다.');
-    window.location.href = '/';
-    return;
+  console.log('Logout - ID Token:', idToken); // 디버깅용
+  console.log('Session Storage idToken:', sessionStorage.getItem('idToken')); // sessionStorage 확인
+  
+  if (idToken) {
+    // ID 토큰이 있으면 자동 로그아웃 후 홈으로 리다이렉트
+    const params = new URLSearchParams({
+      id_token_hint: idToken,
+      post_logout_redirect_uri: window.location.origin
+    });
+    
+    const logoutUrl = `${AUTH_CONFIG.keycloakUrl}/logout?${params.toString()}`;
+    console.log('Logout URL:', logoutUrl); // 디버깅용
+    
+    // 로컬 상태 초기화를 URL 리다이렉트 전에 수행
+    useAuthStore.getState().clearAuth();
+    
+    window.location.href = logoutUrl;
+  } else {
+    // ID 토큰이 없으면 키클락 로그아웃 페이지로 리다이렉트
+    // 로컬 상태 초기화
+    useAuthStore.getState().clearAuth();
+    window.location.href = `${AUTH_CONFIG.keycloakUrl}/logout`;
   }
-  
-  // Keycloak 로그아웃 URL로 리다이렉트
-  const params = new URLSearchParams({
-    id_token_hint: idToken,
-    post_logout_redirect_uri: window.location.origin
-  });
-  
-  const logoutUrl = `${AUTH_CONFIG.keycloakUrl}/logout?${params.toString()}`;
-  window.location.href = logoutUrl;
 };
 
 export const fetchToken = async (code) => {
@@ -53,6 +66,7 @@ export const fetchToken = async (code) => {
   }
 
   const data = await response.json();
+  console.log('Received tokens:', data); // 디버깅용
   useAuthStore.getState().setTokens(data.access_token, data.refresh_token, data.id_token);
   return data;
 };
@@ -96,4 +110,45 @@ export const sendTokenToBackend = async (accessToken) => {
     }
   
     return response.json();
-  }; 
+  };
+
+// 일반 로그인 함수 추가
+export const login = async (email, password) => {
+  try {
+    const response = await api.post('/api/auth/login/basic', {
+      email,
+      password
+    });
+
+    const { data } = response;
+    
+    if (data.token) {
+      useAuthStore.getState().setTokens(data.token, data.refreshToken);
+      
+      const tokenPayload = jwtDecode(data.token);
+      const userData = {
+        username: tokenPayload.preferred_username || tokenPayload.name,
+        email: tokenPayload.email,
+        roles: tokenPayload.realm_access?.roles || [],
+        sub: tokenPayload.sub,
+        role: data.role
+      };
+      
+      useAuthStore.getState().setUser(userData);
+      return { success: true, user: userData };
+    }
+    
+    return { 
+      success: false, 
+      message: '로그인에 실패했습니다.' 
+    };
+  } catch (error) {
+    console.error('로그인 에러:', error);
+    return { 
+      success: false, 
+      message: error.response?.status === 401 
+        ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+        : error.response?.data?.message || '로그인에 실패했습니다.'
+    };
+  }
+}; 

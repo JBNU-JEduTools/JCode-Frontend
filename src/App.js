@@ -8,12 +8,12 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Callback from './components/auth/Callback';
 import Home from './components/Home';
-import JCode from './pages/JCode';
-import Watcher from './pages/Watcher';
-import Admin from './pages/Admin';
+import JCode from './components/jcode/JCodeRedirect';
+import Watcher from './components/watcher/Watcher';
+import Admin from './components/admin/Admin';
 import theme from './theme';
 import { Box } from '@mui/material';
-import PrivateRoute from './components/common/PrivateRoute';
+import PrivateRoute from './components/layout/PrivateRoute';
 
 function App() {
   return (
