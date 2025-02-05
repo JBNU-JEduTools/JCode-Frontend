@@ -83,17 +83,17 @@ export const refreshAccessToken = async (refreshToken) => {
 
 // 백엔드로 토큰 전송
 export const sendTokenToBackend = async (accessToken) => {
-  const response = await fetch('http://localhost:8080/api/auth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ accessToken })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to send token to backend');
-  }
-
-  return response.json();
-}; 
+    const response = await fetch('http://localhost:8080/api/auth/token', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+    });
+  
+    if (!response.ok) {
+      throw new Error('Failed to send token to backend');
+    }
+  
+    return response.json();
+  }; 
