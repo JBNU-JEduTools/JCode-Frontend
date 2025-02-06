@@ -36,22 +36,21 @@ const Callback = () => {
 
           // 토큰에서 사용자 정보 추출
           const decodedToken = jwtDecode(data.access_token);
-          const roles = decodedToken.realm_access?.roles || [];
+          const roles = decodedToken.resource_access?.jcodehub?.roles || []
           
           // 사용자 정보 설정
           const userData = {
             username: decodedToken.preferred_username || decodedToken.name,
             email: decodedToken.email,
-            roles: roles,
             sub: decodedToken.sub,
-            role: 'STUDENT'
+            role: roles[0].toUpperCase() || "STUDENT"
           };
           setUser(userData);
           
           // 역할에 따른 리다이렉션
           if (roles.includes('admin')) {
             navigate('/admin');
-          } else if (roles.includes('professor') || roles.includes('assistant')) {
+          } else if (roles.includes('professor') || roles.includes('assistance')) {
             navigate('/watcher');
           } else {
             navigate('/jcode');
