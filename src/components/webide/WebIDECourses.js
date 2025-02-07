@@ -9,23 +9,44 @@ import {
   CardActions,
   Button,
   Box,
-  Chip
+  Chip,
+  FormControl,
+  Select,
+  MenuItem,
+  Stack,
+  Paper
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from '../../api/axios';
 import CodeIcon from '@mui/icons-material/Code';
+import { selectStyles } from '../../styles/selectStyles';
 
 const WebIDECourses = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedTerm, setSelectedTerm] = useState('all');
+
+  // 고유한 연도와 학기 목록 추출
+  const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
+  const terms = [...new Set(courses.map(course => course.courseTerm))].sort();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await axios.get('/api/users/me/courses');
         setCourses(response.data);
+        // 초기 선택값을 가장 최근 연도/학기로 설정
+        if (response.data.length > 0) {
+          const latestYear = Math.max(...response.data.map(course => course.courseYear));
+          const latestTerm = Math.max(...response.data
+            .filter(course => course.courseYear === latestYear)
+            .map(course => course.courseTerm));
+          setSelectedYear(latestYear);
+          setSelectedTerm(latestTerm);
+        }
         setLoading(false);
       } catch (err) {
         setError('수업 목록을 불러오는데 실패했습니다.');
@@ -50,6 +71,13 @@ const WebIDECourses = () => {
     }
   };
 
+  // 필터링된 강의 목록
+  const filteredCourses = courses.filter(course => {
+    const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
+    const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
+    return yearMatch && termMatch;
+  });
+
   if (loading) {
     return (
       <Container sx={{ mt: 4, textAlign: 'center' }}>
@@ -70,60 +98,127 @@ const WebIDECourses = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        수강 중인 강의
-      </Typography>
-      
-      {courses.length === 0 ? (
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            수강 중인 강의가 없습니다.
+      <Paper elevation={3} sx={{ p: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 3 
+        }}>
+          <Typography variant="h5">
+            수강 중인 강의
           </Typography>
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {courses.map((course) => (
-            <Grid item xs={12} sm={6} md={4} key={course.courseId}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)'
-                  }
-                }}
+
+          <Stack direction="row" spacing={1}>
+            <FormControl sx={{ minWidth: 100 }}>
+              <Select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                displayEmpty
+                size="small"
+                MenuProps={selectStyles.menuProps}
+                sx={selectStyles.select}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5" component="h2" gutterBottom>
-                    {course.courseName}
-                  </Typography>
-                  <Chip 
-                    label={course.courseCode}
-                    color="primary"
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
-                  <Typography color="text.secondary">
-                    담당 교수: {course.professorName}
-                  </Typography>
-                </CardContent>
-                <CardActions>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<CodeIcon />}
-                    onClick={() => handleWebIDEOpen(course.courseId)}
-                  >
-                    Web-IDE 실행
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                <MenuItem value="all" sx={selectStyles.menuItem}>
+                  전체 연도
+                </MenuItem>
+                {years.map(year => (
+                  <MenuItem key={year} value={year} sx={selectStyles.menuItem}>
+                    {year}년
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 90 }}>
+              <Select
+                value={selectedTerm}
+                onChange={(e) => setSelectedTerm(e.target.value)}
+                displayEmpty
+                size="small"
+                MenuProps={selectStyles.menuProps}
+                sx={selectStyles.select}
+              >
+                <MenuItem value="all" sx={selectStyles.menuItem}>
+                  전체 학기
+                </MenuItem>
+                {terms.map(term => (
+                  <MenuItem key={term} value={term} sx={selectStyles.menuItem}>
+                    {term}학기
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Box>
+        
+        {filteredCourses.length === 0 ? (
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Typography variant="h6" color="text.secondary">
+              해당하는 강의가 없습니다.
+            </Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredCourses.map((course) => (
+              <Grid item xs={12} sm={6} md={4} key={course.courseId}>
+                <Card 
+                  sx={{ 
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h5" component="h2" gutterBottom>
+                      {course.courseName}
+                    </Typography>
+                    <Chip 
+                      label={course.courseCode}
+                      color="primary"
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                    <Typography color="text.secondary" gutterBottom>
+                      담당 교수: {course.courseProfessor} 교수님
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      {course.courseYear}년 {course.courseTerm}학기
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      {course.courseClss}분반
+                    </Typography>
+                  </CardContent>
+                  <CardActions>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<CodeIcon />}
+                      onClick={() => handleWebIDEOpen(course.courseId)}
+                      sx={{
+                        bgcolor: 'primary.main',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                        },
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      Web-IDE 실행
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Paper>
     </Container>
   );
 };
