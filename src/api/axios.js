@@ -1,51 +1,30 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/useAuthStore';
+import keycloak from '../config/keycloak';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// 요청 인터셉터 추가
+// 요청 인터셉터
 api.interceptors.request.use(
-  (config) => {
-    const accessToken = useAuthStore.getState().accessToken;
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+  async (config) => {
+    if (keycloak.authenticated) {
+      // 토큰이 곧 만료되면 갱신 (70초 이내로 남았을 때)
+      const minValidity = 70;
+      try {
+        await keycloak.updateToken(minValidity);
+      } catch (error) {
+        keycloak.login();
+        return Promise.reject(error);
+      }
+      config.headers.Authorization = `Bearer ${keycloak.token}`;
     }
     return config;
   },
   (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// 응답 인터셉터 추가 (토큰 만료 처리)
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // 토큰이 만료되었고, 재시도하지 않은 요청인 경우
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        const { refreshAccessToken } = await import('./auth');
-        const response = await refreshAccessToken(refreshToken);
-        
-        useAuthStore.getState().setTokens(response.access_token, response.refresh_token);
-        
-        originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
-        return api(originalRequest);
-      } catch (error) {
-        // 리프레시 토큰도 만료된 경우
-        useAuthStore.getState().clearTokens();
-        window.location.href = '/';
-        return Promise.reject(error);
-      }
-    }
-    
     return Promise.reject(error);
   }
 );

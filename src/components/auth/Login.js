@@ -11,18 +11,17 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
-import { AUTH_CONFIG } from '../../config/auth';
+import { getDefaultRoute } from '../../routes';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, isAuthenticated, user } = useAuth();
+  const { keycloak, login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
-  // 컴포넌트가 언마운트될 때 location state 초기화
   useEffect(() => {
     return () => {
       if (location.state?.message) {
@@ -32,31 +31,25 @@ const Login = () => {
   }, [location, navigate]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // 사용자 역할에 따른 리다이렉션
-      const roles = user?.roles || [];
-      if (roles.includes('admin')) {
-        navigate('/admin');
-      } else if (roles.includes('professor') || roles.includes('assistant')) {
-        navigate('/watcher');
-      } else {
-        navigate('/jcode');
-      }
+    if (user) {
+      navigate(getDefaultRoute(user.role), { replace: true });
     }
-  }, [isAuthenticated, navigate, user]);
+  }, [user, navigate]);
 
-  const params = new URLSearchParams({
-    client_id: AUTH_CONFIG.clientId,
-    redirect_uri: AUTH_CONFIG.redirectUri,
-    response_type: "code",
-    scope: AUTH_CONFIG.scope
-  });
+  const handleKeycloakLogin = () => {
+    try {
+      keycloak.login({
+        redirectUri: window.location.origin + '/callback'
+      });
+    } catch (err) {
+      setError('로그인 중 오류가 발생했습니다.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // 비밀번호 최소 요구사항 검증
     if (password.length < 8) {
       setError('비밀번호는 최소 8자 이상이어야 합니다.');
       return;
@@ -68,24 +61,8 @@ const Login = () => {
     }
 
     try {
-      console.log('로그인 요청');
       const result = await login(email, password);
-      console.log('로그인 결과:', result);
-    
-      if (result.success) {
-        console.log('로그인 성공, 리다이렉트:', result.user.role);
-        const role = result.user.role;
-        console.log('리다이렉트 시도:', role);
-        if (role === 'ADMIN') {
-          navigate('/admin', { replace: true });
-        } else if (role === 'PROFESSOR' || role === 'ASSISTANT') {
-          navigate('/watcher', { replace: true });
-        } else if (role === 'STUDENT') {
-          navigate('/jcode', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      } else {
+      if (!result.success) {
         setError(result.message);
       }
     } catch (err) {
@@ -98,7 +75,7 @@ const Login = () => {
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Typography variant="h5" component="h1" gutterBottom>
-            JCodeHub 로그인
+            J-Code 로그인
           </Typography>
           <Typography variant="body2" color="text.secondary">
             전북대학교 통합계정으로 로그인하세요
@@ -125,7 +102,7 @@ const Login = () => {
           variant="contained"
           fullWidth
           startIcon={<SchoolIcon />}
-          href={`${AUTH_CONFIG.keycloakUrl}/auth?${params.toString()}`}
+          onClick={handleKeycloakLogin}
           sx={{ 
             mt: 2, 
             mb: 3,
@@ -136,7 +113,7 @@ const Login = () => {
             }
           }}
         >
-          전북대학교 통합로그인
+          JEduTools 통합 로그인
         </Button>
         
         <Divider sx={{ my: 3 }}>

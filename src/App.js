@@ -1,62 +1,64 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/layout/Navbar';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import Callback from './components/auth/Callback';
-import Home from './components/Home';
-import JCode from './components/jcode/JCodeRedirect';
-import Watcher from './components/watcher/Watcher';
-import Admin from './components/admin/Admin';
 import theme from './theme';
-import { Box } from '@mui/material';
 import PrivateRoute from './components/layout/PrivateRoute';
+import { routes } from './routes';
+import { Box } from '@mui/material';
+
+const AppRoutes = () => {
+  const { loading, isAuthenticated } = useAuth();
+
+  if (loading) {
+    return null;  // or loading spinner
+  }
+
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          isAuthenticated ? <Navigate to="/watcher" replace /> : <Navigate to="/login" replace />
+        } 
+      />
+      
+      {routes.map(({ path, element: Element, roles }) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            roles.length > 0 ? (
+              <PrivateRoute roles={roles}>
+                <Element />
+              </PrivateRoute>
+            ) : (
+              <Element />
+            )
+          }
+        />
+      ))}
+    </Routes>
+  );
+};
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
         <Router>
-          <Navbar />
-          <Box sx={{ pt: 10 }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/callback" element={<Callback />} />
-              <Route 
-                path="/jcode/*" 
-                element={
-                  <PrivateRoute roles={['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN']}>
-                    <JCode />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/watcher/*" 
-                element={
-                  <PrivateRoute roles={['PROFESSOR', 'ASSISTANT', 'ADMIN']}>
-                    <Watcher />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/admin/*" 
-                element={
-                  <PrivateRoute roles={['ADMIN']}>
-                    <Admin />
-                  </PrivateRoute>
-                } 
-              />
-            </Routes>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navbar />
+            <Box component="main" sx={{ flexGrow: 1, pt: 10 }}>
+              <AppRoutes />
+            </Box>
           </Box>
         </Router>
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,67 +1,130 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
-import { jwtDecode } from 'jwt-decode';
-import axios from '../api/axios';
-import { AUTH_CONFIG } from '../config/auth';
-import { logout as authLogout, login as authLogin } from '../api/auth';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import keycloak from '../config/keycloak';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
-
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
+  const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
-  const setTokens = useAuthStore((state) => state.setTokens);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const [user, setUser] = useState(null);
+  const initializingRef = useRef(false);  // 초기화 상태를 추적하기 위한 ref
+
+  // 토큰을 세션 스토리지에 저장하는 함수
+  const saveTokens = (tokens) => {
+    if (tokens.access_token) {
+      sessionStorage.setItem('accessToken', tokens.access_token);
+    }
+    if (tokens.refresh_token) {
+      sessionStorage.setItem('refreshToken', tokens.refresh_token);
+    }
+    if (tokens.id_token) {
+      sessionStorage.setItem('idToken', tokens.id_token);
+    }
+  };
 
   useEffect(() => {
-    if (accessToken) {
-      try {
-        const decodedToken = jwtDecode(accessToken);
-        console.log('디코딩된 토큰:', decodedToken);
-
-        if (decodedToken.exp * 1000 < Date.now()) {
-          console.log('토큰이 만료되었습니다.');
-          clearAuth();
-        } else {
-          const userData = {
-            username: decodedToken.preferred_username || decodedToken.name,
-            email: decodedToken.email,
-            roles: decodedToken.realm_access?.roles || [],
-            sub: decodedToken.sub,
-            role: decodedToken.role || useAuthStore.getState().user?.role
-          };
-          console.log('설정된 사용자 정보:', userData);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('토큰 디코딩 실패:', error);
-        clearAuth();
+    const initKeycloak = async () => {
+      if (initializingRef.current) {
+        return;
       }
+      initializingRef.current = true;
+
+      try {
+        if (!keycloak.authenticated) {
+          const authenticated = await keycloak.init({
+            pkceMethod: 'S256',
+            checkLoginIframe: false,
+            onAuthSuccess: () => {
+              saveTokens({
+                access_token: keycloak.token,
+                refresh_token: keycloak.refreshToken,
+                id_token: keycloak.idToken
+              });
+            }
+          });
+
+          if (authenticated) {
+            const userProfile = await keycloak.loadUserProfile();
+            const roles = (keycloak.tokenParsed.resource_access?.jcodehub?.roles || [])
+              .map(role => role.toUpperCase());
+            
+            setUser({
+              ...userProfile,
+              roles: roles,
+              role: roles.includes('ADMIN') ? 'ADMIN' :
+                    roles.includes('PROFESSOR') ? 'PROFESSOR' :
+                    roles.includes('ASSISTANCE') ? 'ASSISTANCE' : 'STUDENT'
+            });
+
+            saveTokens({
+              access_token: keycloak.token,
+              refresh_token: keycloak.refreshToken,
+              id_token: keycloak.idToken
+            });
+          }
+        }
+
+        setInitialized(true);
+        setLoading(false);
+      } catch (error) {
+        console.error('Keycloak initialization failed:', error);
+        setLoading(false);
+      } finally {
+        initializingRef.current = false;
+      }
+    };
+
+    initKeycloak();
+  }, []);
+
+  // 토큰 갱신 시에도 세션 스토리지 업데이트
+  useEffect(() => {
+    if (initialized && keycloak.authenticated) {
+      keycloak.onTokenExpired = () => {
+        keycloak.updateToken(70).then(() => {
+          // 새로운 토큰을 세션 스토리지에 저장
+          saveTokens({
+            access_token: keycloak.token,
+            refresh_token: keycloak.refreshToken,
+            id_token: keycloak.idToken
+          });
+        }).catch(() => {
+          console.error('Failed to refresh token');
+        });
+      };
     }
-    setLoading(false);
-  }, [accessToken, setUser, clearAuth]);
+  }, [initialized]);
+
+  const login = () => {
+    keycloak.login();
+  };
 
   const logout = () => {
-    clearAuth();
-    authLogout();
+    // id_token_hint를 사용한 로그아웃을 먼저 실행
+    const idToken = keycloak.idToken;  // 미리 저장
+    
+    keycloak.logout({
+      redirectUri: window.location.origin,
+      idToken: idToken  // 저장된 idToken 사용
+    });
+
+    // 그 다음 세션 스토리지 클리어
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('idToken');
   };
 
   const value = {
-    user,
-    isAuthenticated: !!accessToken && !!user,
+    initialized,
     loading,
+    user,
+    login,
     logout,
-    login: authLogin
+    keycloak
   };
 
-  if (loading) {
-    return null;
+  if (!initialized) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -69,4 +132,12 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-} 
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}; 
