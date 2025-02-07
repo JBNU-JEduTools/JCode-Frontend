@@ -14,34 +14,40 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: "'Comfortaa', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
+    fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
     h1: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     h2: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     h3: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     h4: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     h5: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     h6: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', sans-serif",
       fontWeight: 700,
     },
     button: {
-      fontFamily: 'Comfortaa',
+      fontFamily: "'Comfortaa', 'Noto Sans KR', sans-serif",
       fontWeight: 600,
+    },
+    body1: {
+      fontFamily: "'Noto Sans KR', sans-serif",
+    },
+    body2: {
+      fontFamily: "'Noto Sans KR', sans-serif",
     },
   },
   components: {
@@ -67,7 +73,7 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          fontFamily: "'Comfortaa', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
+          fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         },
       },
     },
