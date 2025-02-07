@@ -12,7 +12,7 @@ import {
   Chip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { mockClasses } from '../../mockData/classes';
+import axios from '../../api/axios';
 
 const ClassList = () => {
   const [classes, setClasses] = useState([]);
@@ -23,19 +23,12 @@ const ClassList = () => {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        // TODO: API 구현 필요 - GET /api/classes
-        // Response: Array<{
-        //   id: number,
-        //   name: string,
-        //   year: number,
-        //   semester: number,
-        //   students: Array<{ id, name, ... }>
-        // }>
-        // API 호출 대신 목업 데이터 사용
-        setClasses(mockClasses);
-      } catch (err) {
-        setError('수업 목록을 불러오는 중 오류가 발생했습니다.');
-      } finally {
+        const response = await axios.get('/api/users/me/courses');
+        setClasses(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('수업 목록 조회 실패:', error);
+        setError('수업 목록을 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
@@ -45,18 +38,20 @@ const ClassList = () => {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography color="error">
-          {error}
-        </Typography>
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography color="error" align="center">
+            {error}
+          </Typography>
+        </Paper>
       </Container>
     );
   }
@@ -65,27 +60,24 @@ const ClassList = () => {
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Paper elevation={3} sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom>
-          수업 목록
+          담당 수업 목록
         </Typography>
-        
+
         <List>
-          {classes.map((classItem) => (
-            <ListItem key={classItem.id} disablePadding>
-              <ListItemButton 
-                onClick={() => navigate(`/watcher/class/${classItem.id}`)}
-              >
-                <ListItemText 
+          {classes.map((classItem, index) => (
+            <ListItem key={index} disablePadding divider>
+              <ListItemButton onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}>
+                <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {classItem.name}
+                      {classItem.courseName}
                       <Chip 
-                        label={`${classItem.students.length}명`} 
+                        label={classItem.courseCode} 
                         size="small" 
                         color="primary"
                       />
                     </Box>
                   }
-                  secondary={`${classItem.year}년 ${classItem.semester}학기`}
                 />
               </ListItemButton>
             </ListItem>

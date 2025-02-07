@@ -34,101 +34,100 @@ export const mockClasses = [
 ];
 
 export const mockMonitoringData = {
-  1: { // studentId
-    name: '김학생',
-    studentId: '201911111',
+  "19": {  // userId를 key로 사용
+    name: "test@jbnu.ac.kr",
+    studentId: "test@jbnu.ac.kr",
     totalCodeChanges: 150,
-    totalCompiles: 45,
-    correctSubmissions: 8,
+    totalCompiles: 75,
+    correctSubmissions: 25,
     submissionStats: {
-      total: 20,
       stats: [
-        { name: '정답', value: 8, color: '#4CAF50' },
-        { name: '오답', value: 5, color: '#f44336' },
-        { name: '컴파일 에러', value: 4, color: '#ff9800' },
-        { name: '런타임 에러', value: 3, color: '#2196f3' }
+        { name: "정답", value: 25, color: "#4CAF50" },
+        { name: "오답", value: 35, color: "#f44336" },
+        { name: "컴파일 에러", value: 15, color: "#ff9800" }
       ]
     },
     recentSubmissions: [
       {
         id: 1,
-        problemId: 'P1234',
-        problemName: '배열의 합',
-        submitTime: '2024-03-15 15:30:00',
-        status: '정답',
-        runtime: '0.5s',
-        memory: '24MB'
+        problemName: "Hello World",
+        submitTime: "2024-03-20 14:30",
+        status: "정답",
+        runtime: "0.5s",
+        memory: "16MB"
       },
       {
         id: 2,
-        problemId: 'P1235',
-        problemName: '링크드리스트 역순',
-        submitTime: '2024-03-15 15:00:00',
-        status: '컴파일 에러',
-        runtime: '-',
-        memory: '-'
+        problemName: "두 수의 합",
+        submitTime: "2024-03-20 14:25",
+        status: "오답",
+        runtime: "0.3s",
+        memory: "14MB"
       },
       {
         id: 3,
-        problemId: 'P1236',
-        problemName: '이진트리 순회',
-        submitTime: '2024-03-15 14:30:00',
-        status: '런타임 에러',
-        runtime: '-',
-        memory: '-'
+        problemName: "배열 정렬",
+        submitTime: "2024-03-20 14:20",
+        status: "컴파일 에러",
+        runtime: "-",
+        memory: "-"
       }
     ],
     timeSeriesData: [
+      { timestamp: "09:00", codeChanges: 10, compiles: 5 },
+      { timestamp: "10:00", codeChanges: 15, compiles: 8 },
+      { timestamp: "11:00", codeChanges: 20, compiles: 12 },
+      { timestamp: "12:00", codeChanges: 8, compiles: 4 },
+      { timestamp: "13:00", codeChanges: 25, compiles: 15 },
+      { timestamp: "14:00", codeChanges: 30, compiles: 18 }
+    ]
+  },
+  "16": {  // 다른 학생의 데이터
+    name: "jsh2256@jbnu.ac.kr",
+    studentId: "jsh2256@jbnu.ac.kr",
+    totalCodeChanges: 200,
+    totalCompiles: 100,
+    correctSubmissions: 30,
+    submissionStats: {
+      stats: [
+        { name: "정답", value: 30, color: "#4CAF50" },
+        { name: "오답", value: 40, color: "#f44336" },
+        { name: "컴파일 에러", value: 20, color: "#ff9800" }
+      ]
+    },
+    recentSubmissions: [
       {
-        timestamp: '14:00',
-        codeChanges: 5,
-        compiles: 1
+        id: 1,
+        problemName: "피보나치 수열",
+        submitTime: "2024-03-20 15:30",
+        status: "정답",
+        runtime: "0.3s",
+        memory: "14MB"
       },
       {
-        timestamp: '14:10',
-        codeChanges: 8,
-        compiles: 2
+        id: 2,
+        problemName: "DFS와 BFS",
+        submitTime: "2024-03-20 15:25",
+        status: "오답",
+        runtime: "0.8s",
+        memory: "32MB"
       },
       {
-        timestamp: '14:20',
-        codeChanges: 12,
-        compiles: 3
-      },
-      {
-        timestamp: '14:30',
-        codeChanges: 15,
-        compiles: 4
-      },
-      {
-        timestamp: '14:40',
-        codeChanges: 18,
-        compiles: 5
-      },
-      {
-        timestamp: '14:50',
-        codeChanges: 20,
-        compiles: 6
-      },
-      {
-        timestamp: '15:00',
-        codeChanges: 22,
-        compiles: 7
-      },
-      {
-        timestamp: '15:10',
-        codeChanges: 25,
-        compiles: 8
-      },
-      {
-        timestamp: '15:20',
-        codeChanges: 28,
-        compiles: 9
-      },
-      {
-        timestamp: '15:30',
-        codeChanges: 30,
-        compiles: 10
+        id: 3,
+        problemName: "동적 계획법",
+        submitTime: "2024-03-20 15:20",
+        status: "정답",
+        runtime: "0.4s",
+        memory: "16MB"
       }
+    ],
+    timeSeriesData: [
+      { timestamp: "09:00", codeChanges: 15, compiles: 8 },
+      { timestamp: "10:00", codeChanges: 20, compiles: 12 },
+      { timestamp: "11:00", codeChanges: 25, compiles: 15 },
+      { timestamp: "12:00", codeChanges: 10, compiles: 5 },
+      { timestamp: "13:00", codeChanges: 30, compiles: 18 },
+      { timestamp: "14:00", codeChanges: 35, compiles: 22 }
     ]
   }
 }; 
