@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const initializingRef = useRef(false);  // 초기화 상태를 추적하기 위한 ref
+  const initializingRef = useRef(false);
 
   // 토큰을 세션 스토리지에 저장하는 함수
   const saveTokens = (tokens) => {
@@ -30,46 +30,46 @@ export const AuthProvider = ({ children }) => {
       initializingRef.current = true;
 
       try {
-        if (!keycloak.authenticated) {
-          const authenticated = await keycloak.init({
-            pkceMethod: 'S256',
-            checkLoginIframe: false,
-            onAuthSuccess: () => {
-              saveTokens({
-                access_token: keycloak.token,
-                refresh_token: keycloak.refreshToken,
-                id_token: keycloak.idToken
-              });
-            }
+        // 세션 스토리지의 토큰 확인
+        const storedToken = sessionStorage.getItem('accessToken');
+        
+        const authenticated = await keycloak.init({
+          pkceMethod: 'S256',
+          checkLoginIframe: false,
+          token: storedToken, // 저장된 토큰 전달
+          onLoad: storedToken ? 'check-sso' : 'check-sso', // 토큰이 있으면 SSO 체크
+          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+          silentCheckSsoFallback: false, // SSO 체크 실패시 fallback 비활성화
+          enableLogging: false, // 로깅 비활성화
+          iframeTarget: '_blank', // iframe 대신 새 창 사용
+        });
+
+        if (authenticated) {
+          const userProfile = await keycloak.loadUserProfile();
+          const roles = (keycloak.tokenParsed.resource_access?.jcodehub?.roles || [])
+            .map(role => role.toUpperCase());
+          
+          setUser({
+            ...userProfile,
+            roles: roles,
+            role: roles.includes('ADMIN') ? 'ADMIN' :
+                  roles.includes('PROFESSOR') ? 'PROFESSOR' :
+                  roles.includes('ASSISTANCE') ? 'ASSISTANCE' : 'STUDENT'
           });
 
-          if (authenticated) {
-            const userProfile = await keycloak.loadUserProfile();
-            const roles = (keycloak.tokenParsed.resource_access?.jcodehub?.roles || [])
-              .map(role => role.toUpperCase());
-            
-            setUser({
-              ...userProfile,
-              roles: roles,
-              role: roles.includes('ADMIN') ? 'ADMIN' :
-                    roles.includes('PROFESSOR') ? 'PROFESSOR' :
-                    roles.includes('ASSISTANCE') ? 'ASSISTANCE' : 'STUDENT'
-            });
-
-            saveTokens({
-              access_token: keycloak.token,
-              refresh_token: keycloak.refreshToken,
-              id_token: keycloak.idToken
-            });
-          }
+          // 토큰 저장
+          saveTokens({
+            access_token: keycloak.token,
+            refresh_token: keycloak.refreshToken,
+            id_token: keycloak.idToken
+          });
         }
 
         setInitialized(true);
-        setLoading(false);
       } catch (error) {
         console.error('Keycloak initialization failed:', error);
-        setLoading(false);
       } finally {
+        setLoading(false);
         initializingRef.current = false;
       }
     };
