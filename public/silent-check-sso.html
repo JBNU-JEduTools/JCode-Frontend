@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Silent SSO check</title>
+</head>
+<body>
+    <script>
+        // 필요한 최소한의 기능만 구현
+        if (window.parent && window.parent !== window) {
+            // origin 검증
+            const allowedOrigin = window.location.origin;
+            try {
+                window.parent.postMessage(location.href, allowedOrigin);
+            } catch (e) {
+                console.error('Failed to post message', e);
+            }
+        }
+    </script>
+</body>
+</html> 
