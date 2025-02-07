@@ -14,11 +14,33 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Pretendard", "Roboto", "Arial", sans-serif',
+    fontFamily: "'Comfortaa', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
+    h1: {
+      fontFamily: 'Comfortaa',
+      fontWeight: 700,
+    },
+    h2: {
+      fontFamily: 'Comfortaa',
+      fontWeight: 700,
+    },
+    h3: {
+      fontFamily: 'Comfortaa',
+      fontWeight: 700,
+    },
+    h4: {
+      fontFamily: 'Comfortaa',
+      fontWeight: 700,
+    },
     h5: {
+      fontFamily: 'Comfortaa',
+      fontWeight: 700,
+    },
+    h6: {
+      fontFamily: 'Comfortaa',
       fontWeight: 700,
     },
     button: {
+      fontFamily: 'Comfortaa',
       fontWeight: 600,
     },
   },
@@ -39,6 +61,13 @@ const theme = createTheme({
           textTransform: 'none',
           fontSize: '1rem',
           padding: '8px 16px',
+        },
+      },
+    },
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          fontFamily: "'Comfortaa', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
         },
       },
     },
