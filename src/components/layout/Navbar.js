@@ -142,15 +142,7 @@ const Navbar = () => {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               WebkitTextStroke: '1px rgba(51, 51, 51, 0.3)',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                textShadow: '4px 4px 8px rgba(0,0,0,0.2)',
-                background: 'linear-gradient(45deg, #444444 30%, #777777 90%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }
+              textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
             }}
             onClick={handleLogoClick}
           >
@@ -171,15 +163,15 @@ const Navbar = () => {
               <Box
                 sx={{
                   position: 'absolute',
-                  bottom: '15px',
+                  bottom: '22px',
                   left: 0,
-                  height: '3px',
-                  background: 'linear-gradient(90deg, #333333, #666666)',  // 검정 그라데이션으로 변경
-                  boxShadow: '0 0 8px rgba(0, 0, 0, 0.3)',  // 그림자 효과 수정
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #333333, #666666)',
+                  boxShadow: '0 0 6px rgba(0, 0, 0, 0.2)',
                   borderRadius: '4px',
-                  width: activeButtonPos.width,
-                  transform: `translateX(${activeButtonPos.left}px)`,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  width: `${activeButtonPos.width * 0.6}px`,
+                  transform: `translateX(${activeButtonPos.left + (activeButtonPos.width * 0.2)}px)`,
+                  transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -187,8 +179,8 @@ const Navbar = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',  // 반짝임 효과 투명도 조정
-                    animation: 'shimmer 2.5s infinite',  // 애니메이션 속도 조정
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                    animation: 'shimmer 2.5s infinite',
                   },
                   '@keyframes shimmer': {
                     '0%': {
