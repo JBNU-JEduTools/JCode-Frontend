@@ -77,7 +77,10 @@ const StudentList = () => {
           <IconButton onClick={() => navigate('/watcher')} sx={{ mr: 2 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h5">
+          <Typography 
+            variant="h5"
+            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+          >
             {className} - 수강생 목록
           </Typography>
         </Box>
@@ -116,7 +119,13 @@ const StudentList = () => {
         </TableContainer>
 
         {students.length === 0 && (
-          <Typography sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography 
+            sx={{ 
+              mt: 2, 
+              textAlign: 'center',
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+            }}
+          >
             수강생이 없습니다.
           </Typography>
         )}

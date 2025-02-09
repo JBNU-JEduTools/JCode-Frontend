@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Fade,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from '../../api/axios';
@@ -92,95 +93,97 @@ const AssistantManagement = () => {
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
-    <Container maxWidth="lg">
-      <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5">조교 계정 관리</Typography>
-          <Button 
-            variant="contained" 
-            onClick={() => setOpenDialog(true)}
-          >
-            조교 추가
-          </Button>
-        </Box>
+    <Fade in={true} timeout={300}>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+            <Typography variant="h5">조교 계정 관리</Typography>
+            <Button 
+              variant="contained" 
+              onClick={() => setOpenDialog(true)}
+            >
+              조교 추가
+            </Button>
+          </Box>
 
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>이메일</TableCell>
-                <TableCell>이름</TableCell>
-                <TableCell>학교</TableCell>
-                <TableCell>작업</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.email}>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.school}</TableCell>
-                  <TableCell>
-                    <IconButton 
-                      color="error" 
-                      size="small"
-                      onClick={() => handleDeleteUser(user.email)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>이메일</TableCell>
+                  <TableCell>이름</TableCell>
+                  <TableCell>학교</TableCell>
+                  <TableCell>작업</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.email}>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.school}</TableCell>
+                    <TableCell>
+                      <IconButton 
+                        color="error" 
+                        size="small"
+                        onClick={() => handleDeleteUser(user.email)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-          <DialogTitle>조교 추가</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="이메일"
-              type="email"
-              fullWidth
-              required
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="이름"
-              fullWidth
-              required
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="비밀번호"
-              type="password"
-              fullWidth
-              required
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="학번"
-              fullWidth
-              required
-              value={newUser.student_num}
-              onChange={(e) => setNewUser({ ...newUser, student_num: e.target.value })}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>취소</Button>
-            <Button onClick={handleAddUser}>추가</Button>
-          </DialogActions>
-        </Dialog>
-      </Paper>
-    </Container>
+          <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+            <DialogTitle>조교 추가</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="이메일"
+                type="email"
+                fullWidth
+                required
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="이름"
+                fullWidth
+                required
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="비밀번호"
+                type="password"
+                fullWidth
+                required
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+              <TextField
+                margin="dense"
+                label="학번"
+                fullWidth
+                required
+                value={newUser.student_num}
+                onChange={(e) => setNewUser({ ...newUser, student_num: e.target.value })}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)}>취소</Button>
+              <Button onClick={handleAddUser}>추가</Button>
+            </DialogActions>
+          </Dialog>
+        </Paper>
+      </Container>
+    </Fade>
   );
 };
 

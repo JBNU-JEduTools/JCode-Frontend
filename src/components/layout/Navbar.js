@@ -16,6 +16,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { routes, getDefaultRoute } from '../../routes';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -24,6 +27,7 @@ const Navbar = () => {
   const location = useLocation();
   const buttonRefs = useRef([]);
   const [activeButtonPos, setActiveButtonPos] = useState({ left: 0, width: 0 });
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   // useEffect를 조건문 이전으로 이동
   useEffect(() => {
@@ -73,44 +77,18 @@ const Navbar = () => {
     return location.pathname === path.replace('/*', '');
   };
 
-  // 공통 스타일을 변수로 정의
+  // 메뉴 버튼 스타일 수정
   const menuButtonStyle = {
     my: 2, 
-    fontWeight: 600,
+    fontWeight: 'bold',
     fontSize: '1rem',
     mx: 1,
-    background: 'linear-gradient(45deg, #333333 30%, #666666 90%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    WebkitTextStroke: '0.5px rgba(51, 51, 51, 0.2)',
-    textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
+    color: '#1a1a1a',  // 글자색을 검정색으로 변경
     transition: 'all 0.3s ease',
     position: 'relative',
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      width: '100%',
-      height: '2px',
-      backgroundColor: 'primary.main',
-      transform: 'scaleX(0)',
-      transformOrigin: 'right',
-      transition: 'transform 0.3s ease'
-    },
     '&:hover': {
       transform: 'translateY(-2px)',
-      textShadow: '4px 4px 8px rgba(0,0,0,0.2)',
-      background: 'linear-gradient(45deg, #444444 30%, #777777 90%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      '&::after': {
-        transform: 'scaleX(1)',
-        transformOrigin: 'left'
-      }
-    },
-    '&.active::after': {
-      transform: 'scaleX(1)'
+      color: '#1a1a1a',  // 호버 시에도 검정색 유지
     }
   };
 
@@ -131,18 +109,24 @@ const Navbar = () => {
             variant="h5"
             noWrap
             component="div"
-            className="logo-font-comfortaa"
             sx={{ 
               mr: 2, 
               cursor: 'pointer',
               fontWeight: 700,
               fontSize: '1.8rem',
               letterSpacing: '-.05rem',
-              background: 'linear-gradient(45deg, #333333 30%, #666666 90%)',
+              background: isDarkMode 
+                ? 'linear-gradient(45deg, #ffffff 30%, #999999 90%)'
+                : 'linear-gradient(45deg, #333333 30%, #666666 90%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              WebkitTextStroke: '1px rgba(51, 51, 51, 0.3)',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+              WebkitTextStroke: isDarkMode 
+                ? '1px rgba(255, 255, 255, 0.3)'
+                : '1px rgba(51, 51, 51, 0.3)',
+              textShadow: isDarkMode
+                ? '2px 2px 4px rgba(255,255,255,0.1)'
+                : '2px 2px 4px rgba(0,0,0,0.1)',
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
             }}
             onClick={handleLogoClick}
           >
@@ -166,8 +150,12 @@ const Navbar = () => {
                   bottom: '22px',
                   left: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, #333333, #666666)',
-                  boxShadow: '0 0 6px rgba(0, 0, 0, 0.2)',
+                  background: isDarkMode
+                    ? 'linear-gradient(90deg, #ffffff, #999999)'
+                    : 'linear-gradient(90deg, #333333, #666666)',
+                  boxShadow: isDarkMode
+                    ? '0 0 6px rgba(255, 255, 255, 0.2)'
+                    : '0 0 6px rgba(0, 0, 0, 0.2)',
                   borderRadius: '4px',
                   width: `${activeButtonPos.width * 0.6}px`,
                   transform: `translateX(${activeButtonPos.left + (activeButtonPos.width * 0.2)}px)`,
@@ -179,8 +167,9 @@ const Navbar = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                    animation: 'shimmer 2.5s infinite',
+                    background: isDarkMode
+                      ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                      : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
                   },
                   '@keyframes shimmer': {
                     '0%': {
@@ -196,7 +185,7 @@ const Navbar = () => {
               {navItems.map((route, index) => (
                 <Button
                   key={route.path}
-                  ref={el => buttonRefs.current[index] = el}  // ref 추가
+                  ref={el => buttonRefs.current[index] = el}
                   component={RouterLink}
                   to={route.path.replace('/*', '')}
                   sx={{
@@ -282,7 +271,20 @@ const Navbar = () => {
                     </Typography>
                   </Box>
                   <Divider />
-                  <MenuItem onClick={handleLogout} sx={{ mt: 1 }}>
+                  <MenuItem onClick={toggleDarkMode}>
+                    {isDarkMode ? (
+                      <>
+                        <LightModeIcon sx={{ mr: 1 }} />
+                        라이트 모드
+                      </>
+                    ) : (
+                      <>
+                        <DarkModeIcon sx={{ mr: 1 }} />
+                        다크 모드
+                      </>
+                    )}
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>
                     logout
                   </MenuItem>
                 </Menu>

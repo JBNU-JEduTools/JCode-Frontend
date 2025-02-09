@@ -8,7 +8,8 @@ import {
   ListItem,
   ListItemText,
   Button,
-  Divider
+  Divider,
+  Fade
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,35 +40,60 @@ const AdminHome = () => {
   ];
 
   return (
-    <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          관리자 페이지
-        </Typography>
-        <List>
-          {menuItems.map((item, index) => (
-            <React.Fragment key={item.path}>
-              <ListItem>
-                <Box sx={{ width: '100%' }}>
-                  <ListItemText 
-                    primary={item.title}
-                    secondary={item.description}
-                  />
-                  <Button 
-                    variant="contained"
-                    onClick={() => navigate(item.path)}
-                    sx={{ mt: 1 }}
+    <Fade in={true} timeout={300}>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+            관리자 페이지
+          </Typography>
+          <List>
+            {menuItems.map((item, index) => (
+              <React.Fragment key={item.path}>
+                <ListItem>
+                  <Box 
+                    sx={{ 
+                      width: '100%',
+                      transition: 'all 0.3s ease',
+                      animation: 'fadeIn 0.3s ease',
+                      '@keyframes fadeIn': {
+                        '0%': {
+                          opacity: 0,
+                          transform: 'translateY(10px)'
+                        },
+                        '100%': {
+                          opacity: 1,
+                          transform: 'translateY(0)'
+                        }
+                      }
+                    }}
                   >
-                    관리하기
-                  </Button>
-                </Box>
-              </ListItem>
-              {index < menuItems.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
-    </Container>
+                    <ListItemText 
+                      primary={item.title}
+                      secondary={item.description}
+                      primaryTypographyProps={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        fontWeight: 600 
+                      }}
+                      secondaryTypographyProps={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" 
+                      }}
+                    />
+                    <Button 
+                      variant="contained"
+                      onClick={() => navigate(item.path)}
+                      sx={{ mt: 1 }}
+                    >
+                      관리하기
+                    </Button>
+                  </Box>
+                </ListItem>
+                {index < menuItems.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        </Paper>
+      </Container>
+    </Fade>
   );
 };
 

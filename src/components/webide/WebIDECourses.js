@@ -14,7 +14,8 @@ import {
   Select,
   MenuItem,
   Stack,
-  Paper
+  Paper,
+  Fade
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from '../../api/axios';
@@ -97,129 +98,161 @@ const WebIDECourses = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3 
-        }}>
-          <Typography variant="h5">
-            수강 중인 강의
-          </Typography>
-
-          <Stack direction="row" spacing={1}>
-            <FormControl sx={{ minWidth: 100 }}>
-              <Select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                displayEmpty
-                size="small"
-                MenuProps={selectStyles.menuProps}
-                sx={selectStyles.select}
-              >
-                <MenuItem value="all" sx={selectStyles.menuItem}>
-                  전체 연도
-                </MenuItem>
-                {years.map(year => (
-                  <MenuItem key={year} value={year} sx={selectStyles.menuItem}>
-                    {year}년
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ minWidth: 90 }}>
-              <Select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                displayEmpty
-                size="small"
-                MenuProps={selectStyles.menuProps}
-                sx={selectStyles.select}
-              >
-                <MenuItem value="all" sx={selectStyles.menuItem}>
-                  전체 학기
-                </MenuItem>
-                {terms.map(term => (
-                  <MenuItem key={term} value={term} sx={selectStyles.menuItem}>
-                    {term}학기
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </Box>
-        
-        {filteredCourses.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              해당하는 강의가 없습니다.
+    <Fade in={true} timeout={300}>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            mb: 3 
+          }}>
+            <Typography variant="h5">
+              수강 중인 강의
             </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {filteredCourses.map((course) => (
-              <Grid item xs={12} sm={6} md={4} key={course.courseId}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                    }
-                  }}
+
+            <Stack direction="row" spacing={1}>
+              <FormControl sx={{ minWidth: 100 }}>
+                <Select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  displayEmpty
+                  size="small"
+                  MenuProps={selectStyles.menuProps}
+                  sx={selectStyles.select}
                 >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h5" component="h2" gutterBottom>
-                      {course.courseName}
-                    </Typography>
-                    <Chip 
-                      label={course.courseCode}
-                      color="primary"
-                      size="small"
-                      sx={{ mb: 2 }}
-                    />
-                    <Typography color="text.secondary" gutterBottom>
-                      담당 교수: {course.courseProfessor} 교수님
-                    </Typography>
-                    <Typography color="text.secondary" variant="body2">
-                      {course.courseYear}년 {course.courseTerm}학기
-                    </Typography>
-                    <Typography color="text.secondary" variant="body2">
-                      {course.courseClss}분반
-                    </Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<CodeIcon />}
-                      onClick={() => handleWebIDEOpen(course.courseId)}
-                      sx={{
-                        bgcolor: 'primary.main',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  <MenuItem value="all" sx={selectStyles.menuItem}>
+                    전체 연도
+                  </MenuItem>
+                  {years.map(year => (
+                    <MenuItem key={year} value={year} sx={selectStyles.menuItem}>
+                      {year}년
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl sx={{ minWidth: 90 }}>
+                <Select
+                  value={selectedTerm}
+                  onChange={(e) => setSelectedTerm(e.target.value)}
+                  displayEmpty
+                  size="small"
+                  MenuProps={selectStyles.menuProps}
+                  sx={selectStyles.select}
+                >
+                  <MenuItem value="all" sx={selectStyles.menuItem}>
+                    전체 학기
+                  </MenuItem>
+                  {terms.map(term => (
+                    <MenuItem key={term} value={term} sx={selectStyles.menuItem}>
+                      {term}학기
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Box>
+          
+          {filteredCourses.length === 0 ? (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                해당하는 강의가 없습니다.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {filteredCourses.map((course) => (
+                <Grid item xs={12} sm={6} md={4} key={course.courseId}>
+                  <Card 
+                    sx={{ 
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      animation: 'fadeIn 0.3s ease',
+                      '@keyframes fadeIn': {
+                        '0%': {
+                          opacity: 0,
+                          transform: 'translateY(10px)'
                         },
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      Web-IDE 실행
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Paper>
-    </Container>
+                        '100%': {
+                          opacity: 1,
+                          transform: 'translateY(0)'
+                        }
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                      }
+                    }}
+                  >
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography 
+                        variant="h5" 
+                        component="h2" 
+                        gutterBottom
+                        sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                      >
+                        {course.courseName}
+                      </Typography>
+                      <Chip 
+                        label={course.courseCode}
+                        color="primary"
+                        size="small"
+                        sx={{ 
+                          mb: 2,
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                        }}
+                      />
+                      <Typography 
+                        color="text.secondary" 
+                        gutterBottom
+                        sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                      >
+                        담당 교수: {course.courseProfessor} 교수님
+                      </Typography>
+                      <Typography 
+                        color="text.secondary" 
+                        variant="body2"
+                        sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                      >
+                        {course.courseYear}년 {course.courseTerm}학기
+                      </Typography>
+                      <Typography 
+                        color="text.secondary" 
+                        variant="body2"
+                        sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                      >
+                        {course.courseClss}분반
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<CodeIcon />}
+                        onClick={() => handleWebIDEOpen(course.courseId)}
+                        sx={{
+                          bgcolor: 'rgba(25, 118, 210, 0.9)',
+                          '&:hover': {
+                            bgcolor: 'rgba(25, 118, 210, 1)',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        J-Code 실행
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Paper>
+      </Container>
+    </Fade>
   );
 };
 

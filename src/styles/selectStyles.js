@@ -21,7 +21,7 @@ export const selectStyles = {
     },
     borderRadius: 1.5,
     '&:hover': {
-      transform: 'translateY(-1px)',
+      backgroundColor: 'rgba(0, 0, 0, 0.02)'
     }
   },
 
@@ -33,8 +33,7 @@ export const selectStyles = {
         '& .MuiMenuItem-root': {
           transition: 'all 0.2s ease',
           '&:hover': {
-            transform: 'translateX(4px)',
-            backgroundColor: 'primary.lighter'
+            backgroundColor: 'rgba(0, 0, 0, 0.04)'
           }
         }
       }
@@ -48,8 +47,7 @@ export const selectStyles = {
       backgroundColor: 'primary.lighter',
     },
     '&.Mui-selected:hover': {
-      backgroundColor: 'primary.light',
-      transform: 'translateX(4px)',
+      backgroundColor: 'primary.light'
     }
   },
 

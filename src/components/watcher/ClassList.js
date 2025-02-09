@@ -13,7 +13,8 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Stack
+  Stack,
+  Fade
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios';
@@ -75,7 +76,11 @@ const ClassList = () => {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Paper elevation={3} sx={{ p: 3 }}>
-          <Typography color="error" align="center">
+          <Typography 
+            color="error" 
+            align="center"
+            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+          >
             {error}
           </Typography>
         </Paper>
@@ -84,167 +89,160 @@ const ClassList = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3 
-        }}>
-          <Typography variant="h5">
-            담당 수업 목록
-          </Typography>
+    <Fade in={true} timeout={300}>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            mb: 3 
+          }}>
+            <Typography 
+              variant="h5"
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            >
+              담당 수업 목록
+            </Typography>
 
-          <Stack direction="row" spacing={1}>
-            <FormControl sx={{ minWidth: 100 }}>
-              <Select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                displayEmpty
-                size="small"
-                MenuProps={selectStyles.menuProps}
-                sx={selectStyles.select}
-              >
-                <MenuItem 
-                  value="all" 
-                  sx={selectStyles.menuItem}
+            <Stack direction="row" spacing={1}>
+              <FormControl sx={{ minWidth: 100 }}>
+                <Select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  displayEmpty
+                  size="small"
+                  MenuProps={selectStyles.menuProps}
+                  sx={selectStyles.select}
                 >
-                  전체 연도
-                </MenuItem>
-                {years.map(year => (
                   <MenuItem 
-                    key={year} 
-                    value={year}
-                    sx={selectStyles.menuItem}
+                    value="all" 
+                    sx={{ 
+                      ...selectStyles.menuItem,
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                    }}
                   >
-                    {year}년
+                    전체 연도
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  {years.map(year => (
+                    <MenuItem 
+                      key={year} 
+                      value={year}
+                      sx={{ 
+                        ...selectStyles.menuItem,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                      }}
+                    >
+                      {year}년
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <FormControl sx={{ minWidth: 90 }}>
-              <Select
-                value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                displayEmpty
-                size="small"
-                MenuProps={{
-                  TransitionProps: { timeout: 200 },
-                  PaperProps: {
-                    sx: {
-                      mt: 0.5,
-                      '& .MuiMenuItem-root': {
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          transform: 'translateX(4px)',
-                          backgroundColor: 'primary.lighter'
-                        }
-                      }
+              <FormControl sx={{ minWidth: 90 }}>
+                <Select
+                  value={selectedTerm}
+                  onChange={(e) => setSelectedTerm(e.target.value)}
+                  displayEmpty
+                  size="small"
+                  MenuProps={selectStyles.menuProps}
+                  sx={selectStyles.select}
+                >
+                  <MenuItem 
+                    value="all" 
+                    sx={{ 
+                      ...selectStyles.menuItem,
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                    }}
+                  >
+                    전체 학기
+                  </MenuItem>
+                  {terms.map(term => (
+                    <MenuItem 
+                      key={term} 
+                      value={term}
+                      sx={{ 
+                        ...selectStyles.menuItem,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                      }}
+                    >
+                      {term}학기
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Box>
+
+          <List>
+            {filteredClasses.map((classItem, index) => (
+              <ListItem 
+                key={index} 
+                disablePadding 
+                divider
+                sx={{
+                  ...selectStyles.listItem,
+                  transition: 'all 0.3s ease',
+                  animation: 'fadeIn 0.3s ease',
+                  '@keyframes fadeIn': {
+                    '0%': {
+                      opacity: 0,
+                      transform: 'translateY(10px)'
+                    },
+                    '100%': {
+                      opacity: 1,
+                      transform: 'translateY(0)'
                     }
                   }
                 }}
-                sx={{
-                  height: 32,
-                  backgroundColor: 'background.paper',
-                  transition: 'all 0.2s ease',
-                  '& .MuiSelect-select': {
-                    paddingY: '4px',
-                    fontSize: '0.875rem',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'divider',
-                    transition: 'all 0.2s ease',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.main',
-                    borderWidth: '1px',
-                    boxShadow: '0 0 0 4px rgba(25, 118, 210, 0.08)',
-                  },
-                  borderRadius: 1.5,
-                  '&:hover': {
-                    transform: 'translateY(-1px)',
-                  }
-                }}
               >
-                <MenuItem 
-                  value="all" 
-                  sx={{ 
-                    fontSize: '0.875rem',
-                    transition: 'all 0.2s ease'
-                  }}
+                <ListItemButton 
+                  onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}
+                  sx={selectStyles.listItemButton}
                 >
-                  전체 학기
-                </MenuItem>
-                {terms.map(term => (
-                  <MenuItem 
-                    key={term} 
-                    value={term}
-                    sx={{ 
-                      fontSize: '0.875rem',
-                      transition: 'all 0.2s ease',
-                      '&.Mui-selected': {
-                        backgroundColor: 'primary.lighter',
-                      },
-                      '&.Mui-selected:hover': {
-                        backgroundColor: 'primary.light',
-                        transform: 'translateX(4px)',
-                      }
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {classItem.courseName}
+                        </Typography>
+                        <Chip 
+                          label={classItem.courseCode} 
+                          size="small" 
+                          color="primary"
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        />
+                      </Box>
+                    }
+                    secondary={`${classItem.courseYear}년 ${classItem.courseTerm}학기 | ${classItem.courseClss}분반`}
+                    primaryTypographyProps={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" 
                     }}
-                  >
-                    {term}학기
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </Box>
+                    secondaryTypographyProps={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      sx: { mt: 0.5 }
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
 
-        <List>
-          {filteredClasses.map((classItem, index) => (
-            <ListItem 
-              key={index} 
-              disablePadding 
-              divider
-              sx={selectStyles.listItem}
+          {filteredClasses.length === 0 && (
+            <Typography 
+              variant="h6" 
+              color="text.secondary"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                textAlign: 'center'
+              }}
             >
-              <ListItemButton 
-                onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}
-                sx={selectStyles.listItemButton}
-              >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {classItem.courseName}
-                      <Chip 
-                        label={classItem.courseCode} 
-                        size="small" 
-                        color="primary"
-                      />
-                    </Box>
-                  }
-                  secondary={
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {classItem.courseYear}년 {classItem.courseTerm}학기 | {classItem.courseClss}분반
-                    </Typography>
-                  }
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-
-        {filteredClasses.length === 0 && (
-          <Typography sx={{ mt: 2, textAlign: 'center' }}>
-            해당하는 수업이 없습니다.
-          </Typography>
-        )}
-      </Paper>
-    </Container>
+              해당하는 강의가 없습니다.
+            </Typography>
+          )}
+        </Paper>
+      </Container>
+    </Fade>
   );
 };
 
