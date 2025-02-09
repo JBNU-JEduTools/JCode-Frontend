@@ -19,6 +19,7 @@ import { routes, getDefaultRoute } from '../../routes';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useTheme } from '../../contexts/ThemeContext';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -83,12 +84,12 @@ const Navbar = () => {
     fontWeight: 'bold',
     fontSize: '1rem',
     mx: 1,
-    color: '#1a1a1a',  // 글자색을 검정색으로 변경
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
     transition: 'all 0.3s ease',
     position: 'relative',
     '&:hover': {
-      transform: 'translateY(-2px)',
-      color: '#1a1a1a',  // 호버 시에도 검정색 유지
+      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',  // 다크모드에서 밝은 회색으로
+      color: isDarkMode ? '#ffffff' : '#1a1a1a',  // 다크모드에서 흰색 유지
     }
   };
 
@@ -271,21 +272,127 @@ const Navbar = () => {
                     </Typography>
                   </Box>
                   <Divider />
-                  <MenuItem onClick={toggleDarkMode}>
-                    {isDarkMode ? (
-                      <>
-                        <LightModeIcon sx={{ mr: 1 }} />
-                        라이트 모드
-                      </>
-                    ) : (
-                      <>
-                        <DarkModeIcon sx={{ mr: 1 }} />
-                        다크 모드
-                      </>
-                    )}
+                  <MenuItem 
+                    onClick={toggleDarkMode}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      '&:hover': {
+                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                      },
+                      overflow: 'hidden',
+                      height: '36px',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        width: '28px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                          transform: isDarkMode 
+                            ? 'translateY(0) rotate(90deg)' 
+                            : 'translateY(-20px) rotate(-90deg)',
+                          opacity: isDarkMode ? 1 : 0,
+                        }}
+                      >
+                        <DarkModeIcon 
+                          sx={{ 
+                            color: isDarkMode ? '#ffffff' : '#666666',
+                            fontSize: '20px',
+                            filter: isDarkMode 
+                              ? 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.6))' 
+                              : 'none',
+                          }} 
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                          transform: isDarkMode 
+                            ? 'translateY(20px) rotate(90deg)'
+                            : 'translateY(0) rotate(0deg)',
+                          opacity: isDarkMode ? 0 : 1,
+                        }}
+                      >
+                        <LightModeIcon 
+                          sx={{ 
+                            color: '#ffd700',
+                            fontSize: '20px',
+                            filter: 'drop-shadow(0 0 2px rgba(255, 215, 0, 0.6))',
+                          }} 
+                        />
+                      </Box>
+                    </Box>
+                    <Typography
+                      sx={{
+                        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        ml: 1,
+                      }}
+                    >
+                      {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                    </Typography>
                   </MenuItem>
-                  <MenuItem onClick={handleLogout}>
-                    logout
+                  <MenuItem 
+                    onClick={handleLogout}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      '&:hover': {
+                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                        '& .logout-icon': {
+                          transform: 'translateX(3px)',
+                        }
+                      },
+                    }}
+                  >
+                    <Box
+                      className="logout-icon"
+                      sx={{
+                        width: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      }}
+                    >
+                      <LogoutIcon 
+                        sx={{ 
+                          fontSize: '20px',
+                          color: '#ff4444',
+                          filter: 'drop-shadow(0 0 1px rgba(255, 68, 68, 0.3))',
+                        }} 
+                      />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        ml: 1,
+                      }}
+                    >
+                      Logout
+                    </Typography>
                   </MenuItem>
                 </Menu>
               </>

@@ -8,20 +8,20 @@ export const selectStyles = {
       fontSize: '0.875rem',
     },
     '& .MuiOutlinedInput-notchedOutline': {
-      borderColor: 'divider',
-      transition: 'all 0.2s ease',
+      borderColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
     },
     '&:hover .MuiOutlinedInput-notchedOutline': {
-      borderColor: 'primary.main',
+      borderColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
     },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: 'primary.main',
-      borderWidth: '1px',
-      boxShadow: '0 0 0 4px rgba(25, 118, 210, 0.08)',
+      borderColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
     },
     borderRadius: 1.5,
     '&:hover': {
-      backgroundColor: 'rgba(0, 0, 0, 0.02)'
+      backgroundColor: 'transparent',
     }
   },
 
@@ -30,10 +30,15 @@ export const selectStyles = {
     PaperProps: {
       sx: {
         mt: 0.5,
+        bgcolor: (theme) => 
+          theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
         '& .MuiMenuItem-root': {
+          color: (theme) => 
+            theme.palette.mode === 'dark' ? '#ffffff' : '#1a1a1a',
           transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.04)'
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
           }
         }
       }
@@ -43,25 +48,29 @@ export const selectStyles = {
   menuItem: {
     fontSize: '0.875rem',
     transition: 'all 0.2s ease',
-    '&.Mui-selected': {
-      backgroundColor: 'primary.lighter',
+    '&:hover': {
+      backgroundColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
     },
-    '&.Mui-selected:hover': {
-      backgroundColor: 'primary.light'
+    '&.Mui-selected': {
+      backgroundColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
+      '&:hover': {
+        backgroundColor: (theme) => 
+          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.12)',
+      }
     }
   },
 
   listItem: {
     transition: 'all 0.2s ease',
-    '&:hover': {
-      backgroundColor: 'rgba(25, 118, 210, 0.04)',
-    }
   },
 
   listItemButton: {
     transition: 'all 0.2s ease',
     '&:hover': {
-      transform: 'translateX(4px)',
+      backgroundColor: (theme) => 
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
     }
   }
 }; 

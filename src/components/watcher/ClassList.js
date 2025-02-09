@@ -14,11 +14,22 @@ import {
   Select,
   MenuItem,
   Stack,
-  Fade
+  Fade,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+  InputLabel,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios';
 import { selectStyles } from '../../styles/selectStyles';
+import AddIcon from '@mui/icons-material/Add';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const ClassList = () => {
   const [classes, setClasses] = useState([]);
@@ -26,6 +37,24 @@ const ClassList = () => {
   const [error, setError] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedTerm, setSelectedTerm] = useState('all');
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newClass, setNewClass] = useState({
+    code: '',
+    name: '',
+    professor: '',
+    year: new Date().getFullYear(),
+    term: 1,
+    clss: '',
+  });
+  const [formErrors, setFormErrors] = useState({
+    courseClss: ''
+  });
+  const [courseKeyDialog, setCourseKeyDialog] = useState({
+    open: false,
+    courseKey: '',
+    courseId: null,
+  });
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   // 고유한 연도와 학기 목록 추출
@@ -63,6 +92,91 @@ const ClassList = () => {
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
   });
+
+  // 유효성 검사 함수
+  const validateForm = () => {
+    let isValid = true;
+    const errors = { courseClss: '' };
+
+    // 분반 유효성 검사 - 숫자만 허용
+    if (!/^\d+$/.test(newClass.clss)) {
+      errors.courseClss = '분반은 숫자만 입력 가능합니다';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleAddClass = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      // 강의 개설 - 서버 API 형식에 맞게 데이터 전송
+      const createResponse = await axios.post('/api/courses', {
+        code: newClass.code,
+        name: newClass.name,
+        professor: newClass.professor,
+        year: newClass.year,
+        term: newClass.term,
+        clss: parseInt(newClass.clss)  // 문자열을 숫자로 변환
+      });
+
+      const { courseId, courseKey } = createResponse.data;
+
+      // 교수님 자동 등록
+      await axios.post(`/api/users/me/courses/${courseId}`, {
+        courseKey: courseKey
+      });
+
+      // 강의 목록 새로고침
+      const response = await axios.get('/api/users/me/courses');
+      setClasses(response.data);
+
+      // 입력 폼 초기화
+      setOpenDialog(false);
+      setNewClass({
+        code: '',
+        name: '',
+        professor: '',
+        year: new Date().getFullYear(),
+        term: 1,
+        clss: '',
+      });
+      setFormErrors({ courseClss: '' });
+
+      // courseKey 다이얼로그 표시
+      setCourseKeyDialog({
+        open: true,
+        courseKey: courseKey,
+        courseId: courseId
+      });
+
+    } catch (error) {
+      console.error('수업 추가 실패:', error);
+    }
+  };
+
+  // 복사 버튼 클릭 핸들러
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(courseKeyDialog.courseKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000); // 2초 후 사라짐
+  };
+
+  // 재발급 핸들러 수정
+  const handleRegenerateKey = async (courseId) => {
+    try {
+      const response = await axios.get(`/api/courses/${courseId}/key`);
+      setCourseKeyDialog({
+        open: true,
+        courseKey: response.data,  // response.data.courseKey가 아닌 response.data
+        courseId: courseId
+      });
+    } catch (error) {
+      console.error('참가 코드 재발급 실패:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -105,7 +219,7 @@ const ClassList = () => {
               담당 수업 목록
             </Typography>
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
               <FormControl sx={{ minWidth: 100 }}>
                 <Select
                   value={selectedYear}
@@ -171,6 +285,20 @@ const ClassList = () => {
                   ))}
                 </Select>
               </FormControl>
+
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setOpenDialog(true)}
+                size="small"
+                sx={{
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  ml: 1,
+                  height: '32px',
+                }}
+              >
+                수업 추가
+              </Button>
             </Stack>
           </Box>
 
@@ -197,32 +325,71 @@ const ClassList = () => {
                 }}
               >
                 <ListItemButton 
-                  onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}
-                  sx={selectStyles.listItemButton}
+                  sx={{
+                    ...selectStyles.listItemButton,
+                    width: '100%'
+                  }}
                 >
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {classItem.courseName}
-                        </Typography>
-                        <Chip 
-                          label={classItem.courseCode} 
-                          size="small" 
-                          color="primary"
-                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                        />
-                      </Box>
-                    }
-                    secondary={`${classItem.courseYear}년 ${classItem.courseTerm}학기 | ${classItem.courseClss}분반`}
-                    primaryTypographyProps={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" 
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      width: '100%'
                     }}
-                    secondaryTypographyProps={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      sx: { mt: 0.5 }
-                    }}
-                  />
+                  >
+                    <Box 
+                      onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}
+                      sx={{ flex: 1 }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                              {classItem.courseName}
+                            </Typography>
+                            <Chip 
+                              label={classItem.courseCode} 
+                              size="small" 
+                              color="primary"
+                              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                            />
+                          </Box>
+                        }
+                        secondary={`${classItem.courseYear}년 ${classItem.courseTerm}학기 | ${classItem.courseClss}분반`}
+                        primaryTypographyProps={{ 
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" 
+                        }}
+                        secondaryTypographyProps={{ 
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          sx: { mt: 0.5 }
+                        }}
+                      />
+                    </Box>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRegenerateKey(classItem.courseId);
+                      }}
+                      startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        ml: 2,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        minWidth: 'auto',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        px: 1,
+                        height: '28px',
+                        '& .MuiButton-startIcon': {
+                          mr: 0.5
+                        }
+                      }}
+                    >
+                      참가 코드 재발급
+                    </Button>
+                  </Box>
                 </ListItemButton>
               </ListItem>
             ))}
@@ -240,6 +407,206 @@ const ClassList = () => {
               해당하는 강의가 없습니다.
             </Typography>
           )}
+
+          <Dialog 
+            open={openDialog} 
+            onClose={() => setOpenDialog(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+              새 수업 추가
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과목 코드"
+                    value={newClass.code}
+                    onChange={(e) => setNewClass({ ...newClass, code: e.target.value })}
+                    placeholder="ex) CSE1001"
+                    helperText="학수번호를 입력하세요 (ex: CSE1001)"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과목명"
+                    value={newClass.name}
+                    onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
+                    placeholder="ex) C++ 프로그래밍"
+                    helperText="과목 이름을 입력하세요 (ex: C++ 프로그래밍)"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="교수명"
+                    value={newClass.professor}
+                    onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
+                    placeholder="ex) 홍길동"
+                    helperText="교수님 성함을 입력해주십시오"
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>연도</InputLabel>
+                    <Select
+                      value={newClass.year}
+                      onChange={(e) => setNewClass({ ...newClass, year: e.target.value })}
+                      label="연도"
+                      size="medium"
+                    >
+                      {[2024, 2025, 2026].map(year => (
+                        <MenuItem key={year} value={year}>
+                          {year}년
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>학기</InputLabel>
+                    <Select
+                      value={newClass.term}
+                      onChange={(e) => setNewClass({ ...newClass, term: e.target.value })}
+                      label="학기"
+                      size="medium"
+                    >
+                      {[1, 2].map(term => (
+                        <MenuItem key={term} value={term}>
+                          {term}학기
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField
+                    fullWidth
+                    label="분반"
+                    value={newClass.clss}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      setNewClass({ ...newClass, clss: value });
+                      if (formErrors.courseClss) {
+                        setFormErrors({ ...formErrors, courseClss: '' });
+                      }
+                    }}
+                    type="text"
+                    inputProps={{
+                      pattern: '[0-9]*',
+                      inputMode: 'numeric',
+                      style: { textAlign: 'center' }
+                    }}
+                    placeholder="1"
+                    helperText={formErrors.courseClss || "숫자만 입력"}
+                    error={Boolean(formErrors.courseClss)}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)}>취소</Button>
+              <Button onClick={handleAddClass} variant="contained">추가</Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={courseKeyDialog.open}
+            onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+              {courseKeyDialog.courseId ? '참가 코드 재발급 완료' : '강의 개설 완료'}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ mt: 2 }}>
+                <Typography 
+                  sx={{ 
+                    mb: 2,
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                    color: 'warning.main',
+                    textAlign: 'center',
+                    whiteSpace: 'pre-line',
+                    lineHeight: 1.6
+                  }}
+                >
+                  ※ 아래의 참가 코드는 일회용이며, 학생들의 수업 참여에 필요합니다. ※{'\n'}
+                  반드시 저장해주세요. 이후 재발급 가능합니다.
+                </Typography>
+                <Box sx={{ position: 'relative' }}>
+                  <TextField
+                    fullWidth
+                    value={courseKeyDialog.courseKey}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <Box sx={{ position: 'relative' }}>
+                          <Button
+                            onClick={handleCopy}
+                            sx={{
+                              minWidth: 'auto',
+                              p: 1,
+                              color: 'primary.main',
+                              '&:hover': {
+                                backgroundColor: 'transparent',
+                                color: 'primary.dark',
+                              }
+                            }}
+                          >
+                            <ContentCopyIcon />
+                          </Button>
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 'calc(100% + 4px)',
+                              right: 0,
+                              backgroundColor: 'background.paper',
+                              color: 'success.main',
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                              px: 1,
+                              borderRadius: 1,
+                              boxShadow: 1,
+                              opacity: copied ? 1 : 0,
+                              transform: copied ? 'translateY(-4px)' : 'translateY(0)',
+                              transition: 'all 0.2s ease',
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              zIndex: 1,
+                            }}
+                          >
+                            Copied!
+                          </Box>
+                        </Box>
+                      ),
+                      sx: { 
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: '1.1rem',
+                        textAlign: 'center',
+                        pr: 1,
+                        '& input': {
+                          textAlign: 'center',
+                          pr: 5
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+                variant="contained"
+              >
+                확인
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Paper>
       </Container>
     </Fade>
