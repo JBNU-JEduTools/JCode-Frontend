@@ -15,20 +15,35 @@ import {
   MenuItem,
   Stack,
   Paper,
-  Fade
+  Fade,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from '../../api/axios';
 import CodeIcon from '@mui/icons-material/Code';
 import { selectStyles } from '../../styles/selectStyles';
+import AddIcon from '@mui/icons-material/Add';
+import { toast } from 'react-toastify';
+import { useTheme } from '../../contexts/ThemeContext';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 
 const WebIDECourses = () => {
   const { user } = useAuth();
+  const { isDarkMode } = useTheme();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedTerm, setSelectedTerm] = useState('all');
+  const [joinDialog, setJoinDialog] = useState({
+    open: false,
+    courseKey: ''
+  });
 
   // 고유한 연도와 학기 목록 추출
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
@@ -72,6 +87,76 @@ const WebIDECourses = () => {
     }
   };
 
+  const handleJoinCourse = async () => {
+    try {
+      await axios.post('/api/users/me/courses', {
+        courseKey: joinDialog.courseKey
+      });
+      
+      // 수업 목록 새로고침
+      const response = await axios.get('/api/users/me/courses');
+      setCourses(response.data);
+      
+      // 다이얼로그 닫기 및 초기화
+      setJoinDialog({
+        open: false,
+        courseKey: ''
+      });
+      
+      // 성공 토스트
+      toast.success('수업 참가가 완료되었습니다.', {
+        icon: ({theme, type}) => <CheckCircleIcon sx={{ 
+          color: '#fff',
+          fontSize: '1.5rem',
+          mr: 1
+        }}/>,
+        style: {
+          background: isDarkMode ? '#2e7d32' : '#4caf50',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px',
+          maxWidth: '500px',
+          width: 'auto',
+          textOverflow: 'ellipsis',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center'
+        }
+      });
+    } catch (error) {
+      const errorMessage = error.response?.status === 400 ? "올바르지 않은 참가 코드 형식입니다."
+        : error.response?.status === 404 ? "존재하지 않는 수업입니다."
+        : error.response?.status === 401 ? "잘못된 참가 코드입니다."
+        : error.response?.status === 409 ? "이미 참가한 수업입니다."
+        : "수업 참가 중 오류가 발생했습니다.";
+      
+      // 에러 토스트
+      toast.error(errorMessage, {
+        icon: ({theme, type}) => <ErrorIcon sx={{ 
+          color: '#fff',
+          fontSize: '1.5rem',
+          mr: 1
+        }}/>,
+        style: {
+          background: isDarkMode ? '#d32f2f' : '#f44336',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px',
+          maxWidth: '500px',
+          width: 'auto',
+          textOverflow: 'ellipsis',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center'
+        }
+      });
+    }
+  };
+
   // 필터링된 강의 목록
   const filteredCourses = courses.filter(course => {
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
@@ -111,7 +196,7 @@ const WebIDECourses = () => {
               수강 중인 강의
             </Typography>
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
               <FormControl sx={{ minWidth: 100 }}>
                 <Select
                   value={selectedYear}
@@ -151,6 +236,20 @@ const WebIDECourses = () => {
                   ))}
                 </Select>
               </FormControl>
+
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setJoinDialog({ ...joinDialog, open: true })}
+                size="small"
+                sx={{
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  ml: 1,
+                  height: '32px',
+                }}
+              >
+                수업 참가
+              </Button>
             </Stack>
           </Box>
           
@@ -250,6 +349,50 @@ const WebIDECourses = () => {
               ))}
             </Grid>
           )}
+
+          <Dialog
+            open={joinDialog.open}
+            onClose={() => setJoinDialog({ open: false, courseKey: '' })}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+              수업 참가
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="참가 코드"
+                  value={joinDialog.courseKey}
+                  onChange={(e) => {
+                    setJoinDialog({ ...joinDialog, courseKey: e.target.value });
+                  }}
+                  placeholder="참가 코드를 입력하세요"
+                  helperText="교수님으로부터 받은 참가 코드를 입력해주세요"
+                  InputProps={{
+                    sx: { 
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }
+                  }}
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setJoinDialog({ open: false, courseKey: '' })}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleJoinCourse}
+                variant="contained"
+                disabled={!joinDialog.courseKey.trim()}
+              >
+                참가
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Paper>
       </Container>
     </Fade>

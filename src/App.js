@@ -10,6 +10,8 @@ import { getTheme } from './theme';
 import PrivateRoute from './components/layout/PrivateRoute';
 import { routes } from './routes';
 import { Box } from '@mui/material';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AppRoutes = () => {
   const { loading, isAuthenticated } = useAuth();
@@ -61,6 +63,19 @@ const ThemedApp = () => {
           </Box>
         </Box>
       </Router>
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        theme={isDarkMode ? "dark" : "light"}
+        limit={1}
+      />
     </MuiThemeProvider>
   );
 };
