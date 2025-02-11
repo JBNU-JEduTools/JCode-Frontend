@@ -34,22 +34,17 @@ export const AuthProvider = ({ children }) => {
       initializingRef.current = true;
 
       try {
-        const storedToken = sessionStorage.getItem('accessToken');
-        console.log('초기화 시작 - 저장된 토큰 존재:', !!storedToken);
+        console.log('Keycloak 초기화 시작');
         
         const authenticated = await keycloak.init({
           pkceMethod: 'S256',
           checkLoginIframe: false,
           onLoad: 'check-sso',
-          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-          silentCheckSsoFallback: true,
+          redirectUri: window.location.origin,
+          flow: 'standard',
+          responseMode: 'fragment',
+          scope: 'openid profile email',
           enableLogging: true,
-          promiseType: 'native',
-          responseMode: 'query',
-          token: storedToken,
-          refreshToken: sessionStorage.getItem('refreshToken'),
-          checkSsoOnLoad: false,
-          silentLoginIfPossible: true,
           onTokenExpired: () => {
             console.log('토큰 만료 감지:', new Date().toISOString());
           },
@@ -77,7 +72,6 @@ export const AuthProvider = ({ children }) => {
                   roles.includes('ASSISTANCE') ? 'ASSISTANCE' : 'STUDENT'
           });
 
-          // 토큰 저장
           saveTokens({
             access_token: keycloak.token,
             refresh_token: keycloak.refreshToken,
@@ -97,61 +91,52 @@ export const AuthProvider = ({ children }) => {
     initKeycloak();
   }, []);
 
-  // 토큰 갱신 시에도 세션 스토리지 업데이트
+  // 토큰 갱신 로직
   useEffect(() => {
     if (initialized && keycloak.authenticated) {
-      keycloak.onTokenExpired = async () => {
+      const tokenRefreshInterval = setInterval(async () => {
         try {
-          const refreshed = await keycloak.updateToken(240); // 30초 남았을 때 갱신 시도
+          const refreshed = await keycloak.updateToken(70); // 70초 남았을 때 갱신
           if (refreshed) {
+            console.log('토큰 갱신 성공:', new Date().toISOString());
             saveTokens({
               access_token: keycloak.token,
               refresh_token: keycloak.refreshToken,
               id_token: keycloak.idToken
             });
-            console.log('토큰이 성공적으로 갱신되었습니다.');
           }
         } catch (error) {
           console.error('토큰 갱신 실패:', error);
-          //logout();
+          logout(); // 갱신 실패시 로그아웃
         }
-      };
-
-      // 2분마다 토큰 유효성 검사 (토큰 수명 5분의 40% 주기)
-      const tokenCheckInterval = setInterval(async () => {
-        if (keycloak.token) {
-          try {
-            await keycloak.updateToken(30);
-          } catch (error) {
-            console.error('주기적 토큰 갱신 실패:', error);
-            logout();
-          }
-        }
-      }, 120000); // 2분 = 120000ms
+      }, 60000); // 1분마다 체크
 
       return () => {
-        clearInterval(tokenCheckInterval);
+        clearInterval(tokenRefreshInterval);
       };
     }
   }, [initialized]);
 
   const login = () => {
-    keycloak.login();
+    keycloak.login({
+      redirectUri: window.location.origin,
+      scope: 'openid profile email'
+    });
   };
 
   const logout = () => {
-    // id_token_hint를 사용한 로그아웃을 먼저 실행
-    const idToken = keycloak.idToken;  // 미리 저장
+    const idToken = keycloak.idToken;
     
-    keycloak.logout({
-      redirectUri: window.location.origin,
-      idToken: idToken  // 저장된 idToken 사용
-    });
-
-    // 그 다음 세션 스토리지 클리어
+    // 세션 스토리지 클리어
     sessionStorage.removeItem('accessToken');
     sessionStorage.removeItem('refreshToken');
     sessionStorage.removeItem('idToken');
+
+    // Keycloak 로그아웃
+    keycloak.logout({
+      redirectUri: window.location.origin,
+      idToken: idToken
+    });
   };
 
   const value = {
