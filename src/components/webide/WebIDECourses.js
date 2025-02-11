@@ -74,12 +74,27 @@ const WebIDECourses = () => {
   }, []);
 
   const handleWebIDEOpen = async (courseId) => {
-    try {
-      const response = await axios.get(`/api/webide/url/${user.id}`, {
-        params: { courseId }
+    try {  
+      // API 호출 시 URL 파라미터와 함께 헤더에 Authorization 토큰을 추가합니다.
+      const response = await axios.get('http://localhost:8080/api/redirect', {
+        params: {
+          courseCode: 'C++',
+          clss: 1,
+          st: 'gjdhks1212'
+        },
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem('token')}`
+        },
+        // 만약 쿠키를 같이 전송해야 한다면 (서버에서 HttpOnly 쿠키 설정 등)
+        // withCredentials: true
       });
-      
-      if (response.data.url) {
+  
+      // 서버가 리다이렉트 응답(302 Found)으로 URL을 전송할 경우,
+      // axios에서는 자동으로 브라우저 리다이렉션을 수행하지 않으므로,
+      // 응답 객체에서 최종 URL을 추출하여 직접 window.location.href에 할당합니다.
+      if (response.request && response.request.responseURL) {
+        window.location.href = response.request.responseURL;
+      } else if (response.data && response.data.url) {
         window.location.href = response.data.url;
       }
     } catch (err) {

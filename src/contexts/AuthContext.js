@@ -40,12 +40,16 @@ export const AuthProvider = ({ children }) => {
         const authenticated = await keycloak.init({
           pkceMethod: 'S256',
           checkLoginIframe: false,
-          token: storedToken,
           onLoad: 'check-sso',
           silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-          silentCheckSsoFallback: false,
+          silentCheckSsoFallback: true,
           enableLogging: true,
-          iframeTarget: '_blank',
+          promiseType: 'native',
+          responseMode: 'query',
+          token: storedToken,
+          refreshToken: sessionStorage.getItem('refreshToken'),
+          checkSsoOnLoad: false,
+          silentLoginIfPossible: true,
           onTokenExpired: () => {
             console.log('토큰 만료 감지:', new Date().toISOString());
           },
