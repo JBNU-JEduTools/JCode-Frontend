@@ -7,12 +7,4 @@ const keycloakConfig = {
 };
 
 const keycloak = new Keycloak(keycloakConfig);
-
-// 토큰 갱신 설정
-keycloak.onTokenExpired = () => {
-  keycloak.updateToken(70).catch(() => {
-    console.error('Failed to refresh token');
-  });
-};
-
 export default keycloak; 

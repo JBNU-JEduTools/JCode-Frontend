@@ -12,11 +12,13 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     if (keycloak.authenticated) {
-      // 토큰이 곧 만료되면 갱신 (70초 이내로 남았을 때)
-      const minValidity = 70;
+      // 토큰이 곧 만료되면 갱신 (30초 이내로 남았을 때)
+      const minValidity = 240;
       try {
         await keycloak.updateToken(minValidity);
+        console.log('API 요청 중 토큰 갱신 성공');
       } catch (error) {
+        console.error('API 요청 중 토큰 갱신 실패:', error);
         keycloak.login();
         return Promise.reject(error);
       }

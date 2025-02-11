@@ -131,7 +131,7 @@ const Navbar = () => {
             }}
             onClick={handleLogoClick}
           >
-            J-Code
+            JCode
           </Typography>
 
           {/* 메인 메뉴 - 로그인 된 경우만 표시 */}
@@ -401,7 +401,7 @@ const Navbar = () => {
                 onClick={login}
                 sx={menuButtonStyle}
               >
-                login
+                Login
               </Button>
             )}
           </Box>

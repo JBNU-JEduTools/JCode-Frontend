@@ -45,7 +45,7 @@ export const routes = [
     element: AdminPage,
     roles: ['ADMIN'],
     showInNav: true,
-    label: 'admin',
+    label: 'Admin',
     order: 3,
   },
 ];
