@@ -1,23 +1,25 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+  baseURL: process.env.REACT_APP_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true  // 쿠키 전송을 위해 필요
 });
 
 export const auth = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
+  login: () => {
+    window.location.href = `${process.env.REACT_APP_API_URL}/oauth2/authorization/keycloak`;
+  },
+  logout: () => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `${process.env.REACT_APP_API_URL}/logout`;
+    document.body.appendChild(form);
+    form.submit();
+  },
+  getUser: () => api.get('/api/users/me')
 };
 
 export const users = {

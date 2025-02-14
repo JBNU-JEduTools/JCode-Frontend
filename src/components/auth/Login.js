@@ -17,7 +17,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { keycloak, login, user } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
@@ -36,14 +36,8 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleKeycloakLogin = () => {
-    try {
-      keycloak.login({
-        redirectUri: window.location.origin + '/callback'
-      });
-    } catch (err) {
-      setError('로그인 중 오류가 발생했습니다.');
-    }
+  const handleLogin = () => {
+    login();
   };
 
   const handleSubmit = async (e) => {
@@ -75,7 +69,7 @@ const Login = () => {
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Typography variant="h5" component="h1" gutterBottom>
-            J-Code 로그인
+            JCode 로그인
           </Typography>
           <Typography variant="body2" color="text.secondary">
             전북대학교 통합계정으로 로그인하세요
@@ -102,7 +96,7 @@ const Login = () => {
           variant="contained"
           fullWidth
           startIcon={<SchoolIcon />}
-          onClick={handleKeycloakLogin}
+          onClick={handleLogin}
           sx={{ 
             mt: 2, 
             mb: 3,

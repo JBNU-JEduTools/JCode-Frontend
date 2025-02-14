@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -29,6 +29,20 @@ const Navbar = () => {
   const buttonRefs = useRef([]);
   const [activeButtonPos, setActiveButtonPos] = useState({ left: 0, width: 0 });
   const { isDarkMode, toggleDarkMode } = useTheme();
+
+  // navItems를 useMemo로 계산하고 user가 변경될 때만 재계산
+  const navItems = useMemo(() => {
+    if (!user) return [];
+    
+    console.log('현재 사용자:', user);  // 사용자 정보 확인
+    
+    return routes
+      .filter(route => 
+        route.showInNav && 
+        (!route.roles.length || route.roles.includes(user.role))  // roles 배열 대신 단일 role 사용
+      )
+      .sort((a, b) => a.order - b.order);
+  }, [user]);
 
   // useEffect를 조건문 이전으로 이동
   useEffect(() => {
@@ -92,14 +106,6 @@ const Navbar = () => {
       color: isDarkMode ? '#ffffff' : '#1a1a1a',  // 다크모드에서 흰색 유지
     }
   };
-
-  // navItems 정의를 useEffect 이전으로 이동
-  const navItems = routes
-    .filter(route => 
-      route.showInNav && 
-      (!route.roles.length || route.roles.includes(user?.role))
-    )
-    .sort((a, b) => a.order - b.order);
 
   return (
     <AppBar position="fixed">

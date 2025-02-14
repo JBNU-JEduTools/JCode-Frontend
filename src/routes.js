@@ -53,14 +53,10 @@ export const routes = [
 // 사용자 역할에 따른 기본 리다이렉트 경로
 export const getDefaultRoute = (role) => {
   switch (role) {
-    case 'ADMIN':
-      return '/admin';
+    case 'ADMIN': return '/admin';
     case 'PROFESSOR':
-    case 'ASSISTANT':
-      return '/watcher';
-    case 'STUDENT':
-      return '/webide';
-    default:
-      return '/';
+    case 'ASSISTANT': return '/watcher';
+    case 'STUDENT': return '/webide';
+    default: return '/login';
   }
 }; 
