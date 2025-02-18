@@ -12,12 +12,15 @@ import { routes } from './routes';
 import { Box } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import LoginCallback from './components/auth/LoginCallback';
+import Login from './components/auth/Login';
+import { getDefaultRoute } from './routes';
 
 const AppRoutes = () => {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, user } = useAuth();
 
   if (loading) {
-    return null;  // or loading spinner
+    return null;
   }
 
   return (
@@ -25,10 +28,15 @@ const AppRoutes = () => {
       <Route 
         path="/" 
         element={
-          isAuthenticated ? <Navigate to="/watcher" replace /> : <Navigate to="/login" replace />
+          isAuthenticated ? (
+            <Navigate to={getDefaultRoute(user?.role)} replace /> 
+          ) : (
+            <Navigate to="/login" replace />
+          )
         } 
       />
       
+      {/* routes.js에 정의된 모든 라우트 사용 */}
       {routes.map(({ path, element: Element, roles }) => (
         <Route
           key={path}
@@ -44,6 +52,9 @@ const AppRoutes = () => {
           }
         />
       ))}
+      
+      {/* 로그인 콜백 라우트 추가 */}
+      <Route path="/login/success" element={<LoginCallback />} />
     </Routes>
   );
 };

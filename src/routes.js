@@ -3,7 +3,8 @@ import RegisterPage from './pages/auth/RegisterPage';
 import Callback from './components/auth/Callback';
 import WatcherPage from './pages/watcher/WatcherPage';
 import AdminPage from './pages/admin/AdminPage';
-import WebIDEPage from './pages/webide/WebIDEPage';
+import WebIDECourses from './components/webide/WebIDECourses';
+import ClassList from './components/watcher/ClassList';
 
 export const routes = [
   {
@@ -26,7 +27,7 @@ export const routes = [
   },
   {
     path: '/webide/*',
-    element: WebIDEPage,
+    element: WebIDECourses,
     roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'],
     showInNav: true,
     label: 'Web-IDE',
@@ -47,7 +48,7 @@ export const routes = [
     showInNav: true,
     label: 'Admin',
     order: 3,
-  },
+  }
 ];
 
 // 사용자 역할에 따른 기본 리다이렉트 경로
