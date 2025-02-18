@@ -8,7 +8,7 @@ import {
   Box 
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from '../../api/axios';
+import api from '../../api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -57,7 +57,7 @@ const Register = () => {
       };
 
       // 회원가입 API 호출
-      const response = await axios.post('/api/auth/signup', requestData);
+      const response = await api.post('/auth/signup', requestData);
 
       // 성공 시 로그인 페이지로 이동
       if (response.status === 200 || response.status === 201) {
