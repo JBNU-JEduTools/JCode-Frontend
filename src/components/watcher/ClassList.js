@@ -66,7 +66,6 @@ const ClassList = () => {
       try {
         const response = await axios.get('/api/users/me/courses');
         setClasses(response.data);
-        // 초기 선택값을 가장 최근 연도/학기로 설정
         if (response.data.length > 0) {
           const latestYear = Math.max(...response.data.map(course => course.courseYear));
           const latestTerm = Math.max(...response.data
@@ -112,28 +111,24 @@ const ClassList = () => {
     if (!validateForm()) return;
     
     try {
-      // 강의 개설 - 서버 API 형식에 맞게 데이터 전송
       const createResponse = await axios.post('/api/courses', {
         code: newClass.code,
         name: newClass.name,
         professor: newClass.professor,
         year: newClass.year,
         term: newClass.term,
-        clss: parseInt(newClass.clss)  // 문자열을 숫자로 변환
+        clss: parseInt(newClass.clss)
       });
 
       const { courseId, courseKey } = createResponse.data;
 
-      // 교수님 자동 등록
       await axios.post(`/api/users/me/courses/${courseId}`, {
         courseKey: courseKey
       });
 
-      // 강의 목록 새로고침
       const response = await axios.get('/api/users/me/courses');
       setClasses(response.data);
 
-      // 입력 폼 초기화
       setOpenDialog(false);
       setNewClass({
         code: '',
@@ -145,7 +140,6 @@ const ClassList = () => {
       });
       setFormErrors({ courseClss: '' });
 
-      // courseKey 다이얼로그 표시
       setCourseKeyDialog({
         open: true,
         courseKey: courseKey,
@@ -154,6 +148,7 @@ const ClassList = () => {
 
     } catch (error) {
       console.error('수업 추가 실패:', error);
+      setError('수업 추가에 실패했습니다.');
     }
   };
 
@@ -170,11 +165,12 @@ const ClassList = () => {
       const response = await axios.get(`/api/courses/${courseId}/key`);
       setCourseKeyDialog({
         open: true,
-        courseKey: response.data,  // response.data.courseKey가 아닌 response.data
+        courseKey: response.data,
         courseId: courseId
       });
     } catch (error) {
       console.error('참가 코드 재발급 실패:', error);
+      setError('참가 코드 재발급에 실패했습니다.');
     }
   };
 

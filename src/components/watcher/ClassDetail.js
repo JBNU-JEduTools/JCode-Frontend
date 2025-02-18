@@ -31,7 +31,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import axios from '../../api/axios';
+import api from '../../api';
 import { useNavigate } from 'react-router-dom';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import CodeIcon from '@mui/icons-material/Code';
@@ -200,8 +200,8 @@ const MonitoringDashboard = () => {
         selectedMetric={selectedMetric} 
         onMetricChange={setSelectedMetric}
       />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
+      <CardContent sx={{ height: '600px' }}>
+        <ResponsiveContainer width="100%" height="100%">
           {selectedMetric === 'submissions' ? (
             <BarChart 
               data={getData()}
@@ -363,7 +363,7 @@ const ClassDetail = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const coursesResponse = await axios.get('/api/users/me/courses');
+        const coursesResponse = await api.get('/api/users/me/courses');
         const foundCourse = coursesResponse.data.find(c => c.courseCode === courseCode);
         
         if (!foundCourse) {
@@ -371,7 +371,7 @@ const ClassDetail = () => {
         }
 
         setCourse(foundCourse);
-        const studentsResponse = await axios.get(`/api/courses/${foundCourse.courseId}/users`);
+        const studentsResponse = await api.get(`/api/courses/${foundCourse.courseId}/users`);
         setStudents(studentsResponse.data);
         setLoading(false);
       } catch (error) {
@@ -441,23 +441,19 @@ const ClassDetail = () => {
 
   return (
     <Fade in={true} timeout={300}>
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Container 
+        maxWidth={false}
+        sx={{ 
+          mt: 2,
+          px: 2,
+        }}
+      >
         <Paper 
-          elevation={3} 
+          elevation={1}
           sx={{ 
-            p: 3,
-            opacity: 0,  // 초기 상태
-            animation: 'fadeIn 0.3s ease forwards',
-            '@keyframes fadeIn': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateY(10px)'
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateY(0)'
-              }
-            }
+            p: 2,
+            minHeight: 'calc(100vh - 100px)',
+            borderRadius: 0
           }}
         >
           <Box sx={{ mb: 4 }}>
@@ -698,7 +694,7 @@ const ClassDetail = () => {
                                 startIcon={<CodeIcon />}
                                 onClick={async () => {
                                   try {
-                                    const response = await axios.get(`/api/redirect/redirect`, {
+                                    const response = await api.get(`/api/redirect/redirect`, {
                                       params: {
                                         userId: student.userId,
                                         courseId: course.courseId

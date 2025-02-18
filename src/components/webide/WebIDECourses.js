@@ -23,7 +23,7 @@ import {
   TextField
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import axios from '../../api/axios';
+import api from '../../api/axios';
 import CodeIcon from '@mui/icons-material/Code';
 import { selectStyles } from '../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
@@ -52,7 +52,7 @@ const WebIDECourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get('/api/users/me/courses');
+        const response = await api.get('/api/users/me/courses');
         setCourses(response.data);
         // 초기 선택값을 가장 최근 연도/학기로 설정
         if (response.data.length > 0) {
@@ -75,17 +75,12 @@ const WebIDECourses = () => {
 
   const handleWebIDEOpen = async (courseId) => {
     try {  
-      // API 호출 시 URL 파라미터와 함께 헤더에 Authorization 토큰을 추가합니다.
-      const response = await axios.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
+      const response = await api.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
         params: {
           courseCode: 'CSE1004',
           clss: 2,
           st: 'gjdhks1212'
         },
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem('token')}`
-        },
-        // 만약 쿠키를 같이 전송해야 한다면 (서버에서 HttpOnly 쿠키 설정 등)
         withCredentials: true
       });
   
@@ -105,12 +100,12 @@ const WebIDECourses = () => {
 
   const handleJoinCourse = async () => {
     try {
-      await axios.post('/api/users/me/courses', {
+      await api.post('/api/users/me/courses', {
         courseKey: joinDialog.courseKey
       });
       
       // 수업 목록 새로고침
-      const response = await axios.get('/api/users/me/courses');
+      const response = await api.get('/api/users/me/courses');
       setCourses(response.data);
       
       // 다이얼로그 닫기 및 초기화
@@ -200,8 +195,9 @@ const WebIDECourses = () => {
 
   return (
     <Fade in={true} timeout={300}>
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
+      {/* 여기봐 */}
+      <Container maxWidth="lg" sx={{ mt: 4 }}>  
+        <Paper elevation={7} sx={{ p: 3 }}>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 

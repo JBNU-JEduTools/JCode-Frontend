@@ -100,8 +100,21 @@ const MonitoringData = () => {
 
   return (
     <Fade in={true} timeout={300}>
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
+      <Container 
+        maxWidth={false}
+        sx={{ 
+          mt: 2,
+          px: 2,
+        }}
+      >
+        <Paper 
+          elevation={1}
+          sx={{ 
+            p: 2,
+            minHeight: 'calc(100vh - 100px)',
+            borderRadius: 0
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
               <ArrowBackIcon />

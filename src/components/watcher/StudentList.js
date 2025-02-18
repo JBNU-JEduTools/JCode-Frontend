@@ -72,7 +72,7 @@ const StudentList = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper elevation={7} sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <IconButton onClick={() => navigate('/watcher')} sx={{ mr: 2 }}>
             <ArrowBackIcon />
