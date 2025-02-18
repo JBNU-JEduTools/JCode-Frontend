@@ -26,7 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import axios from '../../api/axios';
+import api from '../../api';
 
 const ProfessorManagement = () => {
   const [users, setUsers] = useState([]);
@@ -48,7 +48,7 @@ const ProfessorManagement = () => {
   // 교수 목록 조회
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users?role=PROFESSOR');
+      const response = await api.get('/users?role=PROFESSOR');
       const professorUsers = response.data.filter(user => user.role === 'PROFESSOR');
       setUsers(professorUsers);
       setLoading(false);
@@ -65,7 +65,7 @@ const ProfessorManagement = () => {
   // 교수 추가
   const handleAddUser = async () => {
     try {
-      const response = await axios.post('/api/users/professor', {
+      const response = await api.post('/users/professor', {
         email: newUser.email,
         name: newUser.name,
         password: newUser.password,
@@ -91,7 +91,7 @@ const ProfessorManagement = () => {
   // 교수 삭제
   const handleDeleteUser = async (email) => {
     try {
-      await axios.delete(`/api/users/${email}`);
+      await api.delete(`/users/${email}`);
       await fetchUsers();
     } catch (error) {
       setError('교수 삭제에 실패했습니다.');

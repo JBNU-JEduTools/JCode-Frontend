@@ -20,7 +20,7 @@ import {
   Fade,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axios from '../../api/axios';
+import api from '../../api';
 
 const AssistantManagement = () => {
   const [users, setUsers] = useState([]);
@@ -39,7 +39,7 @@ const AssistantManagement = () => {
   // 조교 목록 조회
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users?role=ASSISTANCE');
+      const response = await api.get('/users?role=ASSISTANCE');
       const assistantUsers = response.data.filter(user => user.role === 'ASSISTANCE');
       setUsers(assistantUsers);
       setLoading(false);
@@ -56,7 +56,7 @@ const AssistantManagement = () => {
   // 조교 추가
   const handleAddUser = async () => {
     try {
-      const response = await axios.post('/api/users/assistance', {
+      const response = await api.post('/users/assistance', {
         email: newUser.email,
         name: newUser.name,
         password: newUser.password,
@@ -82,7 +82,7 @@ const AssistantManagement = () => {
   // 조교 삭제
   const handleDeleteUser = async (email) => {
     try {
-      await axios.delete(`/api/users/${email}`);
+      await api.delete(`/users/${email}`);
       await fetchUsers();
     } catch (error) {
       setError('조교 삭제에 실패했습니다.');

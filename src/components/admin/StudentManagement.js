@@ -30,7 +30,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { mockStudents } from '../../mockData/adminData';
-import axios from '../../api/axios';
+import api from '../../api';
 
 const StudentManagement = () => {
   const [users, setUsers] = useState([]);
@@ -49,7 +49,7 @@ const StudentManagement = () => {
   // 사용자 목록 조회
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users?role=STUDENT');
+      const response = await api.get('/users?role=STUDENT');
       const studentUsers = response.data.filter(user => user.role === 'STUDENT');
       setUsers(studentUsers);
       setLoading(false);
@@ -66,7 +66,7 @@ const StudentManagement = () => {
   // 사용자 삭제
   const handleDeleteUser = async (email) => {
     try {
-      await axios.delete(`/api/users/${email}`);
+      await api.delete(`/users/${email}`);
       await fetchUsers();
     } catch (error) {
       setError('사용자 삭제에 실패했습니다.');
@@ -76,7 +76,7 @@ const StudentManagement = () => {
   // 사용자 추가
   const handleAddUser = async () => {
     try {
-      const response = await axios.post('/api/users/student', {
+      const response = await api.post('/users/student', {
         email: newUser.email,
         name: newUser.name,
         password: newUser.password,
@@ -102,7 +102,7 @@ const StudentManagement = () => {
   // 사용자 정보 수정
   const handleUpdateUser = async (email, updatedData) => {
     try {
-      await axios.put(`/api/users/${email}`, updatedData);
+      await api.put(`/users/${email}`, updatedData);
       await fetchUsers();
     } catch (error) {
       setError('사용자 정보 수정에 실패했습니다.');
