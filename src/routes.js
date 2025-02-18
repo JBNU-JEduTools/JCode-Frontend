@@ -1,28 +1,13 @@
 import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import Callback from './components/auth/Callback';
 import WatcherPage from './pages/watcher/WatcherPage';
 import AdminPage from './pages/admin/AdminPage';
 import WebIDECourses from './components/webide/WebIDECourses';
-import ClassList from './components/watcher/ClassList';
 
 export const routes = [
   {
     path: '/login',
     element: LoginPage,
     roles: [], // 빈 배열은 누구나 접근 가능
-    showInNav: false,
-  },
-  {
-    path: '/register',
-    element: RegisterPage,
-    roles: [],
-    showInNav: false,
-  },
-  {
-    path: '/callback',
-    element: Callback,
-    roles: [],
     showInNav: false,
   },
   {

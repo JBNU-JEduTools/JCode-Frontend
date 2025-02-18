@@ -13,7 +13,6 @@ import { Box } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoginCallback from './components/auth/LoginCallback';
-import Login from './components/auth/Login';
 import { getDefaultRoute } from './routes';
 
 const AppRoutes = () => {
