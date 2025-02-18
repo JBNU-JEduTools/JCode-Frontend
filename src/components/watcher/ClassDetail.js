@@ -31,7 +31,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import api from '../../api';
+import api from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import CodeIcon from '@mui/icons-material/Code';

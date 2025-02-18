@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../api';
+import { auth } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDefaultRoute } from '../../routes';
 import { jwtDecode } from 'jwt-decode';

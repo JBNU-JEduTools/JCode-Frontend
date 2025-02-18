@@ -26,7 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import api from '../../api';
+import api from '../../api/axios';
 
 const ProfessorManagement = () => {
   const [users, setUsers] = useState([]);

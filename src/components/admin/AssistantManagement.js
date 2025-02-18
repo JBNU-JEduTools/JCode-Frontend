@@ -20,7 +20,7 @@ import {
   Fade,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import api from '../../api';
+import api from '../../api/axios';
 
 const AssistantManagement = () => {
   const [users, setUsers] = useState([]);

@@ -30,7 +30,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { mockStudents } from '../../mockData/adminData';
-import api from '../../api';
+import api from '../../api/axios';
 
 const StudentManagement = () => {
   const [users, setUsers] = useState([]);
