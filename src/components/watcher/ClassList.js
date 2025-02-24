@@ -23,6 +23,7 @@ import {
   TextField,
   Grid,
   InputLabel,
+  IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios';
@@ -30,6 +31,7 @@ import { selectStyles } from '../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const ClassList = () => {
   const [classes, setClasses] = useState([]);
@@ -66,14 +68,19 @@ const ClassList = () => {
       try {
         const response = await axios.get('/api/users/me/courses');
         setClasses(response.data);
-        if (response.data.length > 0) {
-          const latestYear = Math.max(...response.data.map(course => course.courseYear));
-          const latestTerm = Math.max(...response.data
-            .filter(course => course.courseYear === latestYear)
-            .map(course => course.courseTerm));
-          setSelectedYear(latestYear);
-          setSelectedTerm(latestTerm);
-        }
+        
+        // 현재 날짜 기준으로 연도와 학기 설정
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
+        
+        // 9-12월은 2학기, 나머지(1-8월)는 1학기
+        const currentTerm = currentMonth >= 9 ? 2 : 1;
+        
+        // 현재 연도와 학기로 설정
+        setSelectedYear(currentYear);
+        setSelectedTerm(currentTerm);
+        
         setLoading(false);
       } catch (error) {
         console.error('수업 목록 조회 실패:', error);
@@ -201,7 +208,7 @@ const ClassList = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
+        <Paper elevation={7} sx={{ p: 3 }}>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -212,7 +219,7 @@ const ClassList = () => {
               variant="h5"
               sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
             >
-              담당 수업 목록
+              담당 수업 목록 ({filteredClasses.length})
             </Typography>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -281,20 +288,6 @@ const ClassList = () => {
                   ))}
                 </Select>
               </FormControl>
-
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenDialog(true)}
-                size="small"
-                sx={{
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  ml: 1,
-                  height: '32px',
-                }}
-              >
-                수업 추가
-              </Button>
             </Stack>
           </Box>
 
@@ -403,6 +396,47 @@ const ClassList = () => {
               해당하는 강의가 없습니다.
             </Typography>
           )}
+
+          <ListItem 
+            disablePadding 
+            divider
+            onClick={() => setOpenDialog(true)}
+            sx={{
+              ...selectStyles.listItem,
+              cursor: 'pointer',
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+              '&:hover': {
+                backgroundColor: (theme) => 
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+              },
+              transition: 'background-color 0.2s ease'
+            }}
+          >
+            <ListItemButton 
+              sx={{
+                ...selectStyles.listItemButton,
+                width: '100%',
+                justifyContent: 'center',
+                py: 2
+              }}
+            >
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                color: (theme) => theme.palette.text.secondary
+              }}>
+                <AddIcon sx={{ fontSize: '1.1rem' }} />
+                <Typography sx={{ 
+                  fontSize: '0.9rem',
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                }}>
+                  새 수업 추가
+                </Typography>
+              </Box>
+            </ListItemButton>
+          </ListItem>
 
           <Dialog 
             open={openDialog} 

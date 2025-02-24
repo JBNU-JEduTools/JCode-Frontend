@@ -28,11 +28,17 @@ import {
   Card,
   CardContent,
   Select,
-  MenuItem
+  MenuItem,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tabs,
+  Tab,
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import { useNavigate } from 'react-router-dom';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import CodeIcon from '@mui/icons-material/Code';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -46,6 +52,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import BuildIcon from '@mui/icons-material/Build';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import {
   BarChart,
   Bar,
@@ -68,6 +75,10 @@ import {
   mockSubmissionStats 
 } from '../../mockData/monitoringData';
 import { useTheme } from '../../contexts/ThemeContext';
+import RemainingTime from './RemainingTime';
+import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
+import AddIcon from '@mui/icons-material/Add';
+import GroupIcon from '@mui/icons-material/Group';
 
 const MetricSelector = ({ selectedMetric, onMetricChange }) => (
   <Box sx={{ 
@@ -354,16 +365,40 @@ const ClassDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [course, setCourse] = useState(null);
-  const [sortField, setSortField] = useState('email');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sort, setSort] = useState({
+    field: 'email',
+    order: 'asc'
+  });
   const { courseCode } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [assignments, setAssignments] = useState([]);
+  const [openAssignmentDialog, setOpenAssignmentDialog] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({
+    assignmentName: '',
+    assignmentDescription: '',
+    kickoffDate: '',
+    deadlineDate: ''
+  });
+  const [currentTab, setCurrentTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || 'students'; // 기본값은 students
+  });
+
+  // 탭 변경 핸들러
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+    // URL 업데이트
+    const params = new URLSearchParams(location.search);
+    params.set('tab', newValue);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  };
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
-        const coursesResponse = await api.get('/api/users/me/courses');
+        const coursesResponse = await api.get('/api/users/me/courses/details');
         const foundCourse = coursesResponse.data.find(c => c.courseCode === courseCode);
         
         if (!foundCourse) {
@@ -371,47 +406,85 @@ const ClassDetail = () => {
         }
 
         setCourse(foundCourse);
+        setAssignments(foundCourse.assignments || []);
+        
         const studentsResponse = await api.get(`/api/courses/${foundCourse.courseId}/users`);
+
         setStudents(studentsResponse.data);
         setLoading(false);
       } catch (error) {
-        console.error('학생 목록 조회 실패:', error);
-        setError('학생 목록을 불러오는데 실패했습니다.');
+        console.error('데이터 조회 실패:', error);
+        setError('데이터를 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
-
-    fetchStudents();
+    fetchData();
   }, [courseCode]);
 
   const getFilteredAndSortedStudents = () => {
-    // 먼저 검색어로 필터링
     const filtered = students.filter(student => {
       const searchLower = searchQuery.toLowerCase();
       const emailMatch = student.email?.toLowerCase().includes(searchLower);
+      const nameMatch = student.name?.toLowerCase().includes(searchLower);
       const studentNumMatch = String(student.studentNum || '').toLowerCase().includes(searchLower);
-      return emailMatch || studentNumMatch;
+      return emailMatch || nameMatch || studentNumMatch;
     });
 
-    // 그 다음 정렬
     return filtered.sort((a, b) => {
-      const field = sortField === 'email' ? 'email' : 'studentNum';
-      const aValue = String(a[field] || '');
-      const bValue = String(b[field] || '');
-      
-      if (sortOrder === 'asc') {
-        return aValue.localeCompare(bValue);
+      let aValue, bValue;
+      switch(sort.field) {
+        case 'email':
+          aValue = a.email || '';
+          bValue = b.email || '';
+          break;
+        case 'name':
+          aValue = a.name || '';
+          bValue = b.name || '';
+          break;
+        case 'studentNum':
+          aValue = String(a.studentNum || '');
+          bValue = String(b.studentNum || '');
+          break;
+        default:
+          aValue = '';
+          bValue = '';
       }
-      return bValue.localeCompare(aValue);
+      
+      return sort.order === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
     });
   };
 
   const toggleSort = (field) => {
-    if (sortField === field) {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
+    setSort(prev => ({
+      field: field,
+      order: prev.field === field ? (prev.order === 'asc' ? 'desc' : 'asc') : 'asc'
+    }));
+  };
+
+  const handleAddAssignment = async () => {
+    try {
+      await api.post(`/api/courses/${course.courseId}/assignments`, {
+        ...newAssignment,
+        kickoffDate: new Date(newAssignment.kickoffDate).toISOString(),
+        deadlineDate: new Date(newAssignment.deadlineDate).toISOString()
+      });
+
+      // 과제 목록 새로고침
+      const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
+      setAssignments(assignmentsResponse.data);
+
+      setOpenAssignmentDialog(false);
+      setNewAssignment({
+        assignmentName: '',
+        assignmentDescription: '',
+        kickoffDate: '',
+        deadlineDate: ''
+      });
+    } catch (error) {
+      console.error('과제 추가 실패:', error);
+      // TODO: 에러 처리
     }
   };
 
@@ -456,290 +529,551 @@ const ClassDetail = () => {
             borderRadius: 0
           }}
         >
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" gutterBottom>
-              {course?.courseName}
-            </Typography>
+          <WatcherBreadcrumbs 
+            paths={[
+              { 
+                text: course?.courseName || '로딩중...', 
+                to: `/watcher/class/${courseCode}` 
+              }
+            ]} 
+          />
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'flex-start',
+            gap: 2,
+            mb: 4 
+          }}>
+            {/* 강의 정보 */}
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2,
+              alignItems: 'center',
+              color: 'text.secondary',
+              fontSize: '0.875rem',
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+            }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  color: 'text.primary'
+                }}
+              >
+                {course?.courseName}
+              </Typography>
+              <Box 
+                component="span" 
+                sx={{ 
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                {course?.courseCode}
+              </Box>
+              <Box 
+                component="span"
+                sx={{ 
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  backgroundColor: (theme) => theme.palette.action.hover
+                }}
+              >
+                {course?.courseClss}분반
+              </Box>
+            </Box>
           </Box>
 
-          <Box sx={{ mt: 3 }}>
-            <Accordion 
-              sx={{
-                boxShadow: 'none',
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                '&:before': {
-                  display: 'none',
-                },
-                '&:not(:last-child)': {
-                  borderBottom: 0,
-                },
-                borderRadius: '8px',
-                overflow: 'hidden',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: (theme) => 
-                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.01)'
-                }
+          <Tabs 
+            value={currentTab} 
+            onChange={handleTabChange}
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              mb: 3,
+              minHeight: '40px',
+              '& .MuiTab-root': {
+                minHeight: '40px',
+                padding: '6px 16px',
+                fontSize: '0.875rem'
+              }
+            }}
+          >
+            <Tab 
+              icon={<GroupIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
+              label="수강생 관리" 
+              value="students"
+              iconPosition="start"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                textTransform: 'none',
+                minHeight: '40px',
+                alignItems: 'center'
               }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  backgroundColor: (theme) => 
-                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  '&.Mui-expanded': {
-                    minHeight: '48px',
-                    borderBottom: (theme) => `1px solid ${theme.palette.divider}`
-                  },
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                    '&.Mui-expanded': { margin: '12px 0' }
-                  }
-                }}
-              >
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1.5,
-                  '& .MuiSvgIcon-root': {
-                    fontSize: '1.3rem',
-                    color: (theme) => theme.palette.primary.main
-                  }
-                }}>
-                  <DashboardIcon />
-                  <Typography sx={{ 
-                    fontWeight: 500,
-                    fontSize: '1rem',
-                    color: (theme) => theme.palette.text.primary
-                  }}>
-                    전체 모니터링 대시보드
-                  </Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ 
-                p: 3,
-                backgroundColor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)'
-              }}>
-                <MonitoringDashboard />
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion 
-              sx={{
-                mt: 2,
-                boxShadow: 'none',
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                '&:before': {
-                  display: 'none',
-                },
-                borderRadius: '8px',
-                overflow: 'hidden',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: (theme) => 
-                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.01)'
-                }
+            />
+            <Tab 
+              icon={<AssignmentIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
+              label="과제 관리" 
+              value="assignments"
+              iconPosition="start"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                textTransform: 'none',
+                minHeight: '40px',
+                alignItems: 'center'
               }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  backgroundColor: (theme) => 
-                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  '&.Mui-expanded': {
-                    minHeight: '48px',
-                    borderBottom: (theme) => `1px solid ${theme.palette.divider}`
-                  },
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                    '&.Mui-expanded': { margin: '12px 0' }
-                  }
-                }}
-              >
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1.5,
-                  '& .MuiSvgIcon-root': {
-                    fontSize: '1.3rem',
-                    color: (theme) => theme.palette.primary.main
-                  }
-                }}>
-                  <PeopleIcon />
-                  <Typography sx={{ 
-                    fontWeight: 500,
-                    fontSize: '1rem',
-                    color: (theme) => theme.palette.text.primary
-                  }}>
-                    수강생 목록
-                  </Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ 
-                p: 3,
-                backgroundColor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)'
-              }}>
-                <Box sx={{ mb: 3 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="이메일 또는 학번으로 검색"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ 
-                      mt: 2,
-                      '& .MuiInputBase-root': {
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                      }
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
+            />
+            <Tab 
+              icon={<TimelineIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
+              label="통계" 
+              value="statistics"
+              iconPosition="start"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                textTransform: 'none',
+                minHeight: '40px',
+                alignItems: 'center'
+              }}
+            />
+          </Tabs>
 
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell 
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          이메일
-                          <IconButton
-                            size="small"
-                            onClick={() => toggleSort('email')}
-                            sx={{ ml: 1 }}
-                          >
-                            {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-                          </IconButton>
+          {/* 학생 목록 탭 */}
+          {currentTab === 'students' && (
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <TextField
+                  size="small"
+                  placeholder="검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                  }}
+                />
+              </Box>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        이메일
+                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
+                          <Box sx={{ 
+                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transition: 'transform 0.2s ease-in-out',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </Box>
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        이름
+                        <IconButton size="small" onClick={() => toggleSort('name')} sx={{ ml: 1 }}>
+                          <Box sx={{ 
+                            transform: sort.field !== 'name' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transition: 'transform 0.2s ease-in-out',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </Box>
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        학번
+                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
+                          <Box sx={{ 
+                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transition: 'transform 0.2s ease-in-out',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </Box>
+                        </IconButton>
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        작업
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {getFilteredAndSortedStudents().map((student, index) => (
+                      <TableRow 
+                        key={student.email}
+                        sx={{ 
+                          transition: 'all 0.3s ease',
+                          animation: 'fadeIn 0.3s ease',
+                          '@keyframes fadeIn': {
+                            '0%': {
+                              opacity: 0,
+                              transform: 'translateY(10px)'
+                            },
+                            '100%': {
+                              opacity: 1,
+                              transform: 'translateY(0)'
+                            }
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {student.email}
                         </TableCell>
-                        <TableCell 
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          학번
-                          <IconButton
-                            size="small"
-                            onClick={() => toggleSort('studentNum')}
-                            sx={{ ml: 1 }}
-                          >
-                            {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-                          </IconButton>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {student.name}
                         </TableCell>
-                        <TableCell 
-                          align="right"
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          작업
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {student.studentNum}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                              onClick={async () => {
+                                try {
+                                  const response = await api.get(`/api/redirect/redirect`, {
+                                    params: {
+                                      userId: student.userId,
+                                      courseId: course.courseId
+                                    }
+                                  });
+                                  window.location.href = response.data.redirectUrl;
+                                } catch (error) {
+                                  console.error('JCode 리다이렉트 실패:', error);
+                                }
+                              }}
+                              sx={{ 
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                                px: 1.5,
+                                minHeight: '28px',
+                                borderRadius: '14px',
+                                textTransform: 'none'
+                              }}
+                            >
+                              JCode
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
+                              onClick={() => navigate(`/watcher/monitoring/${student.userId}`)}
+                              sx={{ 
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                                px: 1.5,
+                                minHeight: '28px',
+                                borderRadius: '14px',
+                                textTransform: 'none',
+                                '&:hover': {
+                                  backgroundColor: (theme) => 
+                                    theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
+                                }
+                              }}
+                            >
+                              Watcher
+                            </Button>
+                          </Stack>
                         </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {getFilteredAndSortedStudents().map((student, index) => (
-                        <TableRow 
-                          key={student.email}
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {getFilteredAndSortedStudents().length === 0 && (
+                <Typography 
+                  sx={{ 
+                    mt: 2, 
+                    textAlign: 'center',
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                  }}
+                >
+                  {searchQuery ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* 과제 관리 탭 */}
+          {currentTab === 'assignments' && (
+            <Box>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        과제명
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        설명
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        시작일
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                        마감일
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
+                        남은 시간
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {assignments.map((assignment) => (
+                      <TableRow 
+                        key={assignment.assignmentId}
+                        onClick={() => navigate(`/watcher/class/${courseCode}/assignment/${assignment.assignmentId}`)}
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: (theme) => 
+                              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                          },
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {assignment.assignmentName}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          maxWidth: '300px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {assignment.assignmentDescription}
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                          {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          width: '250px',
+                          textAlign: 'left'
+                        }}>
+                          <RemainingTime deadline={assignment.deadlineDate} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow
+                      onClick={() => setOpenAssignmentDialog(true)}
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: (theme) => 
+                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                        },
+                        transition: 'all 0.2s ease',
+                        height: '60px'
+                      }}
+                    >
+                      <TableCell 
+                        colSpan={5}
+                        align="center"
+                        sx={{ 
+                          border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+                          borderRadius: 1,
+                          m: 1,
+                        }}
+                      >
+                        <Box 
                           sx={{ 
-                            transition: 'all 0.3s ease',
-                            animation: 'fadeIn 0.3s ease',
-                            '@keyframes fadeIn': {
-                              '0%': {
-                                opacity: 0,
-                                transform: 'translateY(10px)'
-                              },
-                              '100%': {
-                                opacity: 1,
-                                transform: 'translateY(0)'
-                              }
-                            }
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: 1,
+                            color: 'text.secondary'
                           }}
                         >
-                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            {student.email}
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            {student.studentNum}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<MonitorIcon />}
-                                onClick={() => navigate(`/watcher/monitoring/${student.userId}`)}
-                                sx={{ 
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  fontWeight: 'bold'
-                                }}
-                              >
-                                Watcher
-                              </Button>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<CodeIcon />}
-                                onClick={async () => {
-                                  try {
-                                    const response = await api.get(`/api/redirect/redirect`, {
-                                      params: {
-                                        userId: student.userId,
-                                        courseId: course.courseId
-                                      }
-                                    });
-                                    window.location.href = response.data.redirectUrl;
-                                  } catch (error) {
-                                    console.error('JCode 리다이렉트 실패:', error);
-                                  }
-                                }}
-                                sx={{ 
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  fontWeight: 'bold',
-                                  bgcolor: 'rgba(25, 118, 210, 0.9)',
-                                  '&:hover': {
-                                    bgcolor: 'rgba(25, 118, 210, 1)',
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                                  },
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                JCode 실행
-                              </Button>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                          <AddIcon />
+                          <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            새 과제 추가
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
 
-                {getFilteredAndSortedStudents().length === 0 && (
-                  <Typography 
+          {/* 통계 탭 */}
+          {currentTab === 'statistics' && (
+            <Box>
+              <Typography>통계 데이터가 준비중입니다.</Typography>
+            </Box>
+          )}
+
+          <Dialog 
+            open={openAssignmentDialog} 
+            onClose={() => setOpenAssignmentDialog(false)}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: {
+                minHeight: '500px'
+              }
+            }}
+          >
+            <DialogTitle 
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                fontSize: '1.5rem',
+                py: 3
+              }}
+            >
+              새 과제 추가
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={3} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과제명"
+                    value={newAssignment.assignmentName}
+                    onChange={(e) => setNewAssignment({ 
+                      ...newAssignment, 
+                      assignmentName: e.target.value 
+                    })}
+                    placeholder="ex) 1주차 과제: Hello World"
                     sx={{ 
-                      mt: 2, 
-                      textAlign: 'center',
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
                     }}
-                  >
-                    {searchQuery ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}
-                  </Typography>
-                )}
-              </AccordionDetails>
-            </Accordion>
-          </Box>
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과제 설명"
+                    value={newAssignment.assignmentDescription}
+                    onChange={(e) => setNewAssignment({ 
+                      ...newAssignment, 
+                      assignmentDescription: e.target.value 
+                    })}
+                    multiline
+                    rows={6}
+                    placeholder="과제에 대한 설명을 입력하세요"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="시작 일시"
+                    type="datetime-local"
+                    value={newAssignment.kickoffDate}
+                    onChange={(e) => setNewAssignment({ 
+                      ...newAssignment, 
+                      kickoffDate: e.target.value 
+                    })}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    inputProps={{
+                      step: 60,
+                      style: {
+                        height: '24px',
+                        padding: '12px'
+                      }
+                    }}
+                    sx={{ 
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="마감 일시"
+                    type="datetime-local"
+                    value={newAssignment.deadlineDate}
+                    onChange={(e) => setNewAssignment({ 
+                      ...newAssignment, 
+                      deadlineDate: e.target.value 
+                    })}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    inputProps={{
+                      step: 60,
+                      style: {
+                        height: '24px',
+                        padding: '12px'
+                      }
+                    }}
+                    sx={{ 
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button 
+                onClick={() => setOpenAssignmentDialog(false)}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleAddAssignment} 
+                variant="contained"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                추가
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Paper>
       </Container>
     </Fade>

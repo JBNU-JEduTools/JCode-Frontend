@@ -74,7 +74,15 @@ const StudentList = () => {
     <Container maxWidth="lg" sx={{ mt: 4 }}>
       <Paper elevation={7} sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton onClick={() => navigate('/watcher')} sx={{ mr: 2 }}>
+          <IconButton 
+            onClick={() => navigate('/watcher')} 
+            sx={{ 
+              mr: 2,
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.action.hover
+              }
+            }}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography 
@@ -108,6 +116,19 @@ const StudentList = () => {
                       variant="contained"
                       size="small"
                       onClick={() => navigate(`/watcher/student/${student.id}`)}
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        px: 1.5,
+                        minHeight: '28px',
+                        borderRadius: '14px',
+                        textTransform: 'none',
+                        backgroundColor: (theme) => theme.palette.primary.main,
+                        '&:hover': {
+                          backgroundColor: (theme) => theme.palette.primary.dark
+                        }
+                      }}
                     >
                       모니터링
                     </Button>

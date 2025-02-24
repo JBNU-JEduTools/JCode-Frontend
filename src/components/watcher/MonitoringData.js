@@ -36,6 +36,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const MonitoringData = () => {
   const [studentData, setStudentData] = useState(null);
@@ -43,6 +44,7 @@ const MonitoringData = () => {
   const [error, setError] = useState('');
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchMonitoringData = async () => {
@@ -116,7 +118,15 @@ const MonitoringData = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
+            <IconButton 
+              onClick={() => navigate(-1)} 
+              sx={{ 
+                mr: 2,
+                '&:hover': {
+                  backgroundColor: (theme) => theme.palette.action.hover
+                }
+              }}
+            >
               <ArrowBackIcon />
             </IconButton>
             <Typography 
@@ -239,7 +249,7 @@ const MonitoringData = () => {
                             sx={{ 
                               width: 12, 
                               height: 12, 
-                              backgroundColor: entry.color,
+                              backgroundColor: (theme) => theme.palette.primary.main,
                               borderRadius: '50%'
                             }} 
                           />
