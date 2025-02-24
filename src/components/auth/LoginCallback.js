@@ -4,6 +4,7 @@ import { auth } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDefaultRoute } from '../../routes';
 import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-toastify';
 
 function LoginCallback() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ function LoginCallback() {
     const handleCallback = async () => {
       try {
         console.log('1. 로그인 콜백 시작');
-        const token = await auth.getAccessToken();  // auth에서 직접 호출
+        const token = await auth.getAccessToken();
         console.log('2. 받은 토큰:', token);
         
         const storedToken = sessionStorage.getItem('jwt');
@@ -28,6 +29,24 @@ function LoginCallback() {
         }
 
         await checkAuth();  // 인증 상태 업데이트
+
+        // 프로필 정보 확인 - 한 번만 실행되도록 수정
+        const response = await auth.getUserProfile();
+        const { studentNum, name } = response.data;
+        
+        if (!studentNum || !name) {
+          // 토스트 메시지를 한 번만 표시
+          const toastId = 'profile-setup-toast';
+          if (!toast.isActive(toastId)) {
+            toast.info('학번과 이름 설정이 필요합니다.', {
+              toastId,
+              autoClose: 2000
+            });
+          }
+          navigate('/profile-setup', { replace: true });
+          return;
+        }
+
         const defaultPath = getDefaultRoute(decodedToken.role);
         console.log('6. 리다이렉트 경로:', defaultPath);
         
@@ -39,7 +58,7 @@ function LoginCallback() {
     };
 
     handleCallback();
-  }, [navigate, checkAuth]);
+  }, []); // 의존성 배열 비움 - 컴포넌트 마운트 시 한 번만 실행
 
   return <div>로그인 처리중...</div>;
 }
