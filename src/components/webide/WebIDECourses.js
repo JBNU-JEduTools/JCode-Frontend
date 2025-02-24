@@ -54,15 +54,19 @@ const WebIDECourses = () => {
       try {
         const response = await api.get('/api/users/me/courses');
         setCourses(response.data);
-        // 초기 선택값을 가장 최근 연도/학기로 설정
-        if (response.data.length > 0) {
-          const latestYear = Math.max(...response.data.map(course => course.courseYear));
-          const latestTerm = Math.max(...response.data
-            .filter(course => course.courseYear === latestYear)
-            .map(course => course.courseTerm));
-          setSelectedYear(latestYear);
-          setSelectedTerm(latestTerm);
-        }
+        
+        // 현재 날짜 기준으로 연도와 학기 설정
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
+        
+        // 9-12월은 2학기, 나머지(1-8월)는 1학기
+        const currentTerm = currentMonth >= 9 ? 2 : 1;
+        
+        // 현재 연도와 학기로 설정
+        setSelectedYear(currentYear);
+        setSelectedTerm(currentTerm);
+        
         setLoading(false);
       } catch (err) {
         setError('수업 목록을 불러오는데 실패했습니다.');
@@ -73,13 +77,14 @@ const WebIDECourses = () => {
     fetchCourses();
   }, []);
 
-  const handleWebIDEOpen = async (courseId) => {
+const handleWebIDEOpen = async (courseId) => {
     try {  
       const response = await api.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
         params: {
-          courseCode: 'CSE1004',
-          clss: 2,
-          st: 'gjdhks1212'
+          folder: '/config/workspace',
+          courseCode: 'CSE1002',
+          clss: 5,
+          st: 'jsh2256'
         },
         withCredentials: true
       });
@@ -195,9 +200,12 @@ const WebIDECourses = () => {
 
   return (
     <Fade in={true} timeout={300}>
-      {/* 여기봐 */}
       <Container maxWidth="lg" sx={{ mt: 4 }}>  
-        <Paper elevation={7} sx={{ p: 3 }}>
+        <Paper elevation={7} sx={{ 
+          p: 3,
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' ? '#1A1B26' : '#FFFFFF'
+        }}>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -205,7 +213,7 @@ const WebIDECourses = () => {
             mb: 3 
           }}>
             <Typography variant="h5">
-              수강 중인 강의
+              수강 중인 강의 ({filteredCourses.length})
             </Typography>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -248,29 +256,94 @@ const WebIDECourses = () => {
                   ))}
                 </Select>
               </FormControl>
-
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setJoinDialog({ ...joinDialog, open: true })}
-                size="small"
-                sx={{
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  ml: 1,
-                  height: '32px',
-                }}
-              >
-                수업 참가
-              </Button>
             </Stack>
           </Box>
           
           {filteredCourses.length === 0 ? (
-            <Box sx={{ textAlign: 'center', mt: 4 }}>
-              <Typography variant="h6" color="text.secondary">
-                해당하는 강의가 없습니다.
-              </Typography>
-            </Box>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Card sx={{ 
+                  mb: 3,
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
+                }}>
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                      해당하는 강의가 없습니다.
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  onClick={() => setJoinDialog({ ...joinDialog, open: true })}
+                  sx={{ 
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: (theme) => 
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
+                    '&:hover': {
+                      backgroundColor: (theme) => 
+                        theme.palette.mode === 'dark' ? '#6272A4' : theme.palette.action.hover,
+                      transform: 'translateY(-2px)',
+                      boxShadow: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? '0 4px 12px rgba(0, 0, 0, 0.5)'
+                          : '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography 
+                      variant="h5" 
+                      component="h2" 
+                      gutterBottom
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        color: (theme) => 
+                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
+                      }}
+                    >
+                      새 수업 참가
+                    </Typography>
+                    <Chip 
+                      icon={<AddIcon sx={{ fontSize: '1rem' }} />}
+                      label="수업 참가하기"
+                      color="primary"
+                      size="small"
+                      sx={{ 
+                        mb: 2,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        backgroundColor: 'transparent',
+                        border: '1px dashed',
+                        borderColor: (theme) =>
+                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                        color: (theme) =>
+                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                        '& .MuiChip-icon': {
+                          color: (theme) =>
+                            theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main'
+                        }
+                      }}
+                    />
+                    <Typography 
+                      color="text.secondary" 
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        fontSize: '0.875rem',
+                        color: (theme) => 
+                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
+                      }}
+                    >
+                      교수님으로부터 받은 참가 코드로 새로운 수업에 참가하세요.
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           ) : (
             <Grid container spacing={3}>
               {filteredCourses.map((course) => (
@@ -342,15 +415,17 @@ const WebIDECourses = () => {
                       <Button
                         fullWidth
                         variant="contained"
-                        startIcon={<CodeIcon />}
+                        startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
                         onClick={() => handleWebIDEOpen(course)}
+                        size="small"
                         sx={{
-                          bgcolor: 'rgba(25, 118, 210, 0.9)',
-                          '&:hover': {
-                            bgcolor: 'rgba(25, 118, 210, 1)',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                          },
-                          transition: 'all 0.2s ease'
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          fontSize: '0.75rem',
+                          py: 0.5,
+                          px: 1.5,
+                          minHeight: '28px',
+                          borderRadius: '14px',
+                          textTransform: 'none'
                         }}
                       >
                         JCode 실행
@@ -359,6 +434,75 @@ const WebIDECourses = () => {
                   </Card>
                 </Grid>
               ))}
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  onClick={() => setJoinDialog({ ...joinDialog, open: true })}
+                  sx={{ 
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: (theme) => 
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
+                    '&:hover': {
+                      backgroundColor: (theme) => 
+                        theme.palette.mode === 'dark' ? '#6272A4' : theme.palette.action.hover,
+                      transform: 'translateY(-2px)',
+                      boxShadow: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? '0 4px 12px rgba(0, 0, 0, 0.5)'
+                          : '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography 
+                      variant="h5" 
+                      component="h2" 
+                      gutterBottom
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        color: (theme) => 
+                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
+                      }}
+                    >
+                      새 수업 참가
+                    </Typography>
+                    <Chip 
+                      icon={<AddIcon sx={{ fontSize: '1rem' }} />}
+                      label="수업 참가하기"
+                      color="primary"
+                      size="small"
+                      sx={{ 
+                        mb: 2,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        backgroundColor: 'transparent',
+                        border: '1px dashed',
+                        borderColor: (theme) =>
+                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                        color: (theme) =>
+                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                        '& .MuiChip-icon': {
+                          color: (theme) =>
+                            theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main'
+                        }
+                      }}
+                    />
+                    <Typography 
+                      color="text.secondary" 
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        fontSize: '0.875rem',
+                        color: (theme) => 
+                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
+                      }}
+                    >
+                      교수님으로부터 받은 참가 코드로 새로운 수업에 참가하세요.
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           )}
 

@@ -15,39 +15,75 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAvatar } from '../../contexts/AvatarContext';
 import { routes, getDefaultRoute } from '../../routes';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useTheme } from '../../contexts/ThemeContext';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
+import { auth } from '../../api/axios';
+import { getAvatarUrl } from '../../utils/avatar';
 
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const { user, login, logout, loading } = useAuth();
+  const { currentStyle } = useAvatar();
   const navigate = useNavigate();
   const location = useLocation();
   const buttonRefs = useRef([]);
   const [activeButtonPos, setActiveButtonPos] = useState({ left: 0, width: 0 });
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const [isProfileSet, setIsProfileSet] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileData, setProfileData] = useState(null);
 
-  // navItems를 useMemo로 계산하고 user가 변경될 때만 재계산
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (!user) {
+        setProfileLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await auth.getUserProfile();
+        console.log('response.data: ', response.data);
+        const { studentNum, name } = response.data;
+        setIsProfileSet(Boolean(studentNum && name));
+        setProfileData({ studentNum, name });
+      } catch (error) {
+        console.error('프로필 확인 실패:', error);
+        setIsProfileSet(false);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    checkProfile();
+  }, [user]);
+
   const navItems = useMemo(() => {
-    if (!user) return [];
-    
-    console.log('현재 사용자:', user);  // 사용자 정보 확인
+    if (!user || !isProfileSet) return [];
     
     return routes
       .filter(route => 
         route.showInNav && 
-        (!route.roles.length || route.roles.includes(user.role))  // roles 배열 대신 단일 role 사용
+        (!route.roles.length || route.roles.includes(user.role))
       )
       .sort((a, b) => a.order - b.order);
-  }, [user]);
+  }, [user, isProfileSet]);
 
-  // useEffect를 조건문 이전으로 이동
+  const isCurrentPath = (path) => {
+    if (path.includes('/*')) {
+      const basePath = path.replace('/*', '');
+      return location.pathname.startsWith(basePath);
+    }
+    return location.pathname === path;
+  };
+
   useEffect(() => {
     const activeIndex = navItems.findIndex(route => 
-      location.pathname === route.path.replace('/*', '')
+      isCurrentPath(route.path)
     );
     
     if (activeIndex >= 0 && buttonRefs.current[activeIndex]) {
@@ -59,19 +95,18 @@ const Navbar = () => {
         left: rect.left - parentRect.left,
         width: rect.width
       });
+    } else {
+      setActiveButtonPos({ left: 0, width: 0 });
     }
-  }, [location.pathname]);  // navItems 의존성 제거
+  }, [location.pathname, navItems]);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return null;
   }
 
   const handleLogoClick = () => {
-    if (user) {
-      navigate(getDefaultRoute(user.role));
-    } else {
-      navigate('/');
-    }
+    const defaultRoute = getDefaultRoute(user?.role);
+    navigate(defaultRoute);
   };
 
   const handleProfileClick = (event) => {
@@ -87,23 +122,22 @@ const Navbar = () => {
     logout();
   };
 
-  // 현재 경로와 메뉴 경로 비교 함수
-  const isCurrentPath = (path) => {
-    return location.pathname === path.replace('/*', '');
+  const handleProfileSettings = () => {
+    handleClose();
+    navigate('/profile/settings');
   };
 
-  // 메뉴 버튼 스타일 수정
   const menuButtonStyle = {
     my: 2, 
     fontWeight: 'bold',
     fontSize: '1rem',
     mx: 1,
-    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    color: 'text.primary',
     transition: 'all 0.3s ease',
     position: 'relative',
     '&:hover': {
-      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',  // 다크모드에서 밝은 회색으로
-      color: isDarkMode ? '#ffffff' : '#1a1a1a',  // 다크모드에서 흰색 유지
+      backgroundColor: (theme) => theme.palette.action.hover,
+      color: (theme) => theme.palette.primary.main
     }
   };
 
@@ -111,36 +145,45 @@ const Navbar = () => {
     <AppBar position="fixed">
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ height: 80 }}>
-          {/* 로고 */}
-          <Typography
-            variant="h5"
-            noWrap
-            component="div"
-            sx={{ 
-              mr: 2, 
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '1.8rem',
-              letterSpacing: '-.05rem',
-              background: isDarkMode 
-                ? 'linear-gradient(45deg, #ffffff 30%, #999999 90%)'
-                : 'linear-gradient(45deg, #333333 30%, #666666 90%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              WebkitTextStroke: isDarkMode 
-                ? '1px rgba(255, 255, 255, 0.3)'
-                : '1px rgba(51, 51, 51, 0.3)',
-              textShadow: isDarkMode
-                ? '2px 2px 4px rgba(255,255,255,0.1)'
-                : '2px 2px 4px rgba(0,0,0,0.1)',
-              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-            }}
+          <Box 
+            component="div" 
             onClick={handleLogoClick}
+            sx={{ 
+              cursor: 'pointer',
+              display: 'flex', 
+              alignItems: 'center' 
+            }}
           >
-            JCode
-          </Typography>
+            <Typography
+              variant="h5"
+              noWrap
+              component="div"
+              sx={{ 
+                mr: 2, 
+                fontWeight: 700,
+                fontSize: '1.8rem',
+                letterSpacing: '-.05rem',
+                background: (theme) => 
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(45deg, #FF79C6 30%, #BD93F9 90%)'
+                    : `linear-gradient(45deg, ${theme.palette.text.primary} 30%, ${theme.palette.text.secondary} 90%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                WebkitTextStroke: (theme) => 
+                  theme.palette.mode === 'dark'
+                    ? 'none'
+                    : `1px ${theme.palette.text.disabled}`,
+                textShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? '2px 2px 4px rgba(189, 147, 249, 0.3)'
+                    : `2px 2px 4px ${theme.palette.text.disabled}`,
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+              }}
+            >
+              JCode
+            </Typography>
+          </Box>
 
-          {/* 메인 메뉴 - 로그인 된 경우만 표시 */}
           {user && (
             <Box 
               sx={{ 
@@ -150,7 +193,6 @@ const Navbar = () => {
                 alignItems: 'center'
               }}
             >
-              {/* 움직이는 바 */}
               <Box
                 sx={{
                   position: 'absolute',
@@ -158,10 +200,10 @@ const Navbar = () => {
                   left: 0,
                   height: '2px',
                   background: isDarkMode
-                    ? 'linear-gradient(90deg, #ffffff, #999999)'
+                    ? 'linear-gradient(90deg, #FF79C6, #BD93F9)'
                     : 'linear-gradient(90deg, #333333, #666666)',
                   boxShadow: isDarkMode
-                    ? '0 0 6px rgba(255, 255, 255, 0.2)'
+                    ? '0 0 6px rgba(189, 147, 249, 0.3)'
                     : '0 0 6px rgba(0, 0, 0, 0.2)',
                   borderRadius: '4px',
                   width: `${activeButtonPos.width * 0.6}px`,
@@ -175,7 +217,7 @@ const Navbar = () => {
                     right: 0,
                     bottom: 0,
                     background: isDarkMode
-                      ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                      ? 'linear-gradient(90deg, transparent, rgba(189, 147, 249, 0.2), transparent)'
                       : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
                   },
                   '@keyframes shimmer': {
@@ -210,10 +252,8 @@ const Navbar = () => {
             </Box>
           )}
 
-          {/* 빈 공간을 만들어 오른쪽 정렬 */}
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* 프로필 메뉴 */}
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             {user ? (
               <>
@@ -222,37 +262,22 @@ const Navbar = () => {
                   sx={{ p: 0.5 }}
                 >
                   <Avatar 
+                    src={getAvatarUrl(user.email)}
                     sx={{ 
                       width: 32, 
                       height: 32, 
-                      background: 'linear-gradient(-45deg, #1a1a1a, #4a4a4a, #7a7a7a, #ffffff)',
-                      backgroundSize: '400% 400%',
-                      animation: 'gradient 15s ease infinite',
-                      border: '2px solid rgba(255,255,255,0.3)',
+                      background: 'transparent',
+                      border: (theme) => `2px solid ${theme.palette.divider}`,
                       fontSize: '0.875rem',
                       fontWeight: 'bold',
-                      boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
                       transition: 'all 0.3s ease',
-                      '@keyframes gradient': {
-                        '0%': {
-                          backgroundPosition: '0% 50%'
-                        },
-                        '50%': {
-                          backgroundPosition: '100% 50%'
-                        },
-                        '100%': {
-                          backgroundPosition: '0% 50%'
-                        }
-                      },
                       '&:hover': {
-                        transform: 'translateY(-2px) scale(1.05)',
-                        boxShadow: '0 8px 15px rgba(0,0,0,0.2)',
-                        cursor: 'pointer',
-                        border: '2px solid rgba(255,255,255,0.5)'
+                        transform: 'scale(1.05)',
+                        border: (theme) => `2px solid ${theme.palette.primary.main}`
                       }
                     }}
                   >
-                    {user.email.split('@')[0][0].toUpperCase()}
+                    {user.email[0].toUpperCase()}
                   </Avatar>
                 </IconButton>
                 <Menu
@@ -269,15 +294,138 @@ const Navbar = () => {
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  <Box sx={{ px: 2, py: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                      {user.email.split('@')[0]}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {user.email}
-                    </Typography>
+                  <Box sx={{ 
+                    px: 2.5, 
+                    py: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                  }}>
+                    <Avatar 
+                      src={getAvatarUrl(user.email)}
+                      sx={{ 
+                        width: 40, 
+                        height: 40,
+                        background: 'transparent',
+                        border: (theme) => 
+                          theme.palette.mode === 'dark' 
+                            ? '2px solid #6272A4' 
+                            : '2px solid rgba(0, 0, 0, 0.1)',
+                      }}
+                    >
+                      {user.email[0].toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.8,
+                        mb: 0.3
+                      }}>
+                        <Typography 
+                          sx={{ 
+                            fontWeight: 600,
+                            color: 'text.primary',
+                            fontSize: '0.95rem',
+                            letterSpacing: '-0.01em'
+                          }}
+                        >
+                          {profileData?.name || user.email.split('@')[0]}
+                        </Typography>
+                        <Typography 
+                          component="span"
+                          sx={{ 
+                            px: 0.8,
+                            py: 0.2,
+                            borderRadius: '12px',
+                            backgroundColor: (theme) => 
+                              theme.palette.mode === 'dark' 
+                                ? 'rgba(189, 147, 249, 0.1)' 
+                                : 'rgba(33, 150, 243, 0.08)',
+                            color: (theme) =>
+                              theme.palette.mode === 'dark'
+                                ? '#FF79C6'
+                                : '#1976D2',
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.02em'
+                          }}
+                        >
+                          {user.role === 'STUDENT' ? '학생' :
+                           user.role === 'PROFESSOR' ? '교수' :
+                           user.role === 'ASSISTANT' ? '조교' :
+                           user.role === 'ADMIN' ? '관리자' : ''}
+                        </Typography>
+                      </Box>
+                      <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.2
+                      }}>
+                        <Typography 
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontSize: '0.75rem',
+                            letterSpacing: '-0.01em'
+                          }}
+                        >
+                          {user.email}
+                        </Typography>
+                        <Typography 
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontSize: '0.75rem',
+                            opacity: 0.8
+                          }}
+                        >
+                          {profileData?.studentNum}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
                   <Divider />
+                  <MenuItem 
+                    onClick={handleProfileSettings}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.action.hover
+                      }
+                    }}
+                  >
+                    <Box
+                      className="profile-icon"
+                      sx={{
+                        width: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      }}
+                    >
+                      <PersonIcon 
+                        sx={{ 
+                          fontSize: '20px',
+                          color: (theme) => theme.palette.primary.main,
+                          filter: (theme) => theme.palette.mode === 'dark'
+                            ? 'drop-shadow(0 0 1px rgba(255, 121, 198, 0.3))'
+                            : 'drop-shadow(0 0 1px rgba(25, 118, 210, 0.3))',
+                        }} 
+                      />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        ml: 1,
+                      }}
+                    >
+                      프로필 설정
+                    </Typography>
+                  </MenuItem>
                   <MenuItem 
                     onClick={toggleDarkMode}
                     sx={{
@@ -286,7 +434,7 @@ const Navbar = () => {
                       gap: 1,
                       transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       '&:hover': {
-                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                        backgroundColor: (theme) => theme.palette.action.hover
                       },
                       overflow: 'hidden',
                       height: '36px',
@@ -318,10 +466,10 @@ const Navbar = () => {
                       >
                         <DarkModeIcon 
                           sx={{ 
-                            color: isDarkMode ? '#ffffff' : '#666666',
+                            color: (theme) => theme.palette.primary.main,
                             fontSize: '20px',
-                            filter: isDarkMode 
-                              ? 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.6))' 
+                            filter: (theme) => theme.palette.mode === 'dark'
+                              ? 'drop-shadow(0 0 2px rgba(189, 147, 249, 0.6))'
                               : 'none',
                           }} 
                         />
@@ -341,9 +489,9 @@ const Navbar = () => {
                       >
                         <LightModeIcon 
                           sx={{ 
-                            color: '#ffd700',
+                            color: (theme) => theme.palette.warning.main,
                             fontSize: '20px',
-                            filter: 'drop-shadow(0 0 2px rgba(255, 215, 0, 0.6))',
+                            filter: (theme) => `drop-shadow(0 0 2px ${theme.palette.warning.light})`,
                           }} 
                         />
                       </Box>
@@ -366,11 +514,8 @@ const Navbar = () => {
                       gap: 1,
                       transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       '&:hover': {
-                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                        '& .logout-icon': {
-                          transform: 'translateX(3px)',
-                        }
-                      },
+                        backgroundColor: (theme) => theme.palette.action.hover
+                      }
                     }}
                   >
                     <Box
@@ -386,8 +531,7 @@ const Navbar = () => {
                       <LogoutIcon 
                         sx={{ 
                           fontSize: '20px',
-                          color: '#ff4444',
-                          filter: 'drop-shadow(0 0 1px rgba(255, 68, 68, 0.3))',
+                          color: (theme) => theme.palette.error.main
                         }} 
                       />
                     </Box>
@@ -412,7 +556,6 @@ const Navbar = () => {
             )}
           </Box>
 
-          {/* 모바일 메뉴 버튼 */}
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
