@@ -1,136 +1,407 @@
 import { createTheme } from '@mui/material/styles';
 
-export const getTheme = (isDarkMode) => createTheme({
-  palette: {
-    mode: isDarkMode ? 'dark' : 'light',
-    primary: {
-      main: isDarkMode ? '#ffffff' : '#1a1a1a',
+// Dracula Theme Colors
+const colors = {
+  background: '#282A36',
+  currentLine: '#44475A',
+  foreground: '#F8F8F2',
+  comment: '#6272A4',
+  purple: '#BD93F9',
+  purpleHover: '#A77BF3',
+  pink: '#FF79C6',
+  red: '#FF5555',
+  orange: '#FFB86C',
+  yellow: '#F1FA8C',
+  green: '#50FA7B',
+  cyan: '#8BE9FD',
+  selection: 'rgba(189, 147, 249, 0.3)',
+  hover: 'rgba(189, 147, 249, 0.08)',
+  selected: 'rgba(189, 147, 249, 0.16)',
+  selectedHover: 'rgba(189, 147, 249, 0.24)',
+};
+
+// Light Theme Colors
+const lightColors = {
+  background: '#F8F8F2',
+  currentLine: '#E4E4E4',
+  foreground: '#282A36',
+  comment: '#44475A',
+  purple: '#6272A4',
+  purpleHover: '#4E5C8E',
+  hover: 'rgba(98, 114, 164, 0.08)',
+  selected: 'rgba(98, 114, 164, 0.16)',
+  selectedHover: 'rgba(98, 114, 164, 0.24)',
+};
+
+export const getTheme = (isDarkMode) => {
+  const themeColors = isDarkMode ? colors : lightColors;
+
+  return createTheme({
+    palette: {
+      mode: isDarkMode ? 'dark' : 'light',
+      primary: {
+        main: themeColors.purple,
+      },
+      secondary: {
+        main: colors.pink,
+      },
+      text: {
+        primary: themeColors.foreground,
+        secondary: themeColors.comment,
+        disabled: isDarkMode ? 'rgba(248, 248, 242, 0.3)' : 'rgba(40, 42, 54, 0.3)',
+      },
+      background: {
+        default: themeColors.background,
+        paper: isDarkMode ? colors.currentLine : '#FFFFFF',
+      },
+      error: {
+        main: colors.red
+      },
+      warning: {
+        main: colors.orange
+      },
+      info: {
+        main: colors.cyan
+      },
+      success: {
+        main: colors.green
+      },
+      action: {
+        hover: themeColors.hover,
+        selected: themeColors.selected,
+        selectedHover: themeColors.selectedHover,
+        disabled: isDarkMode ? 'rgba(248, 248, 242, 0.3)' : 'rgba(40, 42, 54, 0.3)',
+        disabledBackground: isDarkMode ? 'rgba(248, 248, 242, 0.12)' : 'rgba(40, 42, 54, 0.12)',
+        focus: themeColors.selection,
+      }
     },
-    secondary: {
-      main: '#6b38fb',
+    typography: {
+      fontFamily: [
+        'JetBrains Mono',
+        'Noto Sans KR',
+        '-apple-system',
+        'BlinkMacSystemFont',
+        '"Segoe UI"',
+        'Roboto',
+        'Arial',
+        'sans-serif',
+      ].join(','),
+      h1: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      h2: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      h3: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      h4: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      h5: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      h6: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 700,
+      },
+      button: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontWeight: 600,
+      },
+      body1: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+        fontSize: '1rem',
+      },
+      body2: {
+        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+      },
     },
-    text: {
-      primary: isDarkMode ? '#ffffff' : '#1a1a1a',
-      secondary: isDarkMode ? '#b3b3b3' : '#666666',
-    },
-    background: {
-      default: isDarkMode ? '#121212' : '#f5f5f5',
-      paper: isDarkMode ? '#1e1e1e' : '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: [
-      'JetBrains Mono',
-      'Noto Sans KR',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-    h1: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    h2: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    h3: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    h4: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    h5: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    h6: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 700,
-    },
-    button: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontWeight: 600,
-    },
-    body1: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-      fontSize: '1rem',
-    },
-    body2: {
-      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-    },
-  },
-  components: {
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundColor: isDarkMode ? '#121212' : '#ffffff',
-          boxShadow: 'none',
-          borderBottom: `1px solid ${isDarkMode ? '#333333' : '#eaeaea'}`,
-          '& .MuiTypography-root': {
-            color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            fontFamily: "'JetBrains Mono', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+            backgroundColor: isDarkMode ? colors.background : '#F8F8F2',
+            '&::-webkit-scrollbar': {
+              width: '10px',
+              height: '10px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: isDarkMode ? colors.currentLine : themeColors.background,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: themeColors.comment,
+              borderRadius: '5px',
+              '&:hover': {
+                background: themeColors.purple,
+              },
+            },
+            '::selection': {
+              backgroundColor: themeColors.selection,
+              color: themeColors.foreground,
+            },
           },
-          '& .MuiButton-root': {
-            color: isDarkMode ? '#ffffff' : '#1a1a1a',
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: themeColors.background,
+            boxShadow: 'none',
+            borderBottom: `1px solid ${isDarkMode ? colors.currentLine : lightColors.currentLine}`,
+            '& .MuiTypography-root': {
+              color: themeColors.foreground,
+            },
+            '& .MuiButton-root': {
+              color: themeColors.foreground,
+            },
+            '& .logo': {
+              color: themeColors.purple,
+            },
+            '& .menu-indicator': {
+              backgroundColor: themeColors.purple,
+              display: 'none',
+            },
+            '& .active .menu-indicator': {
+              display: 'block',
+            },
           },
-          '& .logo': {
-            color: isDarkMode ? '#ffffff' : '#1a1a1a',
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            textTransform: 'none',
+            fontSize: '1rem',
+            padding: '8px 16px',
           },
-          '& .menu-indicator': {
-            backgroundColor: isDarkMode ? '#ffffff' : '#1a1a1a',
-            display: 'none',
+          contained: {
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? '#FF79C6'
+                : theme.palette.primary.main,
+            color: (theme) => 
+              theme.palette.mode === 'dark'
+                ? '#282A36'
+                : theme.palette.primary.contrastText,
+            '&:hover': {
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '#FF79C6'
+                  : theme.palette.primary.dark,
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 0 10px rgba(255, 121, 198, 0.5)'
+                  : 'none',
+            },
           },
-          '& .active .menu-indicator': {
-            display: 'block',
+          text: {
+            color: (theme) => 
+              theme.palette.mode === 'dark'
+                ? '#F8F8F2'
+                : theme.palette.text.primary,
+            '&:hover': {
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(189, 147, 249, 0.1)'
+                  : theme.palette.action.hover,
+            },
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            backgroundImage: 'none',
+            '&.MuiPaper-elevation1': {
+              boxShadow: isDarkMode 
+                ? '0 1px 3px rgba(0,0,0,0.2)' 
+                : '0 1px 3px rgba(0,0,0,0.1)',
+            },
+            '&.MuiPaper-elevation3': {
+              boxShadow: isDarkMode 
+                ? '0 3px 6px rgba(0,0,0,0.25)' 
+                : '0 3px 6px rgba(0,0,0,0.15)',
+            },
+            '&.MuiPaper-elevation7': {
+              boxShadow: isDarkMode 
+                ? '0 4px 8px rgba(0,0,0,0.3)' 
+                : '0 4px 8px rgba(0,0,0,0.2)',
+            },
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            backgroundImage: 'none',
+            boxShadow: isDarkMode 
+              ? '0 4px 8px rgba(0,0,0,0.3)' 
+              : '0 4px 8px rgba(0,0,0,0.2)',
+            '& .MuiMenuItem-root': {
+              '&:hover': {
+                backgroundColor: themeColors.hover,
+              },
+              '&.Mui-selected': {
+                backgroundColor: themeColors.selected,
+                '&:hover': {
+                  backgroundColor: themeColors.selectedHover,
+                },
+              },
+            },
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            backgroundImage: 'none',
+            boxShadow: isDarkMode 
+              ? '0 8px 16px rgba(0,0,0,0.4)' 
+              : '0 8px 16px rgba(0,0,0,0.3)',
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: themeColors.currentLine,
+              },
+              '&:hover fieldset': {
+                borderColor: themeColors.comment,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: themeColors.purple,
+              },
+              '& input': {
+                color: themeColors.foreground,
+              },
+            },
+            '& .MuiInputLabel-root': {
+              color: themeColors.comment,
+              '&.Mui-focused': {
+                color: themeColors.purple,
+              },
+            },
+          },
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: themeColors.currentLine,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: themeColors.comment,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: themeColors.purple,
+            },
+            '& .MuiSelect-select': {
+              color: themeColors.foreground,
+            },
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            '&:hover': {
+              backgroundColor: themeColors.hover,
+            },
+          },
+        },
+      },
+      MuiCalendarPicker: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            color: themeColors.foreground,
+            '& .MuiTypography-root': {
+              color: themeColors.foreground,
+            },
+            '& .MuiIconButton-root': {
+              color: themeColors.foreground,
+            },
+            '& .MuiPickersDay-root': {
+              color: themeColors.foreground,
+              backgroundColor: 'transparent',
+              '&:hover': {
+                backgroundColor: themeColors.hover,
+              },
+              '&.Mui-selected': {
+                backgroundColor: themeColors.purple,
+                color: '#FFFFFF',
+                '&:hover': {
+                  backgroundColor: themeColors.purpleHover,
+                },
+              },
+              '&.MuiPickersDay-today': {
+                borderColor: themeColors.purple,
+              },
+            },
+          },
+        },
+      },
+      MuiDateCalendar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            color: themeColors.foreground,
+            '& .MuiDayCalendar-weekDayLabel': {
+              color: themeColors.comment,
+            },
+            '& .MuiPickersDay-root': {
+              color: themeColors.foreground,
+              '&:hover': {
+                backgroundColor: themeColors.hover,
+              },
+              '&.Mui-selected': {
+                backgroundColor: themeColors.purple,
+                color: '#FFFFFF',
+                '&:hover': {
+                  backgroundColor: themeColors.purpleHover,
+                },
+              },
+              '&.MuiPickersDay-today': {
+                borderColor: themeColors.purple,
+              },
+            },
+          },
+        },
+      },
+      MuiPickersPopper: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            color: themeColors.foreground,
+            '& .MuiPickersCalendarHeader-root': {
+              color: themeColors.foreground,
+            },
+            '& .MuiPickersCalendarHeader-label': {
+              color: themeColors.foreground,
+            },
+            '& .MuiIconButton-root': {
+              color: themeColors.foreground,
+            },
           },
         },
       },
     },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontSize: '1rem',
-          padding: '8px 16px',
-        },
-        contained: {
-          backgroundColor: isDarkMode ? '#424242' : '#1a1a1a',
-          color: '#ffffff',
-          '&:hover': {
-            backgroundColor: isDarkMode ? '#616161' : '#333333',
-          },
-        },
-        text: {
-          color: isDarkMode ? '#ffffff' : '#1a1a1a',
-          '&:hover': {
-            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-          },
-        },
-      },
-    },
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          fontFamily: "'JetBrains Mono', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-        },
-      },
-    },
-    MuiMenuItem: {
-      styleOverrides: {
-        root: {
-          '&:hover': {
-            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-          },
-        },
-      },
-    },
-  },
-});
+  });
+};
 
 export default getTheme; 
