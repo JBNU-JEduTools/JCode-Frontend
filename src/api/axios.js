@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-toastify';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
@@ -29,11 +30,7 @@ const refreshToken = async (currentToken) => {
     const response = await axios.create({
       baseURL: process.env.REACT_APP_API_URL,
       withCredentials: true
-    }).post('/api/auth/refresh', null, {
-      headers: {
-        'Authorization': `Bearer ${currentToken}`
-      }
-    });
+    }).post('/api/auth/refresh', null);
 
     const authHeader = response.headers['authorization'];
     if (authHeader?.startsWith('Bearer ')) {
@@ -41,9 +38,12 @@ const refreshToken = async (currentToken) => {
       sessionStorage.setItem('jwt', newToken);
       return newToken;
     }
-    throw new Error('새로운 액세스 토큰이 없습니다');
   } catch (error) {
     console.error('Token refresh failed:', error);
+    toast.error('세션이 만료되어 로그아웃됩니다.', {
+      autoClose: 2000,
+      onClose: () => auth.logout()
+    });
     throw error;
   }
 };
@@ -92,13 +92,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const currentToken = sessionStorage.getItem('jwt');
-        if (!currentToken) throw new Error('No token available');
+        if (!currentToken) {
+          toast.error('세션이 만료되어 로그아웃됩니다.', {
+            autoClose: 2000,
+            onClose: () => auth.logout()
+          });
+          throw new Error('No token available');
+        }
         
         const newToken = await refreshToken(currentToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
@@ -123,6 +128,9 @@ export const auth = {
 
       const token = authHeader.substring(7);
       sessionStorage.setItem('jwt', token);
+
+
+
       return token;
     } catch (error) {
       console.error('Token request failed:', error);
@@ -139,7 +147,27 @@ export const auth = {
     form.action = `${process.env.REACT_APP_API_URL}/logout`;
     document.body.appendChild(form);
     form.submit();
-  }
+  },
+
+  getUserProfile: async () => {
+    try {
+      const response = await api.get('/api/users/me');
+      return response;
+    } catch (error) {
+      console.error('Failed to get user profile:', error);
+      throw error;
+    }
+  },
+
+  updateUserProfile: async (profileData) => {
+    try {
+      const response = await api.put('/api/users/me', profileData);
+      return response;
+    } catch (error) {
+      console.error('Failed to update user profile:', error);
+      throw error;
+    }
+  },
 };
 
 export default api; 
