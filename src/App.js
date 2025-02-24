@@ -4,6 +4,7 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useTheme } from './contexts/ThemeContext';
 import { getTheme } from './theme';
@@ -14,6 +15,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoginCallback from './components/auth/LoginCallback';
 import { getDefaultRoute } from './routes';
+import { AvatarProvider } from './contexts/AvatarContext';
 
 const AppRoutes = () => {
   const { loading, isAuthenticated, user } = useAuth();
@@ -24,17 +26,6 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route 
-        path="/" 
-        element={
-          isAuthenticated ? (
-            <Navigate to={getDefaultRoute(user?.role)} replace /> 
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } 
-      />
-      
       {/* routes.js에 정의된 모든 라우트 사용 */}
       {routes.map(({ path, element: Element, roles }) => (
         <Route
@@ -54,6 +45,9 @@ const AppRoutes = () => {
       
       {/* 로그인 콜백 라우트 추가 */}
       <Route path="/login/success" element={<LoginCallback />} />
+
+      {/* 정의되지 않은 경로는 홈으로 리다이렉트 */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
@@ -65,14 +59,28 @@ const ThemedApp = () => {
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <Navbar />
-          <Box component="main" sx={{ flexGrow: 1, pt: 10 }}>
-            <AppRoutes />
-          </Box>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '100vh'
+        }}
+      >
+        <Navbar />
+        <Box 
+          component="main" 
+          sx={{ 
+            flexGrow: 1, 
+            pt: 10,
+            pb: 4,
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <AppRoutes />
         </Box>
-      </Router>
+        <Footer />
+      </Box>
       <ToastContainer
         position="top-center"
         autoClose={2000}
@@ -85,6 +93,9 @@ const ThemedApp = () => {
         pauseOnHover
         theme={isDarkMode ? "dark" : "light"}
         limit={1}
+        style={{
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+        }}
       />
     </MuiThemeProvider>
   );
@@ -92,11 +103,15 @@ const ThemedApp = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <ThemedApp />
-      </ThemeProvider>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <ThemeProvider>
+          <AvatarProvider>
+            <ThemedApp />
+          </AvatarProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 
