@@ -133,198 +133,194 @@ const ProfessorManagement = () => {
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
-    <Fade in={true} timeout={300}>
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-              교수 계정 관리
-            </Typography>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-              <TextField
-                size="small"
-                placeholder="이메일 또는 이름으로 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+          교수 계정 관리
+        </Typography>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+          <TextField
+            size="small"
+            placeholder="이메일 또는 이름으로 검색"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ 
+              width: 300,
+              '& .MuiInputBase-root': {
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button 
+            variant="contained" 
+            onClick={() => setOpenDialog(true)}
+          >
+            교수 추가
+          </Button>
+        </Box>
+      </Box>
+
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell 
                 sx={{ 
-                  width: 300,
-                  '& .MuiInputBase-root': {
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontWeight: 'bold'
+                }}
+              >
+                이메일
+                <IconButton
+                  size="small"
+                  onClick={() => toggleSort('email')}
+                  sx={{ ml: 1 }}
+                >
+                  {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
+                </IconButton>
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontWeight: 'bold'
+                }}
+              >
+                이름
+                <IconButton
+                  size="small"
+                  onClick={() => toggleSort('name')}
+                  sx={{ ml: 1 }}
+                >
+                  {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
+                </IconButton>
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontWeight: 'bold'
+                }}
+              >
+                학교
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontWeight: 'bold'
+                }}
+              >
+                작업
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {getFilteredAndSortedUsers().map((user) => (
+              <TableRow 
+                key={user.email}
+                sx={{ 
+                  transition: 'all 0.3s ease',
+                  animation: 'fadeIn 0.3s ease',
+                  '@keyframes fadeIn': {
+                    '0%': {
+                      opacity: 0,
+                      transform: 'translateY(10px)'
+                    },
+                    '100%': {
+                      opacity: 1,
+                      transform: 'translateY(0)'
+                    }
                   }
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button 
-                variant="contained" 
-                onClick={() => setOpenDialog(true)}
               >
-                교수 추가
-              </Button>
-            </Box>
-          </Box>
+                <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                  {user.email}
+                </TableCell>
+                <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                  {user.name}
+                </TableCell>
+                <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                  {user.school}
+                </TableCell>
+                <TableCell>
+                  <IconButton 
+                    color="error" 
+                    size="small"
+                    onClick={() => handleDeleteUser(user.email)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell 
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    이메일
-                    <IconButton
-                      size="small"
-                      onClick={() => toggleSort('email')}
-                      sx={{ ml: 1 }}
-                    >
-                      {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-                    </IconButton>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    이름
-                    <IconButton
-                      size="small"
-                      onClick={() => toggleSort('name')}
-                      sx={{ ml: 1 }}
-                    >
-                      {sortOrder === 'asc' ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
-                    </IconButton>
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    학교
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    작업
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {getFilteredAndSortedUsers().map((user) => (
-                  <TableRow 
-                    key={user.email}
-                    sx={{ 
-                      transition: 'all 0.3s ease',
-                      animation: 'fadeIn 0.3s ease',
-                      '@keyframes fadeIn': {
-                        '0%': {
-                          opacity: 0,
-                          transform: 'translateY(10px)'
-                        },
-                        '100%': {
-                          opacity: 1,
-                          transform: 'translateY(0)'
-                        }
-                      }
-                    }}
-                  >
-                    <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                      {user.email}
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                      {user.name}
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                      {user.school}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton 
-                        color="error" 
-                        size="small"
-                        onClick={() => handleDeleteUser(user.email)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+      {getFilteredAndSortedUsers().length === 0 && (
+        <Typography 
+          sx={{ 
+            mt: 2, 
+            textAlign: 'center',
+            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+          }}
+        >
+          {searchQuery ? '검색 결과가 없습니다.' : '등록된 교수가 없습니다.'}
+        </Typography>
+      )}
 
-          {getFilteredAndSortedUsers().length === 0 && (
-            <Typography 
-              sx={{ 
-                mt: 2, 
-                textAlign: 'center',
-                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-              }}
-            >
-              {searchQuery ? '검색 결과가 없습니다.' : '등록된 교수가 없습니다.'}
-            </Typography>
-          )}
-
-          {/* 교수 추가 다이얼로그 */}
-          <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-            <DialogTitle>교수 추가</DialogTitle>
-            <DialogContent>
-              <TextField
-                autoFocus
-                margin="dense"
-                label="이메일"
-                type="email"
-                fullWidth
-                required
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              />
-              <TextField
-                margin="dense"
-                label="이름"
-                fullWidth
-                required
-                value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-              />
-              <TextField
-                margin="dense"
-                label="비밀번호"
-                type="password"
-                fullWidth
-                required
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              />
-              <TextField
-                margin="dense"
-                label="교번"
-                fullWidth
-                required
-                value={newUser.student_num}
-                onChange={(e) => setNewUser({ ...newUser, student_num: e.target.value })}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenDialog(false)}>취소</Button>
-              <Button onClick={handleAddUser}>추가</Button>
-            </DialogActions>
-          </Dialog>
-        </Paper>
-      </Container>
-    </Fade>
+      {/* 교수 추가 다이얼로그 */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>교수 추가</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="이메일"
+            type="email"
+            fullWidth
+            required
+            value={newUser.email}
+            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="이름"
+            fullWidth
+            required
+            value={newUser.name}
+            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="비밀번호"
+            type="password"
+            fullWidth
+            required
+            value={newUser.password}
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="교번"
+            fullWidth
+            required
+            value={newUser.student_num}
+            onChange={(e) => setNewUser({ ...newUser, student_num: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>취소</Button>
+          <Button onClick={handleAddUser}>추가</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
