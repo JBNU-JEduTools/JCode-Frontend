@@ -142,9 +142,14 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="fixed">
+    <AppBar position="fixed" sx={{ 
+      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+      color: 'text.primary',
+      boxShadow: 'none',
+      borderBottom: 'none'
+    }}>
       <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ height: 80 }}>
+        <Toolbar disableGutters sx={{ height: 64 }}>
           <Box 
             component="div" 
             onClick={handleLogoClick}
@@ -160,23 +165,23 @@ const Navbar = () => {
               component="div"
               sx={{ 
                 mr: 2, 
-                fontWeight: 700,
-                fontSize: '1.8rem',
+                fontWeight: 1000,
+                fontSize: '2rem',
                 letterSpacing: '-.05rem',
                 background: (theme) => 
                   theme.palette.mode === 'dark'
-                    ? 'linear-gradient(45deg, #FF79C6 30%, #BD93F9 90%)'
-                    : `linear-gradient(45deg, ${theme.palette.text.primary} 30%, ${theme.palette.text.secondary} 90%)`,
+                    ? 'linear-gradient(45deg, #FF79C6 40%, #BD93F9 90%)'
+                    : `linear-gradient(45deg, ${theme.palette.primary.dark} 40%, ${theme.palette.primary.main} 90%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 WebkitTextStroke: (theme) => 
                   theme.palette.mode === 'dark'
-                    ? 'none'
-                    : `1px ${theme.palette.text.disabled}`,
+                    ? '0.5px rgba(255, 121, 198, 0.3)'
+                    : `0.5px ${theme.palette.primary.dark}`,
                 textShadow: (theme) =>
                   theme.palette.mode === 'dark'
-                    ? '2px 2px 4px rgba(189, 147, 249, 0.3)'
-                    : `2px 2px 4px ${theme.palette.text.disabled}`,
+                    ? '2px 2px 4px rgba(189, 147, 249, 0.4)'
+                    : `2px 2px 4px ${theme.palette.primary.dark}35`,
                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
               }}
             >
@@ -199,12 +204,14 @@ const Navbar = () => {
                   bottom: '22px',
                   left: 0,
                   height: '2px',
-                  background: isDarkMode
-                    ? 'linear-gradient(90deg, #FF79C6, #BD93F9)'
-                    : 'linear-gradient(90deg, #333333, #666666)',
-                  boxShadow: isDarkMode
-                    ? '0 0 6px rgba(189, 147, 249, 0.3)'
-                    : '0 0 6px rgba(0, 0, 0, 0.2)',
+                  background: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'linear-gradient(90deg, #FF79C6, #BD93F9)'
+                      : `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+                  boxShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '0 0 6px rgba(189, 147, 249, 0.3)'
+                      : `0 0 6px ${theme.palette.primary.main}25`,
                   borderRadius: '4px',
                   width: `${activeButtonPos.width * 0.6}px`,
                   transform: `translateX(${activeButtonPos.left + (activeButtonPos.width * 0.2)}px)`,
@@ -216,9 +223,10 @@ const Navbar = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: isDarkMode
-                      ? 'linear-gradient(90deg, transparent, rgba(189, 147, 249, 0.2), transparent)'
-                      : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(90deg, transparent, rgba(189, 147, 249, 0.2), transparent)'
+                        : `linear-gradient(90deg, transparent, ${theme.palette.primary.main}15, transparent)`,
                   },
                   '@keyframes shimmer': {
                     '0%': {
@@ -288,7 +296,9 @@ const Navbar = () => {
                     sx: {
                       mt: 1,
                       minWidth: 200,
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                      boxShadow: 'none',
+                      border: (theme) => 
+                        `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`
                     }
                   }}
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
