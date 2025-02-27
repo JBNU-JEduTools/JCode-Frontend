@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  Card,
 } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
@@ -215,7 +216,14 @@ const AssignmentDetail = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth={false} sx={{ mt: 2, px: 2 }}>
-        <Paper elevation={1} sx={{ p: 2, minHeight: 'calc(100vh - 100px)', borderRadius: 0 }}>
+        <Paper elevation={0} sx={{ 
+          p: 3,
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+          border: (theme) =>
+            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+          borderRadius: '16px'
+        }}>
           <WatcherBreadcrumbs 
             paths={[
               { 
