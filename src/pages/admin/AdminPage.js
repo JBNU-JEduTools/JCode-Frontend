@@ -4,7 +4,10 @@ import Admin from '../../components/admin/Admin';
 
 const AdminPage = () => {
   return (
-    <Box sx={{ pt: 10 }}>
+    <Box sx={{ 
+      backgroundColor: (theme) => 
+        theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF'
+    }}>
       <Admin />
     </Box>
   );
