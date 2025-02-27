@@ -4,6 +4,7 @@ import AdminPage from './pages/admin/AdminPage';
 import WebIDECourses from './components/webide/WebIDECourses';
 import ProfileSetup from './components/auth/ProfileSetup';
 import ProfileSettings from './components/profile/ProfileSettings';
+import AboutPage from './pages/about/AboutPage';
 //import HomePage from './pages/HomePage';
 
 export const routes = [
@@ -37,7 +38,7 @@ export const routes = [
     element: WebIDECourses,
     roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'],
     showInNav: true,
-    label: 'Web-IDE',
+    label: 'IDE',
     order: 1,
   },
   {
@@ -55,7 +56,15 @@ export const routes = [
     showInNav: true,
     label: 'Admin',
     order: 3,
-  }
+  },
+  {
+    path: '/about',
+    element: AboutPage,
+    roles: [], // 누구나 접근 가능
+    showInNav: true,
+    label: 'About',
+    order: 4,
+  },
 ];
 
 // 사용자 역할에 따른 기본 리다이렉트 경로
