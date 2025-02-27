@@ -125,29 +125,65 @@ export const getTheme = (isDarkMode) => {
     components: {
       MuiCssBaseline: {
         styleOverrides: {
-          body: {
+          'html': {
+            overflow: 'hidden',
+            height: '100%'
+          },
+          'body': {
             fontFamily: "'JetBrains Mono', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
             backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
+            margin: 0,
+            height: '100%',
+            overflow: 'auto',
             '&::-webkit-scrollbar': {
               width: '10px',
               height: '10px',
+              background: 'transparent'
             },
             '&::-webkit-scrollbar-track': {
-              background: isDarkMode ? colors.currentLine : '#FFFFFF',
+              background: 'transparent'
             },
             '&::-webkit-scrollbar-thumb': {
               background: themeColors.comment,
               borderRadius: '5px',
+              border: '2px solid transparent',
+              backgroundClip: 'content-box',
               '&:hover': {
                 background: themeColors.purple,
-              },
+                backgroundClip: 'content-box'
+              }
             },
             '::selection': {
               backgroundColor: themeColors.selection,
-              color: themeColors.foreground,
-            },
+              color: themeColors.foreground
+            }
           },
-        },
+          '#root': {
+            height: '100%',
+            overflow: 'auto'
+          },
+          '.scrollable-content': {
+            overflow: 'auto',
+            '&::-webkit-scrollbar': {
+              width: '10px',
+              height: '10px',
+              background: 'transparent'
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent'
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: themeColors.comment,
+              borderRadius: '5px',
+              border: '2px solid transparent',
+              backgroundClip: 'content-box',
+              '&:hover': {
+                background: themeColors.purple,
+                backgroundClip: 'content-box'
+              }
+            }
+          }
+        }
       },
       MuiAppBar: {
         styleOverrides: {

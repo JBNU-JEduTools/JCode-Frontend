@@ -114,6 +114,14 @@ const Admin = () => {
       setLoading(true);
       const response = await api.get('/api/users');
       
+      // 응답 데이터가 배열인지 확인
+      if (!Array.isArray(response.data)) {
+        console.error('사용자 목록 조회 실패: 응답 데이터가 배열이 아닙니다.', response.data);
+        toast.error('사용자 목록을 불러오는데 실패했습니다.');
+        setLoading(false);
+        return;
+      }
+      
       // 역할별로 사용자 분류
       const categorizedUsers = response.data.reduce((acc, user) => {
         switch (user.role) {
