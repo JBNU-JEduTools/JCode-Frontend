@@ -206,7 +206,27 @@ const MonitoringDashboard = () => {
   };
 
   return (
-    <Card>
+    <Card 
+      sx={{ 
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.3s ease',
+        backgroundColor: (theme) => 
+          theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+        border: (theme) =>
+          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+        boxShadow: 'none',
+        borderRadius: '12px',
+        '&:hover': {
+          borderColor: (theme) =>
+            theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+          transform: 'translateY(-2px)'
+        }
+      }}
+    >
       <MetricSelector 
         selectedMetric={selectedMetric} 
         onMetricChange={setSelectedMetric}
@@ -383,7 +403,7 @@ const ClassDetail = () => {
   });
   const [currentTab, setCurrentTab] = useState(() => {
     const params = new URLSearchParams(location.search);
-    return params.get('tab') || 'students'; // 기본값은 students
+    return params.get('tab') || 'statistics'; // 기본값을 'statistics'로 변경
   });
 
   // 탭 변경 핸들러
@@ -522,11 +542,14 @@ const ClassDetail = () => {
         }}
       >
         <Paper 
-          elevation={1}
+          elevation={0}
           sx={{ 
-            p: 2,
-            minHeight: 'calc(100vh - 100px)',
-            borderRadius: 0
+            p: 3,
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+            border: (theme) =>
+              `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+            borderRadius: '16px'
           }}
         >
           <WatcherBreadcrumbs 
@@ -603,8 +626,20 @@ const ClassDetail = () => {
             }}
           >
             <Tab 
+              icon={<TimelineIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
+              label="통계" 
+              value="statistics"
+              iconPosition="start"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                textTransform: 'none',
+                minHeight: '40px',
+                alignItems: 'center'
+              }}
+            />
+            <Tab 
               icon={<GroupIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
-              label="수강생 관리" 
+              label="학생" 
               value="students"
               iconPosition="start"
               sx={{ 
@@ -616,20 +651,8 @@ const ClassDetail = () => {
             />
             <Tab 
               icon={<AssignmentIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
-              label="과제 관리" 
+              label="과제" 
               value="assignments"
-              iconPosition="start"
-              sx={{ 
-                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                textTransform: 'none',
-                minHeight: '40px',
-                alignItems: 'center'
-              }}
-            />
-            <Tab 
-              icon={<TimelineIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
-              label="통계" 
-              value="statistics"
               iconPosition="start"
               sx={{ 
                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
