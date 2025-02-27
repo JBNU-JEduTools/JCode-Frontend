@@ -31,6 +31,7 @@ import { toast } from 'react-toastify';
 import { useTheme } from '../../contexts/ThemeContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import { useNavigate } from 'react-router-dom';
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ const WebIDECourses = () => {
     open: false,
     courseKey: ''
   });
+  const navigate = useNavigate();
 
   // 고유한 연도와 학기 목록 추출
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
@@ -54,25 +56,24 @@ const WebIDECourses = () => {
       try {
         const response = await api.get('/api/users/me/courses');
         setCourses(response.data);
-        
-        // 현재 날짜 기준으로 연도와 학기 설정
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
-        
-        // 9-12월은 2학기, 나머지(1-8월)는 1학기
-        const currentTerm = currentMonth >= 9 ? 2 : 1;
-        
-        // 현재 연도와 학기로 설정
-        setSelectedYear(currentYear);
-        setSelectedTerm(currentTerm);
-        
         setLoading(false);
       } catch (err) {
         setError('수업 목록을 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
+
+    // 현재 날짜 기준으로 연도와 학기 설정 (courses와 독립적으로 실행)
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
+    
+    // 9-12월은 2학기, 나머지(1-8월)는 1학기
+    const currentTerm = currentMonth >= 9 ? 2 : 1;
+    
+    // 현재 연도와 학기로 설정
+    setSelectedYear(currentYear);
+    setSelectedTerm(currentTerm);
 
     fetchCourses();
   }, []);
@@ -89,17 +90,37 @@ const handleWebIDEOpen = async (courseId) => {
         withCredentials: true
       });
   
-      // 서버가 리다이렉트 응답(302 Found)으로 URL을 전송할 경우,
-      // axios에서는 자동으로 브라우저 리다이렉션을 수행하지 않으므로,
-      // 응답 객체에서 최종 URL을 추출하여 직접 window.location.href에 할당합니다.
-      console.log(response.request)
       if (response.request && response.request.responseURL) {
         window.location.href = response.request.responseURL;
       } else if (response.data && response.data.url) {
         window.location.href = response.data.url;
       }
     } catch (err) {
-      setError('Web-IDE 접속 중 오류가 발생했습니다.');
+      // 에러 토스트 메시지 표시
+      toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
+        icon: ({theme, type}) => <ErrorIcon sx={{ 
+          color: '#fff',
+          fontSize: '1.5rem',
+          mr: 1
+        }}/>,
+        style: {
+          background: isDarkMode ? '#d32f2f' : '#f44336',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px',
+          maxWidth: '500px',
+          width: 'auto',
+          textOverflow: 'ellipsis',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center'
+        }
+      });
+
+      // IDE 페이지로 리다이렉트
+      navigate('/webide');
     }
   };
 
@@ -201,10 +222,13 @@ const handleWebIDEOpen = async (courseId) => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>  
-        <Paper elevation={7} sx={{ 
+        <Paper elevation={0} sx={{ 
           p: 3,
           backgroundColor: (theme) => 
-            theme.palette.mode === 'dark' ? '#1A1B26' : '#FFFFFF'
+            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+          border: (theme) =>
+            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+          borderRadius: '16px'
         }}>
           <Box sx={{ 
             display: 'flex', 
@@ -224,7 +248,15 @@ const handleWebIDEOpen = async (courseId) => {
                   displayEmpty
                   size="small"
                   MenuProps={selectStyles.menuProps}
-                  sx={selectStyles.select}
+                  sx={{
+                    ...selectStyles.select,
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#E0E0E0'
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#E0E0E0'
+                    }
+                  }}
                 >
                   <MenuItem value="all" sx={selectStyles.menuItem}>
                     전체 연도
@@ -284,15 +316,17 @@ const handleWebIDEOpen = async (courseId) => {
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     backgroundColor: (theme) => 
-                      theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
+                      theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                    border: (theme) =>
+                      `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                    boxShadow: 'none',
+                    borderRadius: '12px',
                     '&:hover': {
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'dark' ? '#6272A4' : theme.palette.action.hover,
-                      transform: 'translateY(-2px)',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 4px 12px rgba(0, 0, 0, 0.5)'
-                          : '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      borderColor: (theme) =>
+                        theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                      transform: 'translateY(-2px)'
                     }
                   }}
                 >
@@ -319,6 +353,7 @@ const handleWebIDEOpen = async (courseId) => {
                         fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                         backgroundColor: 'transparent',
                         border: '1px dashed',
+                        borderRadius: '20px',
                         borderColor: (theme) =>
                           theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
                         color: (theme) =>
@@ -365,9 +400,17 @@ const handleWebIDEOpen = async (courseId) => {
                           transform: 'translateY(0)'
                         }
                       },
+                      backgroundColor: (theme) => 
+                        theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                      border: (theme) =>
+                        `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                      boxShadow: 'none',
+                      borderRadius: '12px',
                       '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        borderColor: (theme) =>
+                          theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                        backgroundColor: (theme) =>
+                          theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA'
                       }
                     }}
                   >
@@ -424,7 +467,7 @@ const handleWebIDEOpen = async (courseId) => {
                           py: 0.5,
                           px: 1.5,
                           minHeight: '28px',
-                          borderRadius: '14px',
+                          borderRadius: '20px',
                           textTransform: 'none'
                         }}
                       >
@@ -444,15 +487,17 @@ const handleWebIDEOpen = async (courseId) => {
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     backgroundColor: (theme) => 
-                      theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
+                      theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                    border: (theme) =>
+                      `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                    boxShadow: 'none',
+                    borderRadius: '12px',
                     '&:hover': {
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'dark' ? '#6272A4' : theme.palette.action.hover,
-                      transform: 'translateY(-2px)',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 4px 12px rgba(0, 0, 0, 0.5)'
-                          : '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      borderColor: (theme) =>
+                        theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                      transform: 'translateY(-2px)'
                     }
                   }}
                 >
@@ -479,6 +524,7 @@ const handleWebIDEOpen = async (courseId) => {
                         fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                         backgroundColor: 'transparent',
                         border: '1px dashed',
+                        borderRadius: '20px',
                         borderColor: (theme) =>
                           theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
                         color: (theme) =>
