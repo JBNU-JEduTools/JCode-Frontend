@@ -49,18 +49,22 @@ const InfoItem = ({ icon, label, value }) => (
     alignItems: 'center', 
     mb: 3,
     p: 2,
-    borderRadius: 2,
+    borderRadius: '12px',
     backgroundColor: (theme) => 
       theme.palette.mode === 'dark' 
         ? 'rgba(255, 255, 255, 0.05)' 
         : 'rgba(0, 0, 0, 0.02)',
     transition: 'all 0.3s ease',
+    border: (theme) =>
+      `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
     '&:hover': {
       backgroundColor: (theme) => 
         theme.palette.mode === 'dark' 
           ? 'rgba(255, 255, 255, 0.08)' 
           : 'rgba(0, 0, 0, 0.04)',
       transform: 'translateY(-2px)',
+      borderColor: (theme) =>
+        theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
     }
   }}>
     <Box sx={{ 
@@ -70,7 +74,7 @@ const InfoItem = ({ icon, label, value }) => (
       justifyContent: 'center',
       width: 40,
       height: 40,
-      borderRadius: '50%',
+      borderRadius: '12px',
       backgroundColor: (theme) => 
         theme.palette.mode === 'dark' 
           ? 'rgba(255, 255, 255, 0.1)' 
@@ -159,7 +163,15 @@ const ProfileSettings = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 12, mb: 4 }}>
-      <Paper elevation={3} sx={{ borderRadius: 2 }}>
+      <Paper elevation={0} sx={{ 
+        borderRadius: '16px',
+        border: (theme) =>
+          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+        backgroundColor: (theme) => 
+          theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+      }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs 
             value={currentTab} 
@@ -192,7 +204,10 @@ const ProfileSettings = () => {
                   width: 100, 
                   height: 100, 
                   mb: 2,
-                  fontSize: profileData?.name?.length > 2 ? '2rem' : '2.5rem'
+                  fontSize: profileData?.name?.length > 2 ? '2rem' : '2.5rem',
+                  border: (theme) => 
+                    `2px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  backgroundColor: 'transparent'
                 }}
               >
                 {profileData?.name?.[0] || user?.email?.[0].toUpperCase()}
