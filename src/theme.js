@@ -22,8 +22,8 @@ const colors = {
 
 // Light Theme Colors
 const lightColors = {
-  background: '#F8F8F2',
-  currentLine: '#E4E4E4',
+  background: '#FFFFFF',
+  currentLine: '#FFFFFF',
   foreground: '#282A36',
   comment: '#44475A',
   purple: '#6272A4',
@@ -127,13 +127,13 @@ export const getTheme = (isDarkMode) => {
         styleOverrides: {
           body: {
             fontFamily: "'JetBrains Mono', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-            backgroundColor: isDarkMode ? colors.background : '#F8F8F2',
+            backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
             '&::-webkit-scrollbar': {
               width: '10px',
               height: '10px',
             },
             '&::-webkit-scrollbar-track': {
-              background: isDarkMode ? colors.currentLine : themeColors.background,
+              background: isDarkMode ? colors.currentLine : '#FFFFFF',
             },
             '&::-webkit-scrollbar-thumb': {
               background: themeColors.comment,
@@ -152,9 +152,9 @@ export const getTheme = (isDarkMode) => {
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: themeColors.background,
+            backgroundColor: isDarkMode ? themeColors.background : '#FFFFFF',
             boxShadow: 'none',
-            borderBottom: `1px solid ${isDarkMode ? colors.currentLine : lightColors.currentLine}`,
+            borderBottom: '1px solid #E0E0E0',
             '& .MuiTypography-root': {
               color: themeColors.foreground,
             },
@@ -221,20 +221,15 @@ export const getTheme = (isDarkMode) => {
           root: {
             backgroundColor: isDarkMode ? colors.background : '#FFFFFF',
             backgroundImage: 'none',
+            boxShadow: 'none',
             '&.MuiPaper-elevation1': {
-              boxShadow: isDarkMode 
-                ? '0 1px 3px rgba(0,0,0,0.2)' 
-                : '0 1px 3px rgba(0,0,0,0.1)',
+              boxShadow: 'none',
             },
             '&.MuiPaper-elevation3': {
-              boxShadow: isDarkMode 
-                ? '0 3px 6px rgba(0,0,0,0.25)' 
-                : '0 3px 6px rgba(0,0,0,0.15)',
+              boxShadow: 'none',
             },
             '&.MuiPaper-elevation7': {
-              boxShadow: isDarkMode 
-                ? '0 4px 8px rgba(0,0,0,0.3)' 
-                : '0 4px 8px rgba(0,0,0,0.2)',
+              boxShadow: 'none',
             },
           },
         },
@@ -277,22 +272,22 @@ export const getTheme = (isDarkMode) => {
           root: {
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
-                borderColor: themeColors.currentLine,
+                borderColor: '#E0E0E0',
               },
               '&:hover fieldset': {
-                borderColor: themeColors.comment,
+                borderColor: '#BDBDBD',
               },
               '&.Mui-focused fieldset': {
-                borderColor: themeColors.purple,
+                borderColor: '#9E9E9E',
               },
               '& input': {
                 color: themeColors.foreground,
               },
             },
             '& .MuiInputLabel-root': {
-              color: themeColors.comment,
+              color: '#757575',
               '&.Mui-focused': {
-                color: themeColors.purple,
+                color: '#616161',
               },
             },
           },
@@ -302,16 +297,13 @@ export const getTheme = (isDarkMode) => {
         styleOverrides: {
           root: {
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: themeColors.currentLine,
+              borderColor: '#E0E0E0',
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: themeColors.comment,
+              borderColor: '#BDBDBD',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: themeColors.purple,
-            },
-            '& .MuiSelect-select': {
-              color: themeColors.foreground,
+              borderColor: '#9E9E9E',
             },
           },
         },
