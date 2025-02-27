@@ -110,11 +110,14 @@ const MonitoringData = () => {
         }}
       >
         <Paper 
-          elevation={1}
+          elevation={0}
           sx={{ 
-            p: 2,
-            minHeight: 'calc(100vh - 100px)',
-            borderRadius: 0
+            p: 3,
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+            border: (theme) =>
+              `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+            borderRadius: '16px'
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -140,7 +143,27 @@ const MonitoringData = () => {
           <Grid container spacing={3}>
             {/* 요약 통계 */}
             <Grid item xs={12} md={4}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
@@ -157,7 +180,27 @@ const MonitoringData = () => {
             </Grid>
 
             <Grid item xs={12} md={4}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
@@ -174,7 +217,27 @@ const MonitoringData = () => {
             </Grid>
 
             <Grid item xs={12} md={4}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
@@ -192,7 +255,27 @@ const MonitoringData = () => {
 
             {/* 제출 현황 도넛 차트 */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
@@ -266,7 +349,27 @@ const MonitoringData = () => {
 
             {/* 최근 제출 기록 */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
@@ -353,7 +456,27 @@ const MonitoringData = () => {
 
             {/* 시계열 그래프 */}
             <Grid item xs={12}>
-              <Card>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+                  border: (theme) =>
+                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                  boxShadow: 'none',
+                  borderRadius: '12px',
+                  '&:hover': {
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 <CardContent>
                   <Typography 
                     variant="h6" 
