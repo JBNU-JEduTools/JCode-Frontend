@@ -24,6 +24,7 @@ import {
   Grid,
   InputLabel,
   IconButton,
+  Card,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios';
@@ -68,19 +69,6 @@ const ClassList = () => {
       try {
         const response = await axios.get('/api/users/me/courses');
         setClasses(response.data);
-        
-        // 현재 날짜 기준으로 연도와 학기 설정
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
-        
-        // 9-12월은 2학기, 나머지(1-8월)는 1학기
-        const currentTerm = currentMonth >= 9 ? 2 : 1;
-        
-        // 현재 연도와 학기로 설정
-        setSelectedYear(currentYear);
-        setSelectedTerm(currentTerm);
-        
         setLoading(false);
       } catch (error) {
         console.error('수업 목록 조회 실패:', error);
@@ -88,6 +76,18 @@ const ClassList = () => {
         setLoading(false);
       }
     };
+
+    // 현재 날짜 기준으로 연도와 학기 설정 (courses와 독립적으로 실행)
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
+    
+    // 9-12월은 2학기, 나머지(1-8월)는 1학기
+    const currentTerm = currentMonth >= 9 ? 2 : 1;
+    
+    // 현재 연도와 학기로 설정
+    setSelectedYear(currentYear);
+    setSelectedTerm(currentTerm);
 
     fetchClasses();
   }, []);
@@ -208,7 +208,14 @@ const ClassList = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={7} sx={{ p: 3 }}>
+        <Paper elevation={0} sx={{ 
+          p: 3,
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+          border: (theme) =>
+            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+          borderRadius: '16px'
+        }}>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
