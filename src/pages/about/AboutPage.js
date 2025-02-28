@@ -97,12 +97,12 @@ const AboutPage = () => {
   const visionMission = [
     {
       icon: <RocketLaunchIcon sx={{ fontSize: 40 }} />,
-      title: "미션",
+      title: "Mission",
       description: "모든 개발자에게 접근성 높은 개발 환경을 제공하고,\n투명하고 공정한 코딩 문화를 만들어 나가는 것입니다."
     },
     {
       icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
-      title: "비전",
+      title: "Vision",
       description: "학생들이 스스로 개발에 참여하고,\n실제 사용 경험을 바탕으로 자연스러운 혁신의 선순환을 이루어,\n모든 학습자에게 유익하고 활발한 교육 환경을\n제공하는 플랫폼으로 성장하는 것이 목표입니다."
     }
   ];

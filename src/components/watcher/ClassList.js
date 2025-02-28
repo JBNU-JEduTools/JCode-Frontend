@@ -33,8 +33,10 @@ import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ClassList = () => {
+  const { user } = useAuth();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,8 +69,28 @@ const ClassList = () => {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const response = await axios.get('/api/users/me/courses');
-        setClasses(response.data);
+        let response;
+        if (user?.role === 'ADMIN') {
+          // 관리자는 모든 강의를 볼 수 있음
+          response = await axios.get('/api/courses');
+        } else {
+          // 교수는 자신의 강의만 볼 수 있음
+          response = await axios.get('/api/users/me/courses');
+        }
+        
+        // 응답 데이터 형식 통일
+        const formattedData = user?.role === 'ADMIN' ? 
+          response.data.map(course => ({
+            courseId: course.courseId,
+            courseName: course.name,
+            courseCode: course.code,
+            courseProfessor: course.professor,
+            courseYear: course.year,
+            courseTerm: course.term,
+            courseClss: course.clss
+          })) : response.data;
+        
+        setClasses(formattedData);
         setLoading(false);
       } catch (error) {
         console.error('수업 목록 조회 실패:', error);
@@ -80,17 +102,14 @@ const ClassList = () => {
     // 현재 날짜 기준으로 연도와 학기 설정 (courses와 독립적으로 실행)
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
-    
-    // 9-12월은 2학기, 나머지(1-8월)는 1학기
+    const currentMonth = currentDate.getMonth() + 1;
     const currentTerm = currentMonth >= 9 ? 2 : 1;
     
-    // 현재 연도와 학기로 설정
     setSelectedYear(currentYear);
     setSelectedTerm(currentTerm);
 
     fetchClasses();
-  }, []);
+  }, [user]);
 
   // 필터링된 강의 목록
   const filteredClasses = classes.filter(course => {
@@ -226,7 +245,7 @@ const ClassList = () => {
               variant="h5"
               sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
             >
-              담당 수업 목록 ({filteredClasses.length})
+              수업 목록 ({filteredClasses.length})
             </Typography>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -335,7 +354,7 @@ const ClassList = () => {
                     }}
                   >
                     <Box 
-                      onClick={() => navigate(`/watcher/class/${classItem.courseCode}/${classItem.courseClss}`)}
+                      onClick={() => navigate(`/watcher/class/${classItem.courseId}`)}
                       sx={{ flex: 1 }}
                     >
                       <ListItemText

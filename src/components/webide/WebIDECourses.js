@@ -55,10 +55,19 @@ const WebIDECourses = () => {
     const fetchCourses = async () => {
       try {
         const response = await api.get('/api/users/me/courses');
-        setCourses(response.data);
+        console.log('API Response:', response.data);
+        console.log('Response type:', typeof response.data);
+        if (Array.isArray(response.data)) {
+          setCourses(response.data);
+        } else {
+          setCourses([]);
+          setError('수업 데이터 형식이 올바르지 않습니다.');
+        }
         setLoading(false);
       } catch (err) {
+        console.error('API Error:', err);
         setError('수업 목록을 불러오는데 실패했습니다.');
+        setCourses([]);
         setLoading(false);
       }
     };
@@ -80,7 +89,7 @@ const WebIDECourses = () => {
 
   const handleWebIDEOpen = async (courseId) => {
     try {  
-      const response = await api.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
+      const response = await api.get('https://jcode.jbnu.ac.kr/api/redirect', {
         params: {
           courseCode: 'OS',
           clss: 2,

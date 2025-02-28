@@ -41,11 +41,13 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { useAuth } from '../../contexts/AuthContext';
 
 const AssignmentDetail = () => {
-  const { courseCode, assignmentId } = useParams();
+  const { courseId, assignmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [assignment, setAssignment] = useState(null);
@@ -65,27 +67,41 @@ const AssignmentDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 강의 정보 조회
-        const coursesResponse = await api.get('/api/users/me/courses');
-        const foundCourse = coursesResponse.data.find(c => c.courseCode === courseCode);
-        
-        if (!foundCourse) {
-          throw new Error('강의를 찾을 수 없습니다.');
-        }
-        setCourse(foundCourse);
+        if (user?.role === 'ADMIN') {
+          // 관리자는 직접 강의 정보를 조회
+          const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
+          setCourse(coursesResponse.data);
+          
+          // 과제 정보 조회
+          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
+          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+          
+          if (!currentAssignment) {
+            throw new Error('과제를 찾을 수 없습니다.');
+          }
+          setAssignment(currentAssignment);
+        } else {
+          // 교수는 자신의 강의 목록에서 조회
+          const coursesResponse = await api.get('/api/users/me/courses/details');
+          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
+          
+          if (!foundCourse) {
+            throw new Error('강의를 찾을 수 없습니다.');
+          }
+          setCourse(foundCourse);
 
-        // 과제 정보 조회
-        const assignmentResponse = await api.get(`/api/courses/${foundCourse.courseId}/assignments`);
-        // assignmentId로 현재 과제 찾기
-        const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
-        
-        if (!currentAssignment) {
-          throw new Error('과제를 찾을 수 없습니다.');
+          // 과제 정보 조회
+          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
+          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+          
+          if (!currentAssignment) {
+            throw new Error('과제를 찾을 수 없습니다.');
+          }
+          setAssignment(currentAssignment);
         }
-        setAssignment(currentAssignment);
 
         // 수강생 목록 조회
-        const studentsResponse = await api.get(`/api/courses/${foundCourse.courseId}/users`);
+        const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
         // 임시로 수강생 목록을 submissions 형태로 변환
         const mockSubmissions = studentsResponse.data.map(student => ({
           userId: student.userId,
@@ -110,7 +126,7 @@ const AssignmentDetail = () => {
     };
 
     fetchData();
-  }, [courseCode, assignmentId]);
+  }, [courseId, assignmentId, user]);
 
   const handleAccordionChange = (accordionId) => {
     setExpandedAccordions(prev => {
@@ -228,11 +244,11 @@ const AssignmentDetail = () => {
             paths={[
               { 
                 text: course?.courseName || '로딩중...', 
-                to: `/watcher/class/${courseCode}` 
+                to: `/watcher/class/${course?.courseId}` 
               },
               { 
                 text: assignment?.assignmentName || '로딩중...', 
-                to: `/watcher/class/${courseCode}/assignment/${assignmentId}` 
+                to: `/watcher/class/${course?.courseId}/assignment/${assignmentId}` 
               }
             ]} 
           />

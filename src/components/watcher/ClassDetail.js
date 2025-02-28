@@ -79,6 +79,7 @@ import RemainingTime from './RemainingTime';
 import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MetricSelector = ({ selectedMetric, onMetricChange }) => (
   <Box sx={{ 
@@ -389,7 +390,7 @@ const ClassDetail = () => {
     field: 'email',
     order: 'asc'
   });
-  const { courseCode, courseClss } = useParams();
+  const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -403,8 +404,9 @@ const ClassDetail = () => {
   });
   const [currentTab, setCurrentTab] = useState(() => {
     const params = new URLSearchParams(location.search);
-    return params.get('tab') || 'statistics'; // 기본값을 'statistics'로 변경
+    return params.get('tab') || 'statistics';
   });
+  const { user } = useAuth();
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
@@ -418,17 +420,23 @@ const ClassDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const coursesResponse = await api.get('/api/users/me/courses/details');
-        const foundCourse = coursesResponse.data.find(c => c.courseCode === courseCode);
-        
-        if (!foundCourse) {
-          throw new Error('강의를 찾을 수 없습니다.');
+        if (user?.role === 'ADMIN') {
+          // 관리자는 직접 강의 정보를 조회
+          const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
+          setCourse(coursesResponse.data);
+          setAssignments(coursesResponse.data.assignments || []);
+        } else {
+          // 교수는 자신의 강의 목록에서 조회
+          const coursesResponse = await api.get('/api/users/me/courses/details');
+          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
+          if (!foundCourse) {
+            throw new Error('강의를 찾을 수 없습니다.');
+          }
+          setCourse(foundCourse);
+          setAssignments(foundCourse.assignments || []);
         }
 
-        setCourse(foundCourse);
-        setAssignments(foundCourse.assignments || []);
-        
-        const studentsResponse = await api.get(`/api/courses/${foundCourse.courseId}/users`);
+        const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
 
         setStudents(studentsResponse.data);
         setLoading(false);
@@ -439,7 +447,7 @@ const ClassDetail = () => {
       }
     };
     fetchData();
-  }, [courseCode]);
+  }, [courseId, user]);
 
   const getFilteredAndSortedStudents = () => {
     const filtered = students.filter(student => {
@@ -556,7 +564,7 @@ const ClassDetail = () => {
             paths={[
               { 
                 text: course?.courseName || '로딩중...', 
-                to: `/watcher/class/${courseCode}` 
+                to: `/watcher/class/${courseId}` 
               }
             ]} 
           />
@@ -855,7 +863,7 @@ const ClassDetail = () => {
                     {assignments.map((assignment) => (
                       <TableRow 
                         key={assignment.assignmentId}
-                        onClick={() => navigate(`/watcher/class/${courseCode}/${courseClss}/assignment/${assignment.assignmentId}`)}
+                        onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
                         sx={{ 
                           cursor: 'pointer',
                           '&:hover': {
