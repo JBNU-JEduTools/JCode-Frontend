@@ -13,8 +13,10 @@ const RemainingTime = ({ deadline }) => {
       const deadlineDate = new Date(deadline);
       const difference = deadlineDate - now;
 
+      // 마감 여부 상태 업데이트
+      setIsExpired(difference <= 0);
+
       if (difference <= 0) {
-        setIsExpired(true);
         setTimeLeft('마감됨');
         return;
       }
@@ -37,7 +39,7 @@ const RemainingTime = ({ deadline }) => {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [deadline]);
+  }, [deadline]); // deadline이 변경될 때마다 useEffect 재실행
 
   return (
     <Typography

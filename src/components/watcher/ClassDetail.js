@@ -53,6 +53,9 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import BuildIcon from '@mui/icons-material/Build';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   BarChart,
   Bar,
@@ -80,6 +83,7 @@ import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 const MetricSelector = ({ selectedMetric, onMetricChange }) => (
   <Box sx={{ 
@@ -407,6 +411,15 @@ const ClassDetail = () => {
     return params.get('tab') || 'statistics';
   });
   const { user } = useAuth();
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deletingAssignment, setDeletingAssignment] = useState(null);
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
@@ -513,6 +526,49 @@ const ClassDetail = () => {
     } catch (error) {
       console.error('과제 추가 실패:', error);
       // TODO: 에러 처리
+    }
+  };
+
+  const handleEditAssignment = async () => {
+    try {
+      await api.put(`/api/courses/${courseId}/assignments/${editingAssignment.assignmentId}`, {
+        assignmentName: editingAssignment.assignmentName,
+        assignmentDescription: editingAssignment.assignmentDescription,
+        kickoffDate: new Date(editingAssignment.kickoffDate).toISOString(),
+        deadlineDate: new Date(editingAssignment.deadlineDate).toISOString()
+      });
+
+      // 과제 목록 새로고침
+      const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
+      setAssignments(assignmentsResponse.data);
+
+      setOpenEditDialog(false);
+      setEditingAssignment(null);
+      
+      // 성공 토스트
+      toast.success('과제가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('과제 수정 실패:', error);
+      // 실패 토스트
+      toast.error('과제 수정에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    try {
+      await api.delete(`/api/courses/${courseId}/assignments/${deletingAssignment.assignmentId}`);
+      
+      // 과제 목록 새로고침
+      const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
+      setAssignments(assignmentsResponse.data);
+
+      setOpenDeleteDialog(false);
+      setDeletingAssignment(null);
+      
+      toast.success('과제가 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('과제 삭제 실패:', error);
+      toast.error('과제 삭제에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -634,7 +690,7 @@ const ClassDetail = () => {
             }}
           >
             <Tab 
-              icon={<TimelineIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
+              icon={<BarChartIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
               label="통계" 
               value="statistics"
               iconPosition="start"
@@ -857,13 +913,15 @@ const ClassDetail = () => {
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
                         남은 시간
                       </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
+                        작업
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {assignments.map((assignment) => (
                       <TableRow 
                         key={assignment.assignmentId}
-                        onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
                         sx={{ 
                           cursor: 'pointer',
                           '&:hover': {
@@ -873,19 +931,28 @@ const ClassDetail = () => {
                           transition: 'background-color 0.2s ease'
                         }}
                       >
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        <TableCell 
+                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        >
                           {assignment.assignmentName}
                         </TableCell>
-                        <TableCell sx={{ 
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                          maxWidth: '300px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <TableCell 
+                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          sx={{ 
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            maxWidth: '300px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
                           {assignment.assignmentDescription}
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        <TableCell 
+                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        >
                           {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
                             year: 'numeric',
                             month: '2-digit',
@@ -894,7 +961,10 @@ const ClassDetail = () => {
                             minute: '2-digit'
                           })}
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        <TableCell 
+                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        >
                           {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
                             year: 'numeric',
                             month: '2-digit',
@@ -903,11 +973,56 @@ const ClassDetail = () => {
                             minute: '2-digit'
                           })}
                         </TableCell>
-                        <TableCell sx={{ 
-                          width: '250px',
-                          textAlign: 'left'
-                        }}>
+                        <TableCell 
+                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          sx={{ 
+                            width: '250px',
+                            textAlign: 'left'
+                          }}
+                        >
                           <RemainingTime deadline={assignment.deadlineDate} />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingAssignment({
+                                  ...assignment,
+                                  kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
+                                  deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
+                                });
+                                setOpenEditDialog(true);
+                              }}
+                              size="small"
+                              sx={{ 
+                                color: 'primary.main',
+                                '&:hover': {
+                                  backgroundColor: (theme) => 
+                                    theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
+                              }
+                            }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingAssignment(assignment);
+                                setOpenDeleteDialog(true);
+                              }}
+                              size="small"
+                              sx={{ 
+                                color: 'error.main',
+                                '&:hover': {
+                                  backgroundColor: (theme) => 
+                                    theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.08)'
+                              }
+                            }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -924,7 +1039,7 @@ const ClassDetail = () => {
                       }}
                     >
                       <TableCell 
-                        colSpan={5}
+                        colSpan={6}
                         align="center"
                         sx={{ 
                           border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
@@ -1102,6 +1217,222 @@ const ClassDetail = () => {
                 }}
               >
                 추가
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 과제 수정 다이얼로그 */}
+          <Dialog 
+            open={openEditDialog} 
+            onClose={() => {
+              setOpenEditDialog(false);
+              setEditingAssignment(null);
+            }}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: {
+                minHeight: '500px'
+              }
+            }}
+          >
+            <DialogTitle 
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                fontSize: '1.5rem',
+                py: 3
+              }}
+            >
+              과제 수정
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={3} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과제명"
+                    value={editingAssignment?.assignmentName || ''}
+                    onChange={(e) => setEditingAssignment({ 
+                      ...editingAssignment, 
+                      assignmentName: e.target.value 
+                    })}
+                    placeholder="ex) 1주차 과제: Hello World"
+                    sx={{ 
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="과제 설명"
+                    value={editingAssignment?.assignmentDescription || ''}
+                    onChange={(e) => setEditingAssignment({ 
+                      ...editingAssignment, 
+                      assignmentDescription: e.target.value 
+                    })}
+                    multiline
+                    rows={6}
+                    placeholder="과제에 대한 설명을 입력하세요"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="시작 일시"
+                    type="datetime-local"
+                    value={editingAssignment?.kickoffDate || ''}
+                    onChange={(e) => setEditingAssignment({ 
+                      ...editingAssignment, 
+                      kickoffDate: e.target.value 
+                    })}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    inputProps={{
+                      step: 60,
+                      style: {
+                        height: '24px',
+                        padding: '12px'
+                      }
+                    }}
+                    sx={{ 
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="마감 일시"
+                    type="datetime-local"
+                    value={editingAssignment?.deadlineDate || ''}
+                    onChange={(e) => setEditingAssignment({ 
+                      ...editingAssignment, 
+                      deadlineDate: e.target.value 
+                    })}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    inputProps={{
+                      step: 60,
+                      style: {
+                        height: '24px',
+                        padding: '12px'
+                      }
+                    }}
+                    sx={{ 
+                      '& .MuiInputBase-root': {
+                        height: '56px'
+                      }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button 
+                onClick={() => {
+                  setOpenEditDialog(false);
+                  setEditingAssignment(null);
+                }}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleEditAssignment} 
+                variant="contained"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                수정
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 과제 삭제 확인 다이얼로그 */}
+          <Dialog
+            open={openDeleteDialog}
+            onClose={() => {
+              setOpenDeleteDialog(false);
+              setDeletingAssignment(null);
+            }}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ 
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              fontSize: '1.25rem',
+              py: 3
+            }}>
+              과제 삭제 확인
+            </DialogTitle>
+            <DialogContent>
+              <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                정말로 "{deletingAssignment?.assignmentName}" 과제를 삭제하시겠습니까?
+                <br />
+                이 작업은 되돌릴 수 없습니다.
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button
+                onClick={() => {
+                  setOpenDeleteDialog(false);
+                  setDeletingAssignment(null);
+                }}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleDeleteAssignment}
+                variant="contained"
+                color="error"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                삭제
               </Button>
             </DialogActions>
           </Dialog>
