@@ -23,7 +23,11 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
-  InputAdornment
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -35,6 +39,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import api from '../../api/axios';
 import { toast } from 'react-toastify';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 const Admin = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -45,7 +50,13 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    studentNum: ''
+    studentNum: '',
+    courseName: '',
+    courseCode: '',
+    term: '',
+    year: new Date().getFullYear(),
+    professor: '',
+    clss: ''
   });
   const [sort, setSort] = useState({
     field: 'name',
@@ -54,24 +65,39 @@ const Admin = () => {
   const [users, setUsers] = useState({
     professors: [],
     assistants: [],
-    students: []
+    students: [],
+    courses: []
   });
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
+    fetchCourses();
   }, []);
 
   useEffect(() => {
     if (selectedItem) {
       setFormData({
         name: selectedItem.name || '',
-        studentNum: selectedItem.studentId || ''
+        studentNum: selectedItem.studentId || '',
+        courseName: selectedItem.courseName || '',
+        courseCode: selectedItem.courseCode || '',
+        term: selectedItem.term || '',
+        year: selectedItem.year || new Date().getFullYear(),
+        professor: selectedItem.professor || '',
+        clss: selectedItem.clss || ''
       });
     } else {
       setFormData({
         name: '',
-        studentNum: ''
+        studentNum: '',
+        courseName: '',
+        courseCode: '',
+        term: '',
+        year: new Date().getFullYear(),
+        professor: '',
+        clss: ''
       });
     }
   }, [selectedItem]);
@@ -86,26 +112,67 @@ const Admin = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!formData.name || !formData.studentNum) {
-        toast.error('모든 필드를 입력해주세요.');
-        return;
+      if (currentTab === 3) { // 수업 관리 탭
+        if (!formData.courseName || !formData.courseCode || !formData.term || !formData.year || !formData.professor || !formData.clss) {
+          toast.error('모든 필드를 입력해주세요.');
+          return;
+        }
+
+        if (dialogType === 'edit') {
+          await api.put(`/api/courses/${selectedItem.courseId}`, {
+            name: formData.courseName,
+            code: formData.courseCode,
+            term: formData.term,
+            year: formData.year,
+            professor: formData.professor,
+            clss: formData.clss
+          });
+          toast.success('수업 정보가 수정되었습니다.');
+        } else if (dialogType === 'add') {
+          await api.post('/api/courses', {
+            name: formData.courseName,
+            code: formData.courseCode,
+            term: formData.term,
+            year: formData.year,
+            professor: formData.professor,
+            clss: formData.clss
+          });
+          toast.success('수업이 추가되었습니다.');
+          setFormData({
+            name: '',
+            studentNum: '',
+            courseName: '',
+            courseCode: '',
+            term: '',
+            year: new Date().getFullYear(),
+            professor: '',
+            clss: ''
+          });
+        }
+        fetchCourses();
+      } else {
+        if (!formData.name || !formData.studentNum) {
+          toast.error('모든 필드를 입력해주세요.');
+          return;
+        }
+
+        if (dialogType === 'edit') {
+          await api.put(`/api/users/${selectedItem.id}`, {
+            name: formData.name,
+            studentNum: formData.studentNum
+          });
+          toast.success('사용자 정보가 수정되었습니다.');
+        } else if (dialogType === 'add') {
+          // 추가 로직은 여기에 구현
+        }
+
+        fetchUsers();
       }
 
-      if (dialogType === 'edit') {
-        await api.put(`/api/users/${selectedItem.id}`, {
-          name: formData.name,
-          studentNum: parseInt(formData.studentNum)
-        });
-        toast.success('사용자 정보가 수정되었습니다.');
-      } else if (dialogType === 'add') {
-        // 추가 로직은 여기에 구현
-      }
-
-      fetchUsers();
       handleCloseDialog();
     } catch (error) {
-      console.error('사용자 정보 수정 실패:', error);
-      toast.error('사용자 정보 수정에 실패했습니다.');
+      console.error('작업 실패:', error);
+      toast.error('작업 수행에 실패했습니다.');
     }
   };
 
@@ -168,6 +235,30 @@ const Admin = () => {
     }
   };
 
+  const fetchCourses = async () => {
+    try {
+      const response = await api.get('/api/courses');
+      console.log('Course API Response:', response.data);
+      if (Array.isArray(response.data)) {
+        setUsers(prev => ({
+          ...prev,
+          courses: response.data.map(course => ({
+            courseId: course.courseId,
+            courseName: course.name,
+            courseCode: course.code,
+            professor: course.professor || '-',
+            term: course.term,
+            year: course.year,
+            clss:course.clss
+          }))
+        }));
+      }
+    } catch (error) {
+      console.error('수업 목록 조회 실패:', error);
+      toast.error('수업 목록을 불러오는데 실패했습니다.');
+    }
+  };
+
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
@@ -184,6 +275,17 @@ const Admin = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedItem(null);
+    // 폼 데이터 초기화
+    setFormData({
+      name: '',
+      studentNum: '',
+      courseName: '',
+      courseCode: '',
+      term: '',
+      year: new Date().getFullYear(),
+      professor: '',
+      clss: ''
+    });
   };
 
   // 사용자 삭제 핸들러
@@ -271,8 +373,21 @@ const Admin = () => {
 
   // 필터링 및 정렬된 사용자 목록 반환
   const getFilteredAndSortedUsers = (items) => {
+    if (!items) return [];
+
+    const isCourseTab = currentTab === 3;
+
     const filtered = items.filter(item => {
       const searchLower = searchQuery.toLowerCase();
+      if (isCourseTab) {
+        return (
+          item.courseName?.toLowerCase().includes(searchLower) ||
+          item.courseCode?.toLowerCase().includes(searchLower) ||
+          item.professor?.toLowerCase().includes(searchLower) ||
+          String(item.year).includes(searchLower) ||
+          String(item.term).includes(searchLower)
+        );
+      }
       return (
         item.name?.toLowerCase().includes(searchLower) ||
         item.email?.toLowerCase().includes(searchLower) ||
@@ -281,6 +396,33 @@ const Admin = () => {
     });
 
     return filtered.sort((a, b) => {
+      if (isCourseTab) {
+        // 수업 테이블 컬럼에 맞는 정렬
+        let aValue, bValue;
+        switch (sort.field) {
+          case 'name':
+            aValue = a.courseName || '';
+            bValue = b.courseName || '';
+            break;
+          case 'code':
+            aValue = a.courseCode || '';
+            bValue = b.courseCode || '';
+            break;
+          case 'year':
+          case 'term':
+          case 'clss':
+            aValue = Number(a[sort.field]) || 0;
+            bValue = Number(b[sort.field]) || 0;
+            return sort.order === 'asc' ? aValue - bValue : bValue - aValue;
+          default:
+            aValue = a[sort.field] || '';
+            bValue = b[sort.field] || '';
+        }
+        return sort.order === 'asc'
+          ? String(aValue).localeCompare(String(bValue))
+          : String(bValue).localeCompare(String(aValue));
+      }
+
       let aValue = a[sort.field] || '';
       let bValue = b[sort.field] || '';
       
@@ -308,6 +450,10 @@ const Admin = () => {
     students: {
       title: '학생 관리',
       items: users.students
+    },
+    courses: {
+      title: '수업 관리',
+      items: users.courses
     }
   };
 
@@ -328,6 +474,14 @@ const Admin = () => {
         { id: 'name', label: '이름' },
         { id: 'studentId', label: '학번' },
         { id: 'email', label: '이메일' }
+      ],
+      courses: [
+        { id: 'courseName', label: '수업명' },
+        { id: 'courseCode', label: '수업 코드' },
+        { id: 'professor', label: '담당 교수' },
+        { id: 'year', label: '년도' },
+        { id: 'term', label: '학기' },
+        { id: 'clss', label: '분반' }
       ]
     };
 
@@ -347,7 +501,7 @@ const Admin = () => {
           <TextField
             fullWidth
             size="small"
-            placeholder="이름, 이메일, 학번으로 검색"
+            placeholder={currentTab === 3 ? "수업명, 수업 코드, 담당 교수로 검색" : "이름, 이메일, 학번으로 검색"}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{ 
@@ -399,28 +553,70 @@ const Admin = () => {
             </TableHead>
             <TableBody>
               {getFilteredAndSortedUsers(section.items).map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                    {item.name}
-                  </TableCell>
-                  {(sectionKey === 'students' || sectionKey === 'assistants' || sectionKey === 'professors') && (
-                    <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                      {item.studentId}
-                    </TableCell>
+                <TableRow 
+                  key={currentTab === 3 ? item.courseId : item.id}
+                  sx={currentTab === 3 ? {
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: theme => theme.palette.action.hover
+                    }
+                  } : {}}
+                  onClick={() => {
+                    if (currentTab === 3) {
+                      navigate(`/watcher/class/${item.courseCode}/${item.clss}`);
+                    }
+                  }}
+                >
+                  {currentTab === 3 ? (
+                    <>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.courseName}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.courseCode}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.professor}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.year}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.term}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.clss}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.name}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.studentId}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        {item.email}
+                      </TableCell>
+                    </>
                   )}
-                  <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                    {item.email}
-                  </TableCell>
                   <TableCell>
                     <IconButton
                       size="small"
-                      onClick={() => handleOpenDialog('edit', item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog('edit', item);
+                      }}
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton
                       size="small"
-                      onClick={() => handleOpenDialog('delete', item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog('delete', item);
+                      }}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -437,7 +633,7 @@ const Admin = () => {
                 onClick={() => handleOpenDialog('add')}
               >
                 <TableCell 
-                  colSpan={4} 
+                  colSpan={currentTab === 3 ? 7 : 4} 
                   align="center"
                   sx={{ 
                     fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
@@ -464,7 +660,7 @@ const Admin = () => {
               fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
             }}
           >
-            {searchQuery ? '검색 결과가 없습니다.' : '등록된 사용자가 없습니다.'}
+            {searchQuery ? '검색 결과가 없습니다.' : '등록된 데이터가 없습니다.'}
           </Typography>
         )}
       </>
@@ -488,40 +684,157 @@ const Admin = () => {
         <DialogContent>
           {dialogType !== 'delete' ? (
             <Box sx={{ pt: 2 }}>
-              <TextField
-                fullWidth
-                name="name"
-                label="이름"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                sx={{ mb: 2 }}
-                InputProps={{
-                  sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                }}
-                InputLabelProps={{
-                  sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                }}
-              />
-              <TextField
-                fullWidth
-                name="studentNum"
-                label={sectionKey === 'professors' ? '교번' : '학번'}
-                value={formData.studentNum}
-                onChange={handleInputChange}
-                required
-                type="number"
-                InputProps={{
-                  sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                }}
-                InputLabelProps={{
-                  sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                }}
-              />
+              {currentTab === 3 ? (
+                // 수업 관리 폼
+                <>
+                  <TextField
+                    fullWidth
+                    name="courseName"
+                    label="수업명"
+                    value={formData.courseName}
+                    onChange={handleInputChange}
+                    required
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    name="professor"
+                    label="교수명"
+                    value={formData.professor}
+                    onChange={handleInputChange}
+                    required
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    name="courseCode"
+                    label="수업 코드"
+                    value={formData.courseCode}
+                    onChange={handleInputChange}
+                    required
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel id="term-label" sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      '&.MuiInputLabel-shrink': {
+                        backgroundColor: 'transparent'
+                      }
+                    }}>학기</InputLabel>
+                    <Select
+                      labelId="term-label"
+                      label="학기"
+                      name="term"
+                      value={formData.term}
+                      onChange={handleInputChange}
+                      required
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                      }}
+                    >
+                      <MenuItem value="1">1학기</MenuItem>
+                      <MenuItem value="2">2학기</MenuItem>
+                      <MenuItem value="S">여름학기</MenuItem>
+                      <MenuItem value="W">겨울학기</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth
+                    name="year"
+                    label="년도"
+                    type="number"
+                    value={formData.year}
+                    onChange={handleInputChange}
+                    required
+                    inputProps={{ 
+                      min: 2000,
+                      max: new Date().getFullYear() + 1
+                    }}
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    name="clss"
+                    label="분반"
+                    type="number"
+                    value={formData.clss}
+                    onChange={handleInputChange}
+                    required
+                    inputProps={{ min: 1 }}
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                </>
+              ) : (
+                // 기존 사용자 관리 폼
+                <>
+                  <TextField
+                    fullWidth
+                    name="name"
+                    label="이름"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    name="studentNum"
+                    label={sectionKey === 'professors' ? '교번' : '학번'}
+                    value={formData.studentNum}
+                    onChange={handleInputChange}
+                    required
+                    type="number"
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                  />
+                </>
+              )}
             </Box>
           ) : (
             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-              {selectedItem.name} ({selectedItem.email}) 사용자를 삭제하시겠습니까?
+              {currentTab === 3 ? 
+                `${selectedItem.courseName} (${selectedItem.courseCode}) 수업을 삭제하시겠습니까?` :
+                `${selectedItem.name} (${selectedItem.email}) 사용자를 삭제하시겠습니까?`}
             </Typography>
           )}
         </DialogContent>
