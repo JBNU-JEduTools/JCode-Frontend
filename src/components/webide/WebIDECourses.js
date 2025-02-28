@@ -78,22 +78,31 @@ const WebIDECourses = () => {
     fetchCourses();
   }, []);
 
-const handleWebIDEOpen = async (courseId) => {
+  const handleWebIDEOpen = async (courseId) => {
     try {  
       const response = await api.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
         params: {
-          folder: '/config/workspace',
           courseCode: 'OS',
-          clss: 5,
-          st: 'gjdhks'
+          clss: 2,
+          st: 'gjdhks1212'
         },
         withCredentials: true
       });
   
+      // 서버가 리다이렉트 응답(302 Found 또는 307 Temporary Redirect)으로 최종 URL을 보내면,
+      // axios는 자동 리다이렉션을 수행하지 않으므로 응답 객체에서 URL을 추출합니다.
+      console.log(response.request);
+      let finalUrl = null;
       if (response.request && response.request.responseURL) {
-        window.location.href = response.request.responseURL;
+        finalUrl = response.request.responseURL;
       } else if (response.data && response.data.url) {
-        window.location.href = response.data.url;
+        finalUrl = response.data.url;
+      }
+      
+      if (finalUrl) {
+        window.open(finalUrl, '_blank'); // 새 창 또는 새 탭에서 열기
+      } else {
+        console.error("Final redirect URL not found in response");
       }
     } catch (err) {
       // 에러 토스트 메시지 표시
