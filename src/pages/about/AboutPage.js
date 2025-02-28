@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -18,7 +18,9 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Paper
+  Paper,
+  Modal,
+  Button
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import CodeIcon from '@mui/icons-material/Code';
@@ -35,6 +37,9 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import ArticleIcon from '@mui/icons-material/Article';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import CloseIcon from '@mui/icons-material/Close';
+import EmailIcon from '@mui/icons-material/Email';
 import jbnuLogo from '../../assets/jbnulogopng.png';
 import swunivLogo from '../../assets/swunivlogopng.png';
 import jedutoolsLogo from '../../assets/jedutoolslogopng.png';
@@ -48,6 +53,10 @@ import CppIcon from '../../assets/icons/c++.svg';
 const AboutPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mapOpen, setMapOpen] = useState(false);
+
+  const handleMapOpen = () => setMapOpen(true);
+  const handleMapClose = () => setMapOpen(false);
 
   const scroll = keyframes`
     0% { transform: translateX(0); }
@@ -575,17 +584,85 @@ const AboutPage = () => {
                   gap: 1
                 }}
               >
-                Contact us: <Link href="mailto:jedutools@gmail.com" sx={{ color: theme.palette.primary.main }}>jedutools@gmail.com</Link>
+                <EmailIcon sx={{ color: theme.palette.primary.main }} /> Contact us: <Link href="https://mail.google.com/mail/?view=cm&fs=1&to=jedutools@gmail.com" target="_blank" rel="noopener noreferrer" sx={{ 
+                  color: theme.palette.primary.main,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}>jedutools@gmail.com</Link>
               </Typography>
               <Typography 
                 variant="body1" 
                 sx={{ 
                   color: theme.palette.text.secondary,
-                  mt: 1
+                  mt: 1,
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    color: theme.palette.primary.main
+                  }
+                }}
+                onClick={handleMapOpen}
+              >
+                <LocationOnIcon /> 주소: 전북대학교 공과대학 7호관 619호 OSLAB
+              </Typography>
+              <Modal
+                open={mapOpen}
+                onClose={handleMapClose}
+                aria-labelledby="map-modal"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
-                주소: 전북대학교 공과대학 7호관 619호 OSLAB
-              </Typography>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '90vw',
+                    maxWidth: '800px',
+                    height: '80vh',
+                    bgcolor: 'background.paper',
+                    borderRadius: theme.shape.borderRadius,
+                    boxShadow: 24,
+                    p: 0,
+                    overflow: 'hidden'
+                  }}
+                >
+                  <IconButton
+                    onClick={handleMapClose}
+                    sx={{
+                      position: 'absolute',
+                      right: 8,
+                      top: 8,
+                      color: 'white',
+                      zIndex: 1,
+                      bgcolor: 'rgba(0, 0, 0, 0.5)',
+                      '&:hover': {
+                        bgcolor: 'rgba(0, 0, 0, 0.7)'
+                      }
+                    }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d808.9954725058649!2d127.13400673036284!3d35.84614799376339!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x35702330dc920b9d%3A0x1d0d425396006646!2z7KCE67aB64yA7ZWZ6rWQIOqzteqzvOuMgO2VmSA37Zi46rSA!5e0!3m2!1sko!2skr!4v1710401812244!5m2!1sko!2skr&markers=color:red%7C35.84614799376339,127.13400673036284"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </Box>
+              </Modal>
             </Box>
           </Box>
 
@@ -742,7 +819,7 @@ const AboutPage = () => {
             overflow: 'hidden'
           }}>
             <Container maxWidth="lg" sx={{ mb: 3 }}>
-              <SectionTitle smaller>Related Sites</SectionTitle>
+              <SectionTitle smaller>Family Sites</SectionTitle>
             </Container>
             
             <Box sx={{ position: 'relative', overflow: 'hidden' }}>
