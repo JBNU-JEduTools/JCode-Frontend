@@ -335,7 +335,7 @@ const ClassList = () => {
                     }}
                   >
                     <Box 
-                      onClick={() => navigate(`/watcher/class/${classItem.courseCode}`)}
+                      onClick={() => navigate(`/watcher/class/${classItem.courseCode}/${classItem.courseClss}`)}
                       sx={{ flex: 1 }}
                     >
                       <ListItemText

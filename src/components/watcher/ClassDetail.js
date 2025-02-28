@@ -389,7 +389,7 @@ const ClassDetail = () => {
     field: 'email',
     order: 'asc'
   });
-  const { courseCode } = useParams();
+  const { courseCode, courseClss } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -855,7 +855,7 @@ const ClassDetail = () => {
                     {assignments.map((assignment) => (
                       <TableRow 
                         key={assignment.assignmentId}
-                        onClick={() => navigate(`/watcher/class/${courseCode}/assignment/${assignment.assignmentId}`)}
+                        onClick={() => navigate(`/watcher/class/${courseCode}/${courseClss}/assignment/${assignment.assignmentId}`)}
                         sx={{ 
                           cursor: 'pointer',
                           '&:hover': {

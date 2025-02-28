@@ -83,9 +83,9 @@ const handleWebIDEOpen = async (courseId) => {
       const response = await api.get('https://jcode.jbnu.ac.kr:8443/api/redirect', {
         params: {
           folder: '/config/workspace',
-          courseCode: 'CSE1002',
+          courseCode: 'OS',
           clss: 5,
-          st: 'jsh2256'
+          st: 'gjdhks'
         },
         withCredentials: true
       });

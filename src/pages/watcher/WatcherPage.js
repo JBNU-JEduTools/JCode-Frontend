@@ -8,8 +8,8 @@ const WatcherPage = () => {
   return (
     <Routes>
       <Route path="/" element={<ClassList />} />
-      <Route path="/class/:courseCode" element={<ClassDetail />} />
-      <Route path="/class/:courseCode/assignment/:assignmentId" element={<AssignmentDetail />} />
+      <Route path="/class/:courseCode/:courseClss" element={<ClassDetail />} />
+      <Route path="/class/:courseCode/:courseClss/assignment/:assignmentId" element={<AssignmentDetail />} />
     </Routes>
   );
 };

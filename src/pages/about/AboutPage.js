@@ -398,7 +398,7 @@ const AboutPage = () => {
 
           {/* 프로그래밍 언어 섹션 */}
           <Box sx={{ mb: 12 }}>
-            <SectionTitle>지원하는 프로그래밍 언어</SectionTitle>
+            <SectionTitle>Supported Programming Languages</SectionTitle>
             <Grid container spacing={3}>
               {programmingLanguages.map((lang, index) => (
                 <Grid item xs={12} sm={6} md={4} key={index}>
@@ -453,11 +453,23 @@ const AboutPage = () => {
                 </Grid>
               ))}
             </Grid>
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ 
+                  fontStyle: 'italic',
+                  fontSize: '0.9rem'
+                }}
+              >
+                * 지속적인 업데이트를 통해 더 많은 프로그래밍 언어를 지원할 예정입니다.
+              </Typography>
+            </Box>
           </Box>
 
           {/* 팀 소개 섹션 */}
           <Box sx={{ mb: 12 }}>
-            <SectionTitle>개발팀 소개</SectionTitle>
+            <SectionTitle>Development Team</SectionTitle>
             <Grid container spacing={4} sx={{ mb: 4 }}>
               <Grid item xs={12}>
                 <motion.div
@@ -552,6 +564,29 @@ const AboutPage = () => {
                 </Grid>
               ))}
             </Grid>
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}
+              >
+                Contact us: <Link href="mailto:jedutools@gmail.com" sx={{ color: theme.palette.primary.main }}>jedutools@gmail.com</Link>
+              </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  mt: 1
+                }}
+              >
+                주소: 전북대학교 공과대학 7호관 619호 OSLAB
+              </Typography>
+            </Box>
           </Box>
 
           {/* 타임라인 섹션 */}
