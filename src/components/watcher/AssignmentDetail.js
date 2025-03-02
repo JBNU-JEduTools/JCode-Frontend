@@ -354,10 +354,10 @@ const AssignmentDetail = () => {
                         No.
                       </TableCell>
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이메일
-                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
+                        학번
+                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
                           <Box sx={{ 
-                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
                             transition: 'transform 0.2s ease-in-out',
                             display: 'flex',
                             alignItems: 'center'
@@ -380,10 +380,10 @@ const AssignmentDetail = () => {
                         </IconButton>
                       </TableCell>
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        학번
-                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
+                        이메일
+                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
                           <Box sx={{ 
-                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
                             transition: 'transform 0.2s ease-in-out',
                             display: 'flex',
                             alignItems: 'center'
@@ -393,23 +393,10 @@ const AssignmentDetail = () => {
                         </IconButton>
                       </TableCell>
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        최근 제출
+                        최근 수정일
                         <IconButton size="small" onClick={() => toggleSort('lastSubmission')} sx={{ ml: 1 }}>
                           <Box sx={{ 
                             transform: sort.field !== 'lastSubmission' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        제출 횟수
-                        <IconButton size="small" onClick={() => toggleSort('submissionCount')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'submissionCount' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
                             transition: 'transform 0.2s ease-in-out',
                             display: 'flex',
                             alignItems: 'center'
@@ -431,32 +418,6 @@ const AssignmentDetail = () => {
                           </Box>
                         </IconButton>
                       </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        점수
-                        <IconButton size="small" onClick={() => toggleSort('score')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'score' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        정답 여부
-                        <IconButton size="small" onClick={() => toggleSort('isCorrect')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'isCorrect' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
                       <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
                         작업
                       </TableCell>
@@ -469,13 +430,13 @@ const AssignmentDetail = () => {
                           {index + 1}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.userEmail}
+                          {submission.studentNum}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           {submission.name}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.studentNum}
+                          {submission.userEmail}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           {submission.lastSubmissionTime ? 
@@ -489,24 +450,7 @@ const AssignmentDetail = () => {
                           }
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.submissionCount || 0}
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           {submission.avgChangesPerMin ? `${submission.avgChangesPerMin.toFixed(2)}/분` : '-'}
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.score ? `${submission.score}점` : '-'}
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          <Chip 
-                            label={submission.isCorrect ? "정답" : "오답"} 
-                            color={submission.isCorrect ? "success" : "error"}
-                            size="small"
-                            sx={{ 
-                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                              minWidth: '60px'
-                            }}
-                          />
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -543,7 +487,7 @@ const AssignmentDetail = () => {
                               variant="outlined"
                               size="small"
                               startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                              onClick={() => navigate(`/watcher/monitoring/${submission.userId}`)}
+                              onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${submission.userId}`)}
                               sx={{ 
                                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                                 fontSize: '0.75rem',

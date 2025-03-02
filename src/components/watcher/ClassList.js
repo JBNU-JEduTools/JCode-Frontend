@@ -371,7 +371,19 @@ const ClassList = () => {
                             />
                           </Box>
                         }
-                        secondary={`${classItem.courseYear}년 ${classItem.courseTerm}학기 | ${classItem.courseClss}분반`}
+                        secondary={
+                          <Typography 
+                            component="span" 
+                            sx={{ 
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              color: 'text.secondary',
+                              display: 'block',
+                              mt: 0.5
+                            }}
+                          >
+                            {classItem.courseYear}년 {classItem.courseTerm}학기 | {classItem.courseClss}분반 | {classItem.courseProfessor} 교수님
+                          </Typography>
+                        }
                         primaryTypographyProps={{ 
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" 
                         }}

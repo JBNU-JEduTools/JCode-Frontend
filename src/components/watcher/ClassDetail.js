@@ -671,6 +671,17 @@ const ClassDetail = () => {
               >
                 {course?.courseClss}분반
               </Box>
+              <Box 
+                component="span"
+                sx={{ 
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  backgroundColor: (theme) => theme.palette.action.hover
+                }}
+              >
+                {course?.courseProfessor} 교수님
+              </Box>
             </Box>
           </Box>
 
@@ -746,10 +757,10 @@ const ClassDetail = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이메일
-                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
+                        학번
+                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
                           <Box sx={{ 
-                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
                             transition: 'transform 0.2s ease-in-out',
                             display: 'flex',
                             alignItems: 'center'
@@ -772,10 +783,10 @@ const ClassDetail = () => {
                         </IconButton>
                       </TableCell>
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        학번
-                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
+                        이메일
+                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
                           <Box sx={{ 
-                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
                             transition: 'transform 0.2s ease-in-out',
                             display: 'flex',
                             alignItems: 'center'
@@ -809,13 +820,13 @@ const ClassDetail = () => {
                         }}
                       >
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {student.email}
+                          {student.studentNum}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           {student.name}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {student.studentNum}
+                          {student.email}
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">

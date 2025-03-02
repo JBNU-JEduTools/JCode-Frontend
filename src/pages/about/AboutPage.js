@@ -53,10 +53,6 @@ import CppIcon from '../../assets/icons/c++.svg';
 const AboutPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [mapOpen, setMapOpen] = useState(false);
-
-  const handleMapOpen = () => setMapOpen(true);
-  const handleMapClose = () => setMapOpen(false);
 
   const scroll = keyframes`
     0% { transform: translateX(0); }
@@ -98,7 +94,7 @@ const AboutPage = () => {
     {
       icon: <RocketLaunchIcon sx={{ fontSize: 40 }} />,
       title: "Mission",
-      description: "모든 개발자에게 접근성 높은 개발 환경을 제공하고,\n투명하고 공정한 코딩 문화를 만들어 나가는 것입니다."
+      description: "모든 학생에게 접근성 높은 개발 환경을 제공하고,\n투명하고 공정한 코딩 문화를 만들어 나가는 것입니다."
     },
     {
       icon: <HandshakeIcon sx={{ fontSize: 40 }} />,
@@ -275,7 +271,7 @@ const AboutPage = () => {
 
           {/* 주요 기능 섹션 */}
           <Box sx={{ mb: 12 }}>
-            <SectionTitle>주요 기능</SectionTitle>
+            <SectionTitle>Features</SectionTitle>
             <Grid container spacing={4}>
               {features.map((feature, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
@@ -334,71 +330,52 @@ const AboutPage = () => {
             </Grid>
           </Box>
 
-          {/* 미션 및 비전 섹션 */}
+          {/* 사용 가이드 섹션 */}
           <Box sx={{ mb: 12 }}>
-            <SectionTitle>미션 및 비전</SectionTitle>
-            <Grid container spacing={4}>
-              {visionMission.map((item, index) => (
-                <Grid item xs={12} md={6} key={index}>
+            <SectionTitle>Guide</SectionTitle>
+            <Grid container spacing={3}>
+              {guides.map((guide, index) => (
+                <Grid item xs={12} sm={6} md={3} key={index}>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: 250,
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
-                        borderRadius: theme.shape.borderRadius,
-                        transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
-                        '&:hover': {
-                          transform: 'translateY(-8px)',
-                          boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
-                        }
-                      }}
+                    <Link
+                      href={guide.link}
+                      underline="none"
+                      sx={{ display: 'block' }}
                     >
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: 3, 
-                        height: '100%', 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        gap: 2
-                      }}>
-                        <Box>
-                          <Box sx={{ 
-                            color: theme.palette.mode === 'dark' 
-                              ? '#FF79C6'
-                              : theme.palette.primary.main,
-                            mb: 1
-                          }}>
-                            {item.icon}
+                      <Card
+                        elevation={0}
+                        sx={{
+                          height: '100%',
+                          background: theme.palette.mode === 'dark' 
+                            ? theme.palette.background.paper
+                            : theme.palette.background.default,
+                          borderRadius: theme.shape.borderRadius,
+                          transition: 'all 0.3s ease',
+                          border: `1px solid ${theme.palette.divider}`,
+                          '&:hover': {
+                            transform: 'translateY(-5px)',
+                            boxShadow: theme.shadows[4],
+                            borderColor: theme.palette.primary.main
+                          }
+                        }}
+                      >
+                        <CardContent sx={{ p: 3 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <ArticleIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                              {guide.title}
+                            </Typography>
                           </Box>
-                          <Typography variant="h6" sx={{ 
-                            fontWeight: theme.typography.fontWeightBold,
-                            color: theme.palette.text.primary,
-                            fontFamily: theme.typography.fontFamily,
-                            mb: 1
-                          }}>
-                            {item.title}
+                          <Typography variant="body2" color="text.secondary">
+                            {guide.description}
                           </Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ 
-                          color: theme.palette.text.secondary,
-                          fontFamily: theme.typography.fontFamily,
-                          fontSize: '0.95rem',
-                          lineHeight: 1.6,
-                          whiteSpace: 'pre-line'
-                        }}>
-                          {item.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   </motion.div>
                 </Grid>
               ))}
@@ -407,7 +384,7 @@ const AboutPage = () => {
 
           {/* 프로그래밍 언어 섹션 */}
           <Box sx={{ mb: 12 }}>
-            <SectionTitle>Supported Programming Languages</SectionTitle>
+            <SectionTitle>Programming Languages</SectionTitle>
             <Grid container spacing={3}>
               {programmingLanguages.map((lang, index) => (
                 <Grid item xs={12} sm={6} md={4} key={index}>
@@ -474,6 +451,77 @@ const AboutPage = () => {
                 * 지속적인 업데이트를 통해 더 많은 프로그래밍 언어를 지원할 예정입니다.
               </Typography>
             </Box>
+          </Box>
+
+          {/* 미션 및 비전 섹션 */}
+          <Box sx={{ mb: 12 }}>
+            <SectionTitle>Goal</SectionTitle>
+            <Grid container spacing={4}>
+              {visionMission.map((item, index) => (
+                <Grid item xs={12} md={6} key={index}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card
+                      elevation={0}
+                      sx={{
+                        height: 250,
+                        background: theme.palette.mode === 'dark' 
+                          ? theme.palette.background.paper
+                          : theme.palette.background.default,
+                        borderRadius: theme.shape.borderRadius,
+                        transition: 'all 0.3s ease',
+                        border: `1px solid ${theme.palette.divider}`,
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[4],
+                          borderColor: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        height: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: 2
+                      }}>
+                        <Box>
+                          <Box sx={{ 
+                            color: theme.palette.mode === 'dark' 
+                              ? '#FF79C6'
+                              : theme.palette.primary.main,
+                            mb: 1
+                          }}>
+                            {item.icon}
+                          </Box>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: theme.typography.fontWeightBold,
+                            color: theme.palette.text.primary,
+                            fontFamily: theme.typography.fontFamily,
+                            mb: 1
+                          }}>
+                            {item.title}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.text.secondary,
+                          fontFamily: theme.typography.fontFamily,
+                          fontSize: '0.95rem',
+                          lineHeight: 1.6,
+                          whiteSpace: 'pre-line'
+                        }}>
+                          {item.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
           </Box>
 
           {/* 팀 소개 섹션 */}
@@ -584,7 +632,7 @@ const AboutPage = () => {
                   gap: 1
                 }}
               >
-                <EmailIcon sx={{ color: theme.palette.primary.main }} /> Contact us: <Link href="https://mail.google.com/mail/?view=cm&fs=1&to=jedutools@gmail.com" target="_blank" rel="noopener noreferrer" sx={{ 
+                <EmailIcon sx={{ color: theme.palette.primary.main }} /><Link href="https://mail.google.com/mail/?view=cm&fs=1&to=jedutools@gmail.com" target="_blank" rel="noopener noreferrer" sx={{ 
                   color: theme.palette.primary.main,
                   display: 'flex',
                   alignItems: 'center',
@@ -603,66 +651,11 @@ const AboutPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 1,
-                  cursor: 'pointer',
-                  '&:hover': {
-                    color: theme.palette.primary.main
-                  }
+                  gap: 1
                 }}
-                onClick={handleMapOpen}
               >
-                <LocationOnIcon /> 주소: 전북대학교 공과대학 7호관 619호 OSLAB
+                <LocationOnIcon /> 전북대학교 공과대학 7호관 619호 OSLAB
               </Typography>
-              <Modal
-                open={mapOpen}
-                onClose={handleMapClose}
-                aria-labelledby="map-modal"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <Box
-                  sx={{
-                    position: 'relative',
-                    width: '90vw',
-                    maxWidth: '800px',
-                    height: '80vh',
-                    bgcolor: 'background.paper',
-                    borderRadius: theme.shape.borderRadius,
-                    boxShadow: 24,
-                    p: 0,
-                    overflow: 'hidden'
-                  }}
-                >
-                  <IconButton
-                    onClick={handleMapClose}
-                    sx={{
-                      position: 'absolute',
-                      right: 8,
-                      top: 8,
-                      color: 'white',
-                      zIndex: 1,
-                      bgcolor: 'rgba(0, 0, 0, 0.5)',
-                      '&:hover': {
-                        bgcolor: 'rgba(0, 0, 0, 0.7)'
-                      }
-                    }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d808.9954725058649!2d127.13400673036284!3d35.84614799376339!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x35702330dc920b9d%3A0x1d0d425396006646!2z7KCE67aB64yA7ZWZ6rWQIOqzteqzvOuMgO2VmSA37Zi46rSA!5e0!3m2!1sko!2skr!4v1710401812244!5m2!1sko!2skr&markers=color:red%7C35.84614799376339,127.13400673036284"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen=""
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </Box>
-              </Modal>
             </Box>
           </Box>
 
@@ -750,58 +743,6 @@ const AboutPage = () => {
                 </motion.div>
               ))}
             </Box>
-          </Box>
-
-          {/* 사용 가이드 섹션 */}
-          <Box sx={{ mb: 12 }}>
-            <SectionTitle>Guide</SectionTitle>
-            <Grid container spacing={3}>
-              {guides.map((guide, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Link
-                      href={guide.link}
-                      underline="none"
-                      sx={{ display: 'block' }}
-                    >
-                      <Card
-                        elevation={0}
-                        sx={{
-                          height: '100%',
-                          background: theme.palette.mode === 'dark' 
-                            ? theme.palette.background.paper
-                            : theme.palette.background.default,
-                          borderRadius: theme.shape.borderRadius,
-                          transition: 'all 0.3s ease',
-                          border: `1px solid ${theme.palette.divider}`,
-                          '&:hover': {
-                            transform: 'translateY(-5px)',
-                            boxShadow: theme.shadows[4],
-                            borderColor: theme.palette.primary.main
-                          }
-                        }}
-                      >
-                        <CardContent sx={{ p: 3 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <ArticleIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              {guide.title}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {guide.description}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
           </Box>
 
           {/* Related Sites 섹션 */}
