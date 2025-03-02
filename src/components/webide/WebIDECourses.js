@@ -95,12 +95,10 @@ const WebIDECourses = () => {
 
   const handleWebIDEOpen = async (courseId) => {
     try {  
-      const response = await api.get('https://jcode.jbnu.ac.kr/api/redirect', {
-        params: {
-          courseCode: 'OS',
-          clss: 2,
-          st: 'gjdhks1212'
-        },
+      const response = await api.post('/api/redirect', {
+        userId: user.id,
+        courseId: courseId
+      }, {
         withCredentials: true
       });
   
