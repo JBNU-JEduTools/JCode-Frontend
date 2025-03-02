@@ -12,7 +12,8 @@ import {
   CircularProgress,
   Button,
   Box,
-  IconButton
+  IconButton,
+  Fade
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -71,87 +72,89 @@ const StudentList = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper elevation={7} sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton 
-            onClick={() => navigate('/watcher')} 
-            sx={{ 
-              mr: 2,
-              '&:hover': {
-                backgroundColor: (theme) => theme.palette.action.hover
-              }
-            }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography 
-            variant="h5"
-            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-          >
-            {className} - 수강생 목록
-          </Typography>
-        </Box>
+    <Fade in={true} timeout={300}>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={7} sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <IconButton 
+              onClick={() => navigate('/watcher')} 
+              sx={{ 
+                mr: 2,
+                '&:hover': {
+                  backgroundColor: (theme) => theme.palette.action.hover
+                }
+              }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography 
+              variant="h5"
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            >
+              {className} - 수강생 목록
+            </Typography>
+          </Box>
 
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>학번</TableCell>
-                <TableCell>이름</TableCell>
-                <TableCell>이메일</TableCell>
-                <TableCell>최근 활동</TableCell>
-                <TableCell>상세 보기</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {students.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell>{student.studentId}</TableCell>
-                  <TableCell>{student.name}</TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>{student.lastActive}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => navigate(`/watcher/student/${student.id}`)}
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        px: 1.5,
-                        minHeight: '28px',
-                        borderRadius: '14px',
-                        textTransform: 'none',
-                        backgroundColor: (theme) => theme.palette.primary.main,
-                        '&:hover': {
-                          backgroundColor: (theme) => theme.palette.primary.dark
-                        }
-                      }}
-                    >
-                      모니터링
-                    </Button>
-                  </TableCell>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>학번</TableCell>
+                  <TableCell>이름</TableCell>
+                  <TableCell>이메일</TableCell>
+                  <TableCell>최근 활동</TableCell>
+                  <TableCell>상세 보기</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {students.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>{student.studentId}</TableCell>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.email}</TableCell>
+                    <TableCell>{student.lastActive}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => navigate(`/watcher/student/${student.id}`)}
+                        sx={{ 
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          fontSize: '0.75rem',
+                          py: 0.5,
+                          px: 1.5,
+                          minHeight: '28px',
+                          borderRadius: '14px',
+                          textTransform: 'none',
+                          backgroundColor: (theme) => theme.palette.primary.main,
+                          '&:hover': {
+                            backgroundColor: (theme) => theme.palette.primary.dark
+                          }
+                        }}
+                      >
+                        모니터링
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        {students.length === 0 && (
-          <Typography 
-            sx={{ 
-              mt: 2, 
-              textAlign: 'center',
-              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-            }}
-          >
-            수강생이 없습니다.
-          </Typography>
-        )}
-      </Paper>
-    </Container>
+          {students.length === 0 && (
+            <Typography 
+              sx={{ 
+                mt: 2, 
+                textAlign: 'center',
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+              }}
+            >
+              수강생이 없습니다.
+            </Typography>
+          )}
+        </Paper>
+      </Container>
+    </Fade>
   );
 };
 

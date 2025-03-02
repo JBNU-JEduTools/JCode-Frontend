@@ -740,351 +740,357 @@ const ClassDetail = () => {
 
           {/* 학생 목록 탭 */}
           {currentTab === 'students' && (
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <TextField
-                  size="small"
-                  placeholder="검색..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
-                  }}
-                />
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        학번
-                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이름
-                        <IconButton size="small" onClick={() => toggleSort('name')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'name' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이메일
-                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        작업
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {getFilteredAndSortedStudents().map((student, index) => (
-                      <TableRow 
-                        key={student.email}
-                        sx={{ 
-                          transition: 'all 0.3s ease',
-                          animation: 'fadeIn 0.3s ease',
-                          '@keyframes fadeIn': {
-                            '0%': {
-                              opacity: 0,
-                              transform: 'translateY(10px)'
-                            },
-                            '100%': {
-                              opacity: 1,
-                              transform: 'translateY(0)'
-                            }
-                          }
-                        }}
-                      >
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {student.studentNum}
+            <Fade in={currentTab === 'students'} timeout={300}>
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <TextField
+                    size="small"
+                    placeholder="검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                    }}
+                  />
+                </Box>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          학번
+                          <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {student.name}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          이름
+                          <IconButton size="small" onClick={() => toggleSort('name')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'name' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {student.email}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          이메일
+                          <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Button
-                              variant="contained"
-                              size="small"
-                              startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                              onClick={async () => {
-                                try {
-                                  const response = await api.get(`/api/redirect/redirect`, {
-                                    params: {
-                                      userId: student.userId,
-                                      courseId: course.courseId
-                                    }
-                                  });
-                                  window.location.href = response.data.redirectUrl;
-                                } catch (error) {
-                                  console.error('JCode 리다이렉트 실패:', error);
-                                }
-                              }}
-                              sx={{ 
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                                px: 1.5,
-                                minHeight: '28px',
-                                borderRadius: '14px',
-                                textTransform: 'none'
-                              }}
-                            >
-                              JCode
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                              onClick={() => navigate(`/watcher/monitoring/${student.userId}`)}
-                              sx={{ 
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                                px: 1.5,
-                                minHeight: '28px',
-                                borderRadius: '14px',
-                                textTransform: 'none',
-                                '&:hover': {
-                                  backgroundColor: (theme) => 
-                                    theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
-                                }
-                              }}
-                            >
-                              Watcher
-                            </Button>
-                          </Stack>
+                        <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          작업
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {getFilteredAndSortedStudents().map((student, index) => (
+                        <TableRow 
+                          key={student.email}
+                          sx={{ 
+                            transition: 'all 0.3s ease',
+                            animation: 'fadeIn 0.3s ease',
+                            '@keyframes fadeIn': {
+                              '0%': {
+                                opacity: 0,
+                                transform: 'translateY(10px)'
+                              },
+                              '100%': {
+                                opacity: 1,
+                                transform: 'translateY(0)'
+                              }
+                            }
+                          }}
+                        >
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {student.studentNum}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {student.name}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {student.email}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                                onClick={async () => {
+                                  try {
+                                    const response = await api.get(`/api/redirect/redirect`, {
+                                      params: {
+                                        userId: student.userId,
+                                        courseId: course.courseId
+                                      }
+                                    });
+                                    window.location.href = response.data.redirectUrl;
+                                  } catch (error) {
+                                    console.error('JCode 리다이렉트 실패:', error);
+                                  }
+                                }}
+                                sx={{ 
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  fontSize: '0.75rem',
+                                  py: 0.5,
+                                  px: 1.5,
+                                  minHeight: '28px',
+                                  borderRadius: '14px',
+                                  textTransform: 'none'
+                                }}
+                              >
+                                JCode
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
+                                onClick={() => navigate(`/watcher/monitoring/${student.userId}`)}
+                                sx={{ 
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  fontSize: '0.75rem',
+                                  py: 0.5,
+                                  px: 1.5,
+                                  minHeight: '28px',
+                                  borderRadius: '14px',
+                                  textTransform: 'none',
+                                  '&:hover': {
+                                    backgroundColor: (theme) => 
+                                      theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
+                                  }
+                                }}
+                              >
+                                Watcher
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
 
-              {getFilteredAndSortedStudents().length === 0 && (
-                <Typography 
-                  sx={{ 
-                    mt: 2, 
-                    textAlign: 'center',
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                  }}
-                >
-                  {searchQuery ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}
-                </Typography>
-              )}
-            </Box>
+                {getFilteredAndSortedStudents().length === 0 && (
+                  <Typography 
+                    sx={{ 
+                      mt: 2, 
+                      textAlign: 'center',
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                    }}
+                  >
+                    {searchQuery ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}
+                  </Typography>
+                )}
+              </Box>
+            </Fade>
           )}
 
           {/* 과제 관리 탭 */}
           {currentTab === 'assignments' && (
-            <Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        과제명
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        설명
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        시작일
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        마감일
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
-                        남은 시간
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
-                        작업
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {assignments.map((assignment) => (
-                      <TableRow 
-                        key={assignment.assignmentId}
+            <Fade in={currentTab === 'assignments'} timeout={300}>
+              <Box>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          과제명
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          설명
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          시작일
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          마감일
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
+                          남은 시간
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
+                          작업
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {assignments.map((assignment) => (
+                        <TableRow 
+                          key={assignment.assignmentId}
+                          sx={{ 
+                            cursor: 'pointer',
+                            '&:hover': {
+                              backgroundColor: (theme) => 
+                                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                            },
+                            transition: 'background-color 0.2s ease'
+                          }}
+                        >
+                          <TableCell 
+                            onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          >
+                            {assignment.assignmentName}
+                          </TableCell>
+                          <TableCell 
+                            onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                            sx={{ 
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              maxWidth: '300px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {assignment.assignmentDescription}
+                          </TableCell>
+                          <TableCell 
+                            onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          >
+                            {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell 
+                            onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          >
+                            {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell 
+                            onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                            sx={{ 
+                              width: '250px',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <RemainingTime deadline={assignment.deadlineDate} />
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1}>
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAssignment({
+                                    ...assignment,
+                                    kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
+                                    deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
+                                  });
+                                  setOpenEditDialog(true);
+                                }}
+                                size="small"
+                                sx={{ 
+                                  color: 'primary.main',
+                                  '&:hover': {
+                                    backgroundColor: (theme) => 
+                                      theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
+                                }
+                              }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeletingAssignment(assignment);
+                                  setOpenDeleteDialog(true);
+                                }}
+                                size="small"
+                                sx={{ 
+                                  color: 'error.main',
+                                  '&:hover': {
+                                    backgroundColor: (theme) => 
+                                      theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.08)'
+                                }
+                              }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow
+                        onClick={() => setOpenAssignmentDialog(true)}
                         sx={{ 
                           cursor: 'pointer',
                           '&:hover': {
                             backgroundColor: (theme) => 
                               theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
                           },
-                          transition: 'background-color 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          height: '60px'
                         }}
                       >
                         <TableCell 
-                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
-                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                        >
-                          {assignment.assignmentName}
-                        </TableCell>
-                        <TableCell 
-                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
+                          colSpan={6}
+                          align="center"
                           sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            maxWidth: '300px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+                            borderRadius: 1,
+                            m: 1,
                           }}
                         >
-                          {assignment.assignmentDescription}
-                        </TableCell>
-                        <TableCell 
-                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
-                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                        >
-                          {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </TableCell>
-                        <TableCell 
-                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
-                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                        >
-                          {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </TableCell>
-                        <TableCell 
-                          onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`)}
-                          sx={{ 
-                            width: '250px',
-                            textAlign: 'left'
-                          }}
-                        >
-                          <RemainingTime deadline={assignment.deadlineDate} />
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingAssignment({
-                                  ...assignment,
-                                  kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
-                                  deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
-                                });
-                                setOpenEditDialog(true);
-                              }}
-                              size="small"
-                              sx={{ 
-                                color: 'primary.main',
-                                '&:hover': {
-                                  backgroundColor: (theme) => 
-                                    theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
-                              }
+                          <Box 
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              gap: 1,
+                              color: 'text.secondary'
                             }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingAssignment(assignment);
-                                setOpenDeleteDialog(true);
-                              }}
-                              size="small"
-                              sx={{ 
-                                color: 'error.main',
-                                '&:hover': {
-                                  backgroundColor: (theme) => 
-                                    theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.08)'
-                              }
-                            }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Stack>
+                          >
+                            <AddIcon />
+                            <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                              새 과제 추가
+                            </Typography>
+                          </Box>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    <TableRow
-                      onClick={() => setOpenAssignmentDialog(true)}
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: (theme) => 
-                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-                        },
-                        transition: 'all 0.2s ease',
-                        height: '60px'
-                      }}
-                    >
-                      <TableCell 
-                        colSpan={6}
-                        align="center"
-                        sx={{ 
-                          border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
-                          borderRadius: 1,
-                          m: 1,
-                        }}
-                      >
-                        <Box 
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            gap: 1,
-                            color: 'text.secondary'
-                          }}
-                        >
-                          <AddIcon />
-                          <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            새 과제 추가
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </Fade>
           )}
 
           {/* 통계 탭 */}
           {currentTab === 'statistics' && (
-            <Box>
-              <Typography>통계 데이터가 준비중입니다.</Typography>
-            </Box>
+            <Fade in={currentTab === 'statistics'} timeout={300}>
+              <Box>
+                <Typography>통계 데이터가 준비중입니다.</Typography>
+              </Box>
+            </Fade>
           )}
 
           <Dialog 
