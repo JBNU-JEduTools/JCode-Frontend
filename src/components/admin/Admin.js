@@ -185,7 +185,6 @@ const Admin = () => {
       if (!Array.isArray(response.data)) {
         console.error('사용자 목록 조회 실패: 응답 데이터가 배열이 아닙니다.', response.data);
         toast.error('사용자 목록을 불러오는데 실패했습니다.');
-        setLoading(false);
         return;
       }
       
@@ -223,14 +222,18 @@ const Admin = () => {
       }, {
         professors: [],
         assistants: [],
-        students: []
+        students: [],
+        courses: []
       });
 
-      setUsers(categorizedUsers);
-      setLoading(false);
+      setUsers(prev => ({
+        ...categorizedUsers,
+        courses: prev.courses || []
+      }));
     } catch (error) {
       console.error('사용자 목록 조회 실패:', error);
       toast.error('사용자 목록을 불러오는데 실패했습니다.');
+    } finally {
       setLoading(false);
     }
   };
@@ -240,22 +243,36 @@ const Admin = () => {
       const response = await api.get('/api/courses');
       console.log('Course API Response:', response.data);
       if (Array.isArray(response.data)) {
+        const coursesData = response.data.map(course => ({
+          courseId: course.courseId,
+          courseName: course.name,
+          courseCode: course.code,
+          professor: course.professor || '-',
+          term: course.term,
+          year: course.year,
+          clss: course.clss
+        }));
+
+        setUsers(prev => ({
+          professors: prev.professors || [],
+          assistants: prev.assistants || [],
+          students: prev.students || [],
+          courses: coursesData
+        }));
+      } else {
+        console.error('수업 데이터가 배열 형식이 아닙니다:', response.data);
         setUsers(prev => ({
           ...prev,
-          courses: response.data.map(course => ({
-            courseId: course.courseId,
-            courseName: course.name,
-            courseCode: course.code,
-            professor: course.professor || '-',
-            term: course.term,
-            year: course.year,
-            clss:course.clss
-          }))
+          courses: []
         }));
       }
     } catch (error) {
       console.error('수업 목록 조회 실패:', error);
       toast.error('수업 목록을 불러오는데 실패했습니다.');
+      setUsers(prev => ({
+        ...prev,
+        courses: []
+      }));
     }
   };
 
@@ -555,17 +572,6 @@ const Admin = () => {
               {getFilteredAndSortedUsers(section.items).map((item) => (
                 <TableRow 
                   key={currentTab === 3 ? item.courseId : item.id}
-                  sx={currentTab === 3 ? {
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: theme => theme.palette.action.hover
-                    }
-                  } : {}}
-                  onClick={() => {
-                    if (currentTab === 3) {
-                      navigate(`/watcher/class/${item.courseCode}/${item.clss}`);
-                    }
-                  }}
                 >
                   {currentTab === 3 ? (
                     <>
