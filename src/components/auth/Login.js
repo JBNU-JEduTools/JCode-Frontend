@@ -18,7 +18,7 @@ const Login = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 'calc(100vh - 200px)'
+          minHeight: 'calc(100vh - 500px)'
         }}
       >
         <Paper 
@@ -44,7 +44,7 @@ const Login = () => {
               top: 0,
               left: 0,
               right: 0,
-              height: '3px',
+              height: '5px',
               background: (theme) =>
                 theme.palette.mode === 'dark'
                   ? 'linear-gradient(90deg, #FF79C6, #BD93F9)'
