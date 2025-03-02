@@ -59,9 +59,24 @@ const WebIDECourses = () => {
         console.log('Response type:', typeof response.data);
         if (Array.isArray(response.data)) {
           setCourses(response.data);
+          // 수업이 있을 때만 현재 연도와 학기로 설정
+          if (response.data.length > 0) {
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentTerm = currentMonth >= 9 ? 2 : 1;
+            setSelectedYear(currentYear);
+            setSelectedTerm(currentTerm);
+          } else {
+            // 수업이 없을 때는 전체 연도와 전체 학기로 설정
+            setSelectedYear('all');
+            setSelectedTerm('all');
+          }
         } else {
           setCourses([]);
-          setError('수업 데이터 형식이 올바르지 않습니다.');
+          // 에러 시에도 전체 연도와 전체 학기로 설정
+          setSelectedYear('all');
+          setSelectedTerm('all');
         }
         setLoading(false);
       } catch (err) {
@@ -69,20 +84,11 @@ const WebIDECourses = () => {
         setError('수업 목록을 불러오는데 실패했습니다.');
         setCourses([]);
         setLoading(false);
+        // 에러 시에도 전체 연도와 전체 학기로 설정
+        setSelectedYear('all');
+        setSelectedTerm('all');
       }
     };
-
-    // 현재 날짜 기준으로 연도와 학기 설정 (courses와 독립적으로 실행)
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // getMonth()는 0-11 반환
-    
-    // 9-12월은 2학기, 나머지(1-8월)는 1학기
-    const currentTerm = currentMonth >= 9 ? 2 : 1;
-    
-    // 현재 연도와 학기로 설정
-    setSelectedYear(currentYear);
-    setSelectedTerm(currentTerm);
 
     fetchCourses();
   }, []);
