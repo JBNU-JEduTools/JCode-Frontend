@@ -348,7 +348,7 @@ const AssignmentMonitoring = () => {
         enabled: true,
         mode: 'index',
         intersect: false,
-        position: 'nearest',
+        position: 'average',
         external: null,
         z: 999999,
         callbacks: {
@@ -1010,6 +1010,11 @@ const AssignmentMonitoring = () => {
           if (chartInstanceRef.current && chartInstanceRef2.current) {
             // 마우스 이벤트 핸들러 정의 및 설정
             chart1MouseMoveHandler = (e) => {
+              // 합성 이벤트인 경우 이벤트 전파를 중단
+              if (e.isSynthetic) {
+                return;
+              }
+              
               if (chartInstanceRef2.current) {
                 // 첫 번째 차트에서 마우스 이벤트 발생 시 두 번째 차트에도 전파
                 const rect = chartInstanceRef2.current.canvas.getBoundingClientRect();
@@ -1022,6 +1027,10 @@ const AssignmentMonitoring = () => {
                     cancelable: true,
                     view: window
                   });
+                  
+                  // 합성 이벤트 플래그 추가
+                  syntheticEvent.isSynthetic = true;
+                  
                   chartInstanceRef2.current.canvas.dispatchEvent(syntheticEvent);
                 } catch (error) {
                   console.error('차트 이벤트 전파 오류:', error);
@@ -1030,6 +1039,11 @@ const AssignmentMonitoring = () => {
             };
 
             chart2MouseMoveHandler = (e) => {
+              // 합성 이벤트인 경우 이벤트 전파를 중단
+              if (e.isSynthetic) {
+                return;
+              }
+              
               if (chartInstanceRef.current) {
                 // 두 번째 차트에서 마우스 이벤트 발생 시 첫 번째 차트에도 전파
                 const rect = chartInstanceRef.current.canvas.getBoundingClientRect();
@@ -1042,6 +1056,10 @@ const AssignmentMonitoring = () => {
                     cancelable: true,
                     view: window
                   });
+                  
+                  // 합성 이벤트 플래그 추가
+                  syntheticEvent.isSynthetic = true;
+                  
                   chartInstanceRef.current.canvas.dispatchEvent(syntheticEvent);
                 } catch (error) {
                   console.error('차트 이벤트 전파 오류:', error);
