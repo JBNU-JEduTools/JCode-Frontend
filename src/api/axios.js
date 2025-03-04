@@ -140,13 +140,21 @@ export const auth = {
 
   refreshToken,
 
-  logout: () => {
-    sessionStorage.removeItem('jwt');
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `${process.env.REACT_APP_API_URL}/logout`;
-    document.body.appendChild(form);
-    form.submit();
+  logout: async () => {
+    try {
+      const token = sessionStorage.getItem('jwt');
+      sessionStorage.removeItem('jwt');
+      await api.post('/logout', null, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      window.location.href = '/login'; // 로그인 페이지로 리다이렉트
+    } catch (error) {
+      console.error('Logout failed:', error);
+      sessionStorage.removeItem('jwt'); // 에러가 발생해도 토큰은 삭제
+      window.location.href = '/login';
+    }
   },
 
   getUserProfile: async () => {
