@@ -12,7 +12,10 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  useTheme
+  useTheme,
+  Typography,
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
@@ -24,6 +27,7 @@ import crosshairPlugin from 'chartjs-plugin-crosshair';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import api from '../../api/axios';
 
 Chart.register(zoomPlugin);
 Chart.register(crosshairPlugin);
@@ -40,6 +44,10 @@ const AssignmentMonitoring = () => {
   const isUpdating = useRef(false);
   const theme = useTheme();
   const isDarkMode = useMemo(() => theme.palette.mode === 'dark', [theme.palette.mode]);
+  const [assignment, setAssignment] = useState(null);
+  const [course, setCourse] = useState(null);
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // 데이터 다운샘플링 함수
   const downsampleData = (data, targetPoints = 500) => {
@@ -467,11 +475,36 @@ const AssignmentMonitoring = () => {
 
   // 데이터 로드 및 차트 초기화
   useEffect(() => {
-    const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
-    const newData = getMonitoringData(startDate, endDate, timeUnit, minuteValue);
-    setData(newData);
-  }, [timeUnit, minuteValue]);
+    const fetchData = async () => {
+      try {
+        // 과제 정보 조회
+        const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
+        const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+        setAssignment(currentAssignment);
+
+        // 강의 정보 조회
+        const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
+        setCourse(coursesResponse.data);
+
+        // 학생 정보 조회
+        const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+        const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
+        setStudent(currentStudent);
+
+        const endDate = new Date();
+        const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
+        const newData = getMonitoringData(startDate, endDate, timeUnit, minuteValue);
+        setData(newData);
+
+        setLoading(false);
+      } catch (error) {
+        console.error('데이터 조회 실패:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [courseId, assignmentId, userId, timeUnit, minuteValue]);
 
   // 데이터가 변경될 때마다 차트 업데이트
   useEffect(() => {
@@ -549,6 +582,14 @@ const AssignmentMonitoring = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Container maxWidth={false} sx={{ mt: 2, px: 2 }}>
       <Paper elevation={0} sx={{
@@ -562,7 +603,11 @@ const AssignmentMonitoring = () => {
         <WatcherBreadcrumbs
           paths={[
             {
-              text: '과제 모니터링',
+              text: course?.courseName || '로딩중...',
+              to: `/watcher/class/${courseId}`
+            },
+            {
+              text: assignment?.assignmentName || '로딩중...',
               to: `/watcher/class/${courseId}/assignment/${assignmentId}`
             },
             {
@@ -571,6 +616,29 @@ const AssignmentMonitoring = () => {
             }
           ]}
         />
+
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ 
+            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+            mb: 2
+          }}>
+            {assignment?.assignmentName}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <Chip 
+              label={`학번: ${student?.studentNum || '로딩중...'}`}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            />
+            <Chip 
+              label={`이름: ${student?.name || '로딩중...'}`}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            />
+            <Chip 
+              label={`이메일: ${student?.email || '로딩중...'}`}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            />
+          </Box>
+        </Box>
 
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
