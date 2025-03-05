@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  IconButton
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
@@ -32,6 +33,70 @@ import { useTheme } from '../../contexts/ThemeContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useNavigate } from 'react-router-dom';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ReactDOM from 'react-dom';
+
+const WebIDELogoutOverlay = ({ onClose }) => {
+  const handleLogout = async () => {
+    try {
+      // code-server 로그아웃
+      const codeServerFrame = document.createElement('iframe');
+      codeServerFrame.style.display = 'none';
+      codeServerFrame.src = '/code-server/logout';
+      document.body.appendChild(codeServerFrame);
+
+      // jcode 로그아웃
+      const jcodeFrame = document.createElement('iframe');
+      jcodeFrame.style.display = 'none';
+      jcodeFrame.src = '/jcode/logout';
+      document.body.appendChild(jcodeFrame);
+
+      // 프레임 제거
+      setTimeout(() => {
+        document.body.removeChild(codeServerFrame);
+        document.body.removeChild(jcodeFrame);
+        onClose();
+      }, 1000);
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 9999,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: '50%',
+        padding: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        }
+      }}
+      onClick={handleLogout}
+    >
+      <IconButton
+        size="large"
+        sx={{
+          color: '#fff',
+          '&:hover': {
+            backgroundColor: 'transparent',
+          }
+        }}
+      >
+        <LogoutIcon />
+      </IconButton>
+    </Box>
+  );
+};
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -94,31 +159,192 @@ const WebIDECourses = () => {
   }, []);
 
   const handleWebIDEOpen = async (courseId) => {
-    try {  
+    try {
       const response = await api.post('/api/redirect', {
-        userId: user.id,
+        userEmail: user.email,
         courseId: courseId
       }, {
         withCredentials: true
       });
-  
-      // 서버가 리다이렉트 응답(302 Found 또는 307 Temporary Redirect)으로 최종 URL을 보내면,
-      // axios는 자동 리다이렉션을 수행하지 않으므로 응답 객체에서 URL을 추출합니다.
-      console.log(response.request);
+
       let finalUrl = null;
       if (response.request && response.request.responseURL) {
         finalUrl = response.request.responseURL;
       } else if (response.data && response.data.url) {
         finalUrl = response.data.url;
       }
-      
-      if (finalUrl) {
-        window.open(finalUrl, '_blank'); // 새 창 또는 새 탭에서 열기
-      } else {
-        console.error("Final redirect URL not found in response");
+
+      if (!finalUrl) {
+        throw new Error("Final redirect URL not found in response");
       }
+
+      // 새 탭 열기
+      const newWindow = window.open('', '_blank');
+      
+      // 새 탭에 HTML 콘텐츠 작성
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>JCode Web IDE</title>
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                font-family: 'JetBrains Mono', 'Noto Sans KR', sans-serif;
+              }
+              .header {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 10px;
+                z-index: 1000;
+              }
+              .logout-btn {
+                background-color: rgba(0, 0, 0, 0.6);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+              }
+              .logout-btn:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+              }
+              .logout-menu {
+                position: absolute;
+                bottom: 70px;
+                right: 10px;
+                background-color: rgba(0, 0, 0, 0.8);
+                border-radius: 8px;
+                padding: 8px 0;
+                display: none;
+                flex-direction: column;
+                min-width: 180px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+              }
+              .logout-menu.show {
+                display: flex;
+              }
+              .logout-menu-item {
+                color: white;
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background-color 0.2s;
+                border: none;
+                background: none;
+                width: 100%;
+                text-align: left;
+                font-family: 'JetBrains Mono', 'Noto Sans KR', sans-serif;
+                font-size: 14px;
+              }
+              .logout-menu-item:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+              }
+              .iframe-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <button class="logout-btn" id="logoutBtn" title="로그아웃 옵션">
+                <svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 0 24 24" width="28" fill="white">
+                  <path d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+              </button>
+              <div class="logout-menu" id="logoutMenu">
+                <button class="logout-menu-item" id="ideLogout">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="white">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                  </svg>
+                  IDE 로그아웃
+                </button>
+                <button class="logout-menu-item" id="fullLogout">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="white">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                  </svg>
+                  전체 로그아웃
+                </button>
+              </div>
+            </div>
+            <iframe src="${finalUrl}" class="iframe-container"></iframe>
+            <script>
+              const logoutBtn = document.getElementById('logoutBtn');
+              const logoutMenu = document.getElementById('logoutMenu');
+              const ideLogout = document.getElementById('ideLogout');
+              const fullLogout = document.getElementById('fullLogout');
+
+              // 메뉴 토글
+              logoutBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                logoutMenu.classList.toggle('show');
+              });
+
+              // 메뉴 외부 클릭시 닫기
+              document.addEventListener('click', function(e) {
+                if (!logoutMenu.contains(e.target) && !logoutBtn.contains(e.target)) {
+                  logoutMenu.classList.remove('show');
+                }
+              });
+
+              // IDE 로그아웃
+              ideLogout.addEventListener('click', function() {
+                const codeServerFrame = document.createElement('iframe');
+                codeServerFrame.style.display = 'none';
+                codeServerFrame.src = '/code-server/logout';
+                document.body.appendChild(codeServerFrame);
+
+                setTimeout(() => {
+                  document.body.removeChild(codeServerFrame);
+                  window.close();
+                }, 1000);
+              });
+
+              // 전체 로그아웃
+              fullLogout.addEventListener('click', function() {
+                const codeServerFrame = document.createElement('iframe');
+                codeServerFrame.style.display = 'none';
+                codeServerFrame.src = '/code-server/logout';
+                document.body.appendChild(codeServerFrame);
+
+                const jcodeFrame = document.createElement('iframe');
+                jcodeFrame.style.display = 'none';
+                jcodeFrame.src = '/jcode/logout';
+                document.body.appendChild(jcodeFrame);
+
+                setTimeout(() => {
+                  document.body.removeChild(codeServerFrame);
+                  document.body.removeChild(jcodeFrame);
+                  window.close();
+                }, 1000);
+              });
+            </script>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+
     } catch (err) {
-      // 에러 토스트 메시지 표시
       toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
         icon: ({theme, type}) => <ErrorIcon sx={{ 
           color: '#fff',
@@ -140,9 +366,6 @@ const WebIDECourses = () => {
           alignItems: 'center'
         }
       });
-
-      // IDE 페이지로 리다이렉트
-      navigate('/webide');
     }
   };
 
@@ -481,7 +704,7 @@ const WebIDECourses = () => {
                         fullWidth
                         variant="contained"
                         startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                        onClick={() => handleWebIDEOpen(course)}
+                        onClick={() => handleWebIDEOpen(course.courseId)}
                         size="small"
                         sx={{
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
