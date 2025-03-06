@@ -148,7 +148,7 @@ const ClassList = () => {
 
       const { courseId, courseKey } = createResponse.data;
 
-      await axios.post(`/api/users/me/courses/${courseId}`, {
+      await axios.post(`/api/users/me/courses`, {
         courseKey: courseKey
       });
 
@@ -390,7 +390,7 @@ const ClassList = () => {
                         secondaryTypographyProps={{ 
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                           sx: { mt: 0.5 }
-                        }}
+                        }}ddddddd
                       />
                     </Box>
                     <Button
