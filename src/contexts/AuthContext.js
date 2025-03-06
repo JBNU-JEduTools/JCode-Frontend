@@ -56,7 +56,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    sessionStorage.removeItem('jwt');
     setUser(null);
     auth.logout();
   };

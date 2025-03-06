@@ -24,7 +24,7 @@ import {
   IconButton
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../api/axios';
+import api, { auth } from '../../api/axios';
 import CodeIcon from '@mui/icons-material/Code';
 import { selectStyles } from '../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
@@ -36,67 +36,8 @@ import { useNavigate } from 'react-router-dom';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ReactDOM from 'react-dom';
 
-const WebIDELogoutOverlay = ({ onClose }) => {
-  const handleLogout = async () => {
-    try {
-      // code-server 로그아웃
-      const codeServerFrame = document.createElement('iframe');
-      codeServerFrame.style.display = 'none';
-      codeServerFrame.src = '/code-server/logout';
-      document.body.appendChild(codeServerFrame);
+const IDE_URL = process.env.REACT_APP_IDE_URL;
 
-      // jcode 로그아웃
-      const jcodeFrame = document.createElement('iframe');
-      jcodeFrame.style.display = 'none';
-      jcodeFrame.src = '/jcode/logout';
-      document.body.appendChild(jcodeFrame);
-
-      // 프레임 제거
-      setTimeout(() => {
-        document.body.removeChild(codeServerFrame);
-        document.body.removeChild(jcodeFrame);
-        onClose();
-      }, 1000);
-    } catch (error) {
-      console.error('로그아웃 중 오류 발생:', error);
-    }
-  };
-
-  return (
-    <Box
-      sx={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px',
-        zIndex: 9999,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        borderRadius: '50%',
-        padding: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        }
-      }}
-      onClick={handleLogout}
-    >
-      <IconButton
-        size="large"
-        sx={{
-          color: '#fff',
-          '&:hover': {
-            backgroundColor: 'transparent',
-          }
-        }}
-      >
-        <LogoutIcon />
-      </IconButton>
-    </Box>
-  );
-};
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -158,6 +99,10 @@ const WebIDECourses = () => {
     fetchCourses();
   }, []);
 
+  useEffect(() => {
+      window.auth = auth;
+  }, [auth]);
+
   const handleWebIDEOpen = async (courseId) => {
     try {
       const response = await api.post('/api/redirect', {
@@ -199,58 +144,129 @@ const WebIDECourses = () => {
                 right: 20px;
                 padding: 10px;
                 z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                align-items: center;
               }
-              .logout-btn {
-                background-color: rgba(0, 0, 0, 0.6);
+              .logout-btn, .refresh-btn {
+                background-color: rgba(0, 0, 0, 0.7);
                 color: white;
                 border: none;
-                border-radius: 50%;
-                width: 50px;
-                height: 50px;
+                border-radius: 12px;
+                width: 42px;
+                height: 42px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                transition: all 0.2s ease;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                position: relative;
               }
-              .logout-btn:hover {
-                background-color: rgba(0, 0, 0, 0.8);
+              .logout-btn:hover, .refresh-btn:hover {
+                background-color: rgba(0, 0, 0, 0.85);
                 transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
               }
-              .logout-menu {
+              .refresh-btn svg {
+                stroke: white;
+              }
+              .refresh-btn::after, .logout-btn::after {
+                content: attr(title);
                 position: absolute;
-                bottom: 70px;
-                right: 10px;
-                background-color: rgba(0, 0, 0, 0.8);
-                border-radius: 8px;
-                padding: 8px 0;
-                display: none;
-                flex-direction: column;
-                min-width: 180px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-              }
-              .logout-menu.show {
-                display: flex;
-              }
-              .logout-menu-item {
+                right: calc(100% + 10px);
+                top: 50%;
+                transform: translateY(-50%);
+                background-color: rgba(0, 0, 0, 0.85);
                 color: white;
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                transition: background-color 0.2s;
-                border: none;
-                background: none;
-                width: 100%;
-                text-align: left;
-                font-family: 'JetBrains Mono', 'Noto Sans KR', sans-serif;
-                font-size: 14px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
               }
-              .logout-menu-item:hover {
+              .refresh-btn:hover::after, .logout-btn:hover::after {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(-50%) translateX(-5px);
+              }
+              .confirm-dialog {
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-radius: 12px;
+                padding: 20px;
+                min-width: 300px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                z-index: 1001;
+                color: white;
+                font-family: 'JetBrains Mono', 'Noto Sans KR', sans-serif;
+              }
+              .confirm-dialog.show {
+                display: block;
+              }
+              .confirm-dialog-title {
+                font-size: 16px;
+                margin-bottom: 16px;
+                text-align: center;
+              }
+              .confirm-dialog-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+                margin-top: 20px;
+              }
+              .confirm-dialog-button {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 14px;
+                transition: all 0.2s ease;
+              }
+              .confirm-dialog-button.cancel {
+                background-color: transparent;
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+              }
+              .confirm-dialog-button.confirm {
+                background-color: #f44336;
+                color: white;
+              }
+              .confirm-dialog-button:hover {
+                transform: translateY(-1px);
+              }
+              .confirm-dialog-button.cancel:hover {
                 background-color: rgba(255, 255, 255, 0.1);
+              }
+              .confirm-dialog-button.confirm:hover {
+                background-color: #d32f2f;
+              }
+              .dialog-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                z-index: 1000;
+              }
+              .dialog-overlay.show {
+                display: block;
               }
               .iframe-container {
                 position: fixed;
@@ -264,79 +280,82 @@ const WebIDECourses = () => {
           </head>
           <body>
             <div class="header">
-              <button class="logout-btn" id="logoutBtn" title="로그아웃 옵션">
-                <svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 0 24 24" width="28" fill="white">
+              <button class="refresh-btn" id="refreshBtn" title="새로고침">
+                <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14L5.64 18.36a9 9 0 0 0 14.85-3.36"></path>
+                </svg>
+              </button>
+              <button class="logout-btn" id="logoutBtn" title="로그아웃">
+                <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="white">
                   <path d="M0 0h24v24H0z" fill="none"/>
                   <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                 </svg>
               </button>
-              <div class="logout-menu" id="logoutMenu">
-                <button class="logout-menu-item" id="ideLogout">
-                  <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="white">
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                  </svg>
-                  IDE 로그아웃
-                </button>
-                <button class="logout-menu-item" id="fullLogout">
-                  <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="white">
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                  </svg>
-                  전체 로그아웃
-                </button>
+            </div>
+            <div class="dialog-overlay" id="dialogOverlay"></div>
+            <div class="confirm-dialog" id="confirmDialog">
+              <div class="confirm-dialog-title">정말 로그아웃 하시겠습니까?</div>
+              <div class="confirm-dialog-buttons">
+                <button class="confirm-dialog-button cancel" id="cancelLogout">취소</button>
+                <button class="confirm-dialog-button confirm" id="confirmLogout">로그아웃</button>
               </div>
             </div>
-            <iframe src="${finalUrl}" class="iframe-container"></iframe>
+            <iframe id="ideFrame" class="iframe-container" src="${finalUrl}"></iframe>
             <script>
+              const refreshBtn = document.getElementById('refreshBtn');
               const logoutBtn = document.getElementById('logoutBtn');
-              const logoutMenu = document.getElementById('logoutMenu');
-              const ideLogout = document.getElementById('ideLogout');
-              const fullLogout = document.getElementById('fullLogout');
+              const confirmDialog = document.getElementById('confirmDialog');
+              const dialogOverlay = document.getElementById('dialogOverlay');
+              const cancelLogout = document.getElementById('cancelLogout');
+              const confirmLogout = document.getElementById('confirmLogout');
+              const ideFrame = document.getElementById('ideFrame');
+              const IDE_URL = '${IDE_URL}';
 
-              // 메뉴 토글
-              logoutBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                logoutMenu.classList.toggle('show');
+              // 새로고침 버튼 클릭 시 iframe 새로고침
+              refreshBtn.addEventListener('click', function() {
+                ideFrame.src = ideFrame.src;
               });
 
-              // 메뉴 외부 클릭시 닫기
-              document.addEventListener('click', function(e) {
-                if (!logoutMenu.contains(e.target) && !logoutBtn.contains(e.target)) {
-                  logoutMenu.classList.remove('show');
+              // 로그아웃 버튼 클릭 시 확인 다이얼로그 표시
+              logoutBtn.addEventListener('click', function() {
+                confirmDialog.classList.add('show');
+                dialogOverlay.classList.add('show');
+              });
+
+              // 취소 버튼 클릭 시 다이얼로그 닫기
+              cancelLogout.addEventListener('click', function() {
+                confirmDialog.classList.remove('show');
+                dialogOverlay.classList.remove('show');
+              });
+
+              // 오버레이 클릭 시 다이얼로그 닫기
+              dialogOverlay.addEventListener('click', function() {
+                confirmDialog.classList.remove('show');
+                dialogOverlay.classList.remove('show');
+              });
+
+              // 로그아웃 확인
+              confirmLogout.addEventListener('click', async function() {
+                try {
+                  const response = await fetch(IDE_URL + '/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  });
+
+                  if (response.ok) {
+                    await window.opener.auth.logout();
+                    window.close();
+                  } else {
+                    console.error('IDE 로그아웃 실패:', response.status);
+                  }
+                } catch (error) {
+                  console.error('로그아웃 중 오류 발생:', error);
                 }
-              });
-
-              // IDE 로그아웃
-              ideLogout.addEventListener('click', function() {
-                const codeServerFrame = document.createElement('iframe');
-                codeServerFrame.style.display = 'none';
-                codeServerFrame.src = '/code-server/logout';
-                document.body.appendChild(codeServerFrame);
-
-                setTimeout(() => {
-                  document.body.removeChild(codeServerFrame);
-                  window.close();
-                }, 1000);
-              });
-
-              // 전체 로그아웃
-              fullLogout.addEventListener('click', function() {
-                const codeServerFrame = document.createElement('iframe');
-                codeServerFrame.style.display = 'none';
-                codeServerFrame.src = '/code-server/logout';
-                document.body.appendChild(codeServerFrame);
-
-                const jcodeFrame = document.createElement('iframe');
-                jcodeFrame.style.display = 'none';
-                jcodeFrame.src = '/jcode/logout';
-                document.body.appendChild(jcodeFrame);
-
-                setTimeout(() => {
-                  document.body.removeChild(codeServerFrame);
-                  document.body.removeChild(jcodeFrame);
-                  window.close();
-                }, 1000);
               });
             </script>
           </body>
