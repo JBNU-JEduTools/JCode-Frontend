@@ -20,7 +20,7 @@ import {
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 import { ko } from 'date-fns/locale';
-import { getMonitoringData, timeUnits } from '../../mocks/monitoringData';
+import { timeUnits } from '../../mocks/monitoringData';
 import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import crosshairPlugin from 'chartjs-plugin-crosshair';
@@ -48,6 +48,17 @@ const AssignmentMonitoring = () => {
   const [course, setCourse] = useState(null);
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // 타임스탬프 변환 함수 (20250306_1519 형식을 Date 객체로 변환)
+  const parseTimestamp = (timestamp) => {
+    const year = parseInt(timestamp.substring(0, 4));
+    const month = parseInt(timestamp.substring(4, 6)) - 1; // 월은 0부터 시작
+    const day = parseInt(timestamp.substring(6, 8));
+    const hour = parseInt(timestamp.substring(9, 11));
+    const minute = parseInt(timestamp.substring(11, 13));
+    
+    return new Date(year, month, day, hour, minute).getTime();
+  };
 
   // 데이터 다운샘플링 함수
   const downsampleData = (data, targetPoints = 500) => {
@@ -192,7 +203,7 @@ const AssignmentMonitoring = () => {
             pinch: {
               enabled: true
             },
-            mode: 'xy',
+            mode: 'x',
             drag: {
               enabled: false
             },
@@ -227,42 +238,34 @@ const AssignmentMonitoring = () => {
             displayFormats: {
               minute: 'HH:mm',
               hour: 'MM-dd HH:mm',
-              day: 'yyyy-MM-dd',
+              day: 'MM-dd',
               week: 'yyyy-MM-dd',
               month: 'yyyy-MM'
             },
-            stepSize: 1
+            tooltipFormat: 'yyyy-MM-dd HH:mm',
+            adapters: {
+              date: {
+                locale: ko
+              }
+            }
+          },
+          ticks: {
+            source: 'auto',
+            autoSkip: true,
+            maxRotation: 0,
+            color: isDarkMode ? '#F8F8F2' : '#282A36'
+          },
+          grid: {
+            display: true,
+            color: isDarkMode ? 'rgba(98, 114, 164, 0.1)' : 'rgba(189, 147, 249, 0.1)'
+          },
+          border: {
+            color: isDarkMode ? '#6272A4' : '#BD93F9'
           },
           adapters: {
             date: {
               locale: ko
             }
-          },
-          display: true,
-          ticks: {
-            source: 'data',
-            maxRotation: 0,
-            autoSkip: true,
-            maxTicksLimit: 10,
-            padding: 8,
-            align: 'center',
-            color: isDarkMode ? '#F8F8F2' : '#282A36'
-          },
-          offset: !isTotal,
-          grid: {
-            display: true,
-            drawBorder: false,
-            color: isDarkMode ? 'rgba(98, 114, 164, 0.2)' : 'rgba(98, 114, 164, 0.25)',
-            offset: !isTotal,
-            tickColor: isDarkMode ? 'rgba(98, 114, 164, 0.4)' : 'rgba(98, 114, 164, 0.4)',
-            borderColor: isDarkMode ? 'rgba(98, 114, 164, 0.4)' : 'rgba(98, 114, 164, 0.4)',
-            borderWidth: 1
-          },
-          border: {
-            display: true,
-            color: isDarkMode ? '#6272A4' : '#E0E0E0',
-            width: 1,
-            dash: [2, 4]
           }
         },
         y: {
@@ -301,9 +304,22 @@ const AssignmentMonitoring = () => {
   // 차트 생성 함수
   const createChart = (canvas, config) => {
     if (!canvas) return null;
+    if (!data || data.length === 0 || !assignment) return null;
+    
     const ctx = canvas.getContext('2d');
-    const currentTime = new Date().getTime();
-    const defaultRange = 24 * 60 * 60 * 1000;
+    
+    // 과제 시작일과 마감일 가져오기
+    const startTime = new Date(assignment.startDateTime).getTime();
+    const endTime = new Date(assignment.endDateTime).getTime();
+
+    console.log('Assignment Info:', {
+      startDateTime: assignment.startDateTime,
+      endDateTime: assignment.endDateTime,
+      parsedStartTime: new Date(startTime).toLocaleString(),
+      parsedEndTime: new Date(endTime).toLocaleString(),
+      startTime,
+      endTime
+    });
 
     const isBar = config.type === 'bar';
     const options = {
@@ -312,8 +328,8 @@ const AssignmentMonitoring = () => {
         ...getChartOptions(config.type === 'line').scales,
         x: {
           ...getChartOptions(config.type === 'line').scales.x,
-          min: currentTime - defaultRange,
-          max: currentTime,
+          min: startTime,
+          max: endTime,
           display: true,
           offset: isBar,
           grid: {
@@ -329,6 +345,20 @@ const AssignmentMonitoring = () => {
             display: true
           }
         }
+      },
+      plugins: {
+        ...getChartOptions(config.type === 'line').plugins,
+        zoom: {
+          ...getChartOptions(config.type === 'line').plugins.zoom,
+          limits: {
+            x: {
+              min: startTime,
+              max: endTime,
+              minRange: 60 * 1000 // 최소 1분
+            },
+            y: { min: 'original', max: 'original' }
+          }
+        }
       }
     };
 
@@ -342,67 +372,16 @@ const AssignmentMonitoring = () => {
       options
     });
   };
-
-  // 줌 리셋 함수
-  const handleResetZoom = () => {
-    if (isUpdating.current) return;
-    isUpdating.current = true;
-
-    try {
-      const currentTime = new Date().getTime();
-      const defaultRange = 24 * 60 * 60 * 1000;
-      const min = currentTime - defaultRange;
-      const max = currentTime;
-
-      if (totalChartInstance.current) {
-        totalChartInstance.current.options.scales.x.min = min;
-        totalChartInstance.current.options.scales.x.max = max;
-        totalChartInstance.current.update('none');
-      }
-      if (changeChartInstance.current) {
-        changeChartInstance.current.options.scales.x.min = min;
-        changeChartInstance.current.options.scales.x.max = max;
-        changeChartInstance.current.update('none');
-      }
-    } finally {
-      isUpdating.current = false;
-    }
-  };
-
-  // 줌 인/아웃 함수
-  const handleZoom = (factor) => {
-    if (isUpdating.current || !totalChartInstance.current) return;
-    isUpdating.current = true;
-
-    try {
-      const chart = totalChartInstance.current;
-      const range = chart.scales.x.max - chart.scales.x.min;
-      const center = (chart.scales.x.max + chart.scales.x.min) / 2;
-      const newRange = range * factor;
-      const newMin = Math.trunc(center - newRange / 2);
-      const newMax = Math.trunc(center + newRange / 2);
-      
-      chart.options.scales.x.min = newMin;
-      chart.options.scales.x.max = newMax;
-      chart.update('none');
-      
-      if (changeChartInstance.current) {
-        changeChartInstance.current.options.scales.x.min = newMin;
-        changeChartInstance.current.options.scales.x.max = newMax;
-        changeChartInstance.current.update('none');
-      }
-    } finally {
-      isUpdating.current = false;
-    }
-  };
-
   // 차트 업데이트 함수
   const updateCharts = () => {
-    if (!data) return;
-    const currentTime = new Date().getTime();
-    const defaultRange = 24 * 60 * 60 * 1000;
+    if (!data || !assignment) return;
     const sampledData = downsampleData(data);
-
+    
+    // 과제 시작일과 마감일 가져오기
+    const startTime = new Date(assignment.startDateTime).getTime();
+    const endTime = new Date(assignment.endDateTime).getTime();
+    console.log('startTime', startTime);
+    console.log('endTime', endTime);
     const updateChartInstance = (chart, isTotal) => {
       if (!chart) return;
 
@@ -426,8 +405,20 @@ const AssignmentMonitoring = () => {
 
       // 옵션 업데이트
       Object.assign(chart.options, getChartOptions(isTotal));
-      chart.options.scales.x.min = currentTime - defaultRange;
-      chart.options.scales.x.max = currentTime;
+      
+      // 시간 범위 설정 (과제 시작일과 마감일 사이)
+      chart.options.scales.x.min = startTime;
+      chart.options.scales.x.max = endTime;
+
+      // 줌 제한 설정
+      chart.options.plugins.zoom.limits = {
+        x: {
+          min: startTime,
+          max: endTime,
+          minRange: 60 * 1000 // 최소 1분
+        },
+        y: { min: 'original', max: 'original' }
+      };
 
       requestAnimationFrame(() => {
         chart.update('none');
@@ -482,6 +473,14 @@ const AssignmentMonitoring = () => {
         const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
         setAssignment(currentAssignment);
 
+        console.log('Fetched Assignment:', {
+          assignment: currentAssignment,
+          startDateTime: currentAssignment?.startDateTime,
+          endDateTime: currentAssignment?.endDateTime,
+          parsedStartTime: currentAssignment?.startDateTime ? new Date(currentAssignment.startDateTime).toLocaleString() : null,
+          parsedEndTime: currentAssignment?.endDateTime ? new Date(currentAssignment.endDateTime).toLocaleString() : null
+        });
+
         // 강의 정보 조회
         const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
         setCourse(coursesResponse.data);
@@ -491,11 +490,58 @@ const AssignmentMonitoring = () => {
         const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
         setStudent(currentStudent);
 
-        const endDate = new Date();
-        const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
-        const newData = getMonitoringData(startDate, endDate, timeUnit, minuteValue);
-        setData(newData);
+        // interval 값 계산
+        let intervalValue = 1; // 기본값
+        if (timeUnit === 'minute') {
+          intervalValue = parseInt(minuteValue);
+        } else if (timeUnit === 'hour') {
+          intervalValue = 60; // 60분 = 1시간
+        } else if (timeUnit === 'day') {
+          intervalValue = 1440; // 1440분 = 24시간 = 1일
+        } else if (timeUnit === 'week') {
+          intervalValue = 10080; // 10080분 = 7일 = 1주
+        } else if (timeUnit === 'month') {
+          intervalValue = 43200; // 43200분 = 30일 = 1개월 (근사값)
+        }
 
+        // 모니터링 데이터 조회
+        const params = new URLSearchParams({
+          course: 1,
+          assignment: 3,
+          user: 16
+        });
+        const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+        
+        console.log('Monitoring Data:', {
+          intervalValue,
+          dataPoints: monitoringResponse.data.trends.length,
+          firstPoint: monitoringResponse.data.trends[0],
+          lastPoint: monitoringResponse.data.trends[monitoringResponse.data.trends.length - 1]
+        });
+
+        // API 응답 데이터를 차트에 맞는 형식으로 변환
+        const chartData = monitoringResponse.data.trends.map(item => ({
+          timestamp: parseTimestamp(item.timestamp),
+          totalBytes: item.total_size,
+          change: item.size_change
+        }));
+
+        // 과제 시작 시간에 초기 데이터 포인트 추가
+        if (currentAssignment && currentAssignment.startDateTime && chartData.length > 0) {
+          const startTime = new Date(currentAssignment.startDateTime).getTime();
+          const firstDataPoint = chartData[0];
+          
+          // 첫 데이터 포인트가 시작 시간 이후인 경우에만 추가
+          if (firstDataPoint.timestamp > startTime) {
+            chartData.unshift({
+              timestamp: startTime,
+              totalBytes: 0,
+              change: 0
+            });
+          }
+        }
+        
+        setData(chartData);
         setLoading(false);
       } catch (error) {
         console.error('데이터 조회 실패:', error);
@@ -546,7 +592,7 @@ const AssignmentMonitoring = () => {
     try {
       setTimeUnit(newValue);
       
-      // 분 단위가 아닌 다른 단위로 변경할 때는 차트 인스턴스 초기화
+      // 차트 인스턴스 초기화
       if (totalChartInstance.current) {
         totalChartInstance.current.destroy();
         totalChartInstance.current = null;
@@ -555,6 +601,9 @@ const AssignmentMonitoring = () => {
         changeChartInstance.current.destroy();
         changeChartInstance.current = null;
       }
+      
+      // API 호출을 위해 로딩 상태로 변경
+      setLoading(true);
     } finally {
       isUpdating.current = false;
     }
@@ -569,6 +618,7 @@ const AssignmentMonitoring = () => {
       setMinuteValue(newMinuteValue);
       setTimeUnit('minute');
       
+      // 차트 인스턴스 초기화
       if (totalChartInstance.current) {
         totalChartInstance.current.destroy();
         totalChartInstance.current = null;
@@ -577,6 +627,9 @@ const AssignmentMonitoring = () => {
         changeChartInstance.current.destroy();
         changeChartInstance.current = null;
       }
+      
+      // API 호출을 위해 로딩 상태로 변경
+      setLoading(true);
     } finally {
       isUpdating.current = false;
     }
