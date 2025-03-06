@@ -305,8 +305,8 @@ const Admin = () => {
     });
   };
 
-  // 사용자 삭제 핸들러
-  const handleDeleteUser = async () => {
+  // 사용자 및 수업 삭제 핸들러
+  const handleDelete = async () => {
     try {
       const token = sessionStorage.getItem('jwt');
       if (!token) {
@@ -314,69 +314,36 @@ const Admin = () => {
         return;
       }
 
-      await api.delete(`/api/users/${selectedItem.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // 성공 토스트 메시지
-      toast.success(`${selectedItem.name} (${selectedItem.email}) 사용자가 삭제되었습니다.`, {
-        icon: ({theme, type}) => <CheckCircleIcon sx={{ 
-          color: '#fff',
-          fontSize: '1.5rem',
-          mr: 1
-        }}/>,
-        style: {
-          background: isDarkMode ? '#2e7d32' : '#4caf50',
-          color: '#fff',
-          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-          borderRadius: '8px',
-          fontSize: '0.95rem',
-          padding: '12px 20px',
-          maxWidth: '500px',
-          width: 'auto',
-          textOverflow: 'ellipsis',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center'
-        }
-      });
+      if (currentTab === 3) {
+        // 수업 삭제
+        await api.delete(`/api/courses/${selectedItem.courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        toast.success(`${selectedItem.courseName} (${selectedItem.courseCode}) 수업이 삭제되었습니다.`);
+        fetchCourses();
+      } else {
+        // 사용자 삭제
+        await api.delete(`/api/users/${selectedItem.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        toast.success(`${selectedItem.name} (${selectedItem.email}) 사용자가 삭제되었습니다.`);
+        fetchUsers();
+      }
 
-      // 사용자 목록 새로고침
-      fetchUsers();
-      
-      // 다이얼로그 닫기
       handleCloseDialog();
     } catch (error) {
-      console.error('사용자 삭제 실패:', error);
+      console.error('삭제 실패:', error);
       
-      // 에러 메시지 표시
-      const errorMessage = error.response?.status === 404 ? "존재하지 않는 사용자입니다."
-        : error.response?.status === 403 ? "삭제 권한이 없습니다."
-        : "사용자 삭제 중 오류가 발생했습니다.";
+      const errorMessage = error.response?.status === 404 ? 
+        (currentTab === 3 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
+        error.response?.status === 403 ? "삭제 권한이 없습니다." :
+        (currentTab === 3 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
 
-      toast.error(errorMessage, {
-        icon: ({theme, type}) => <ErrorIcon sx={{ 
-          color: '#fff',
-          fontSize: '1.5rem',
-          mr: 1
-        }}/>,
-        style: {
-          background: isDarkMode ? '#d32f2f' : '#f44336',
-          color: '#fff',
-          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-          borderRadius: '8px',
-          fontSize: '0.95rem',
-          padding: '12px 20px',
-          maxWidth: '500px',
-          width: 'auto',
-          textOverflow: 'ellipsis',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center'
-        }
-      });
+      toast.error(errorMessage);
     }
   };
 
@@ -852,7 +819,7 @@ const Admin = () => {
             취소
           </Button>
           <Button 
-            onClick={dialogType === 'delete' ? handleDeleteUser : handleSubmit}
+            onClick={dialogType === 'delete' ? handleDelete : handleSubmit}
             variant="contained"
             color={dialogType === 'delete' ? 'error' : 'primary'}
             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
