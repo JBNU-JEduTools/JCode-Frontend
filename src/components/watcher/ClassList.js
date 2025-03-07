@@ -70,9 +70,13 @@ const ClassList = () => {
     const fetchClasses = async () => {
       try {
         let response;
+        
         if (user?.role === 'ADMIN') {
           // 관리자는 모든 강의를 볼 수 있음
           response = await axios.get('/api/courses');
+        } else if (user?.role === 'ASSISTANT') {
+          // 조교는 자신이 조교하는 강의만 볼 수 있음
+          response = await axios.get('/api/users/me/assistant/courses');
         } else {
           // 교수는 자신의 강의만 볼 수 있음
           response = await axios.get('/api/users/me/courses');
@@ -393,29 +397,31 @@ const ClassList = () => {
                         }}ddddddd
                       />
                     </Box>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRegenerateKey(classItem.courseId);
-                      }}
-                      startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        ml: 2,
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        minWidth: 'auto',
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        px: 1,
-                        height: '28px',
-                        '& .MuiButton-startIcon': {
-                          mr: 0.5
-                        }
-                      }}
-                    >
-                      참가 코드 재발급
-                    </Button>
+                    {user?.role !== 'ASSISTANT' && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRegenerateKey(classItem.courseId);
+                        }}
+                        startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          ml: 2,
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          minWidth: 'auto',
+                          fontSize: '0.75rem',
+                          py: 0.5,
+                          px: 1,
+                          height: '28px',
+                          '& .MuiButton-startIcon': {
+                            mr: 0.5
+                          }
+                        }}
+                      >
+                        참가 코드 재발급
+                      </Button>
+                    )}
                   </Box>
                 </ListItemButton>
               </ListItem>
@@ -435,46 +441,48 @@ const ClassList = () => {
             </Typography>
           )}
 
-          <ListItem 
-            disablePadding 
-            divider
-            onClick={() => setOpenDialog(true)}
-            sx={{
-              ...selectStyles.listItem,
-              cursor: 'pointer',
-              backgroundColor: (theme) => 
-                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-              '&:hover': {
-                backgroundColor: (theme) => 
-                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-              },
-              transition: 'background-color 0.2s ease'
-            }}
-          >
-            <ListItemButton 
+          {user?.role !== 'ASSISTANT' && (
+            <ListItem 
+              disablePadding 
+              divider
+              onClick={() => setOpenDialog(true)}
               sx={{
-                ...selectStyles.listItemButton,
-                width: '100%',
-                justifyContent: 'center',
-                py: 2
+                ...selectStyles.listItem,
+                cursor: 'pointer',
+                backgroundColor: (theme) => 
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                '&:hover': {
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                },
+                transition: 'background-color 0.2s ease'
               }}
             >
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: (theme) => theme.palette.text.secondary
-              }}>
-                <AddIcon sx={{ fontSize: '1.1rem' }} />
-                <Typography sx={{ 
-                  fontSize: '0.9rem',
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+              <ListItemButton 
+                sx={{
+                  ...selectStyles.listItemButton,
+                  width: '100%',
+                  justifyContent: 'center',
+                  py: 2
+                }}
+              >
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: (theme) => theme.palette.text.secondary
                 }}>
-                  새 수업 추가
-                </Typography>
-              </Box>
-            </ListItemButton>
-          </ListItem>
+                  <AddIcon sx={{ fontSize: '1.1rem' }} />
+                  <Typography sx={{ 
+                    fontSize: '0.9rem',
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                  }}>
+                    새 수업 추가
+                  </Typography>
+                </Box>
+              </ListItemButton>
+            </ListItem>
+          )}
 
           <Dialog 
             open={openDialog} 
