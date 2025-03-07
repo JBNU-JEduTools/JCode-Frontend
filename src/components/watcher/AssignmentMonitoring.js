@@ -68,14 +68,33 @@ const AssignmentMonitoring = () => {
     return data.filter((_, index) => index % skip === 0);
   };
 
+  // y축 ticks callback 함수 수정
+  const formatBytes = (bytes) => {
+    if (!Number.isInteger(bytes)) return '';
+    if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
+      return `${(bytes / 1048576).toFixed(1)}M`;
+    } else if (Math.abs(bytes) >= 1024) { // 1KB
+      return `${(bytes / 1024).toFixed(1)}K`;
+    }
+    return `${bytes}B`;
+  };
+
   // 차트 옵션 설정 - useMemo로 최적화
   const getChartOptions = (isTotal = true) => {
     const calculateStepSize = (chart) => {
       if (!chart || !chart.data || !chart.data.datasets || chart.data.datasets.length === 0) return 100;
       
-      const values = chart.data.datasets[0].data;
-      const max = Math.max(...values);
-      const min = Math.min(...values);
+      // x축의 현재 범위 내에서의 데이터만 필터링
+      const xMin = chart.scales.x.min;
+      const xMax = chart.scales.x.max;
+      const visibleData = chart.data.datasets[0].data.filter((_, index) => {
+        const timestamp = chart.data.labels[index];
+        return timestamp >= xMin && timestamp <= xMax;
+      });
+      
+      // 보이는 범위 내의 최대/최소값 계산
+      const max = Math.max(...visibleData);
+      const min = Math.min(...visibleData);
       const range = max - min;
       
       const targetTicks = 15;
@@ -151,6 +170,13 @@ const AssignmentMonitoring = () => {
             } finally {
               isUpdating.current = false;
             }
+          },
+          callbacks: {
+            label: (context) => {
+              const label = context.dataset.label || '';
+              const value = context.parsed.y;
+              return `${label}: ${formatBytes(value)}`;
+            }
           }
         },
         crosshair: {
@@ -189,6 +215,13 @@ const AssignmentMonitoring = () => {
                   const xMax = Math.trunc(chart.scales.x.max);
                   targetChart.options.scales.x.min = xMin;
                   targetChart.options.scales.x.max = xMax;
+                  
+                  // y축 범위 업데이트
+                  calculateYAxisRange(chart, chart === totalChartInstance.current);
+                  calculateYAxisRange(targetChart, targetChart === totalChartInstance.current);
+                  
+                  // 차트 업데이트
+                  chart.update('none');
                   targetChart.update('none');
                 }
               } finally {
@@ -221,6 +254,13 @@ const AssignmentMonitoring = () => {
                   const xMax = Math.trunc(chart.scales.x.max);
                   targetChart.options.scales.x.min = xMin;
                   targetChart.options.scales.x.max = xMax;
+                  
+                  // y축 범위 업데이트
+                  calculateYAxisRange(chart, chart === totalChartInstance.current);
+                  calculateYAxisRange(targetChart, targetChart === totalChartInstance.current);
+                  
+                  // 차트 업데이트
+                  chart.update('none');
                   targetChart.update('none');
                 }
               } finally {
@@ -251,7 +291,7 @@ const AssignmentMonitoring = () => {
           },
           ticks: {
             source: 'auto',
-            autoSkip: true,
+            autoSkip: false,
             maxRotation: 0,
             color: isDarkMode ? '#F8F8F2' : '#282A36'
           },
@@ -274,11 +314,12 @@ const AssignmentMonitoring = () => {
           display: true,
           ticks: {
             padding: 8,
-            callback: (value) => Number.isInteger(value) ? `${value} B` : '',
-            stepSize: (context) => calculateStepSize(context.chart),
+            callback: (value) => formatBytes(value),
+            stepSize: 500,
             display: true,
             z: 1,
-            color: isDarkMode ? '#F8F8F2' : '#282A36'
+            color: isDarkMode ? '#F8F8F2' : '#282A36',
+            autoSkip: true
           },
           grid: {
             display: true,
@@ -295,6 +336,32 @@ const AssignmentMonitoring = () => {
             color: isDarkMode ? '#6272A4' : '#E0E0E0',
             width: 1,
             dash: [2, 4]
+          },
+          afterDataLimits: (scale) => {
+            const chart = scale.chart;
+            const xMin = chart.scales.x.min;
+            const xMax = chart.scales.x.max;
+            const visibleData = chart.data.datasets[0].data.filter((_, index) => {
+              const timestamp = chart.data.labels[index];
+              return timestamp >= xMin && timestamp <= xMax;
+            });
+            
+            if (visibleData.length > 0) {
+              if (isTotal) {
+                const max = Math.max(...visibleData);
+                const roundedMax = Math.ceil((max * 1.1) / 500) * 500;
+                scale.min = 0;
+                scale.max = roundedMax;
+              } else {
+                const maxPositive = Math.max(...visibleData, 0);
+                const maxNegative = Math.abs(Math.min(...visibleData, 0));
+                const maxValue = Math.max(maxPositive, maxNegative);
+                const roundedMax = Math.ceil((maxValue * 1.1) / 500) * 500;
+                
+                scale.min = -roundedMax;
+                scale.max = roundedMax;
+              }
+            }
           }
         }
       }
@@ -365,6 +432,47 @@ const AssignmentMonitoring = () => {
     if (isBar) {
       config.data.datasets[0].barPercentage = 0.8;
       config.data.datasets[0].categoryPercentage = 0.9;
+      
+      // 막대 그래프의 y축 설정을 라인 그래프와 동일하게 설정
+      options.scales.y = {
+        ...getChartOptions(false).scales.y,  // 라인 그래프와 동일한 기본 설정 사용
+        position: 'right',
+        display: true,
+        ticks: {
+          padding: 8,
+          callback: (value) => formatBytes(value),
+          stepSize: 500,
+          display: true,
+          z: 1,
+          color: isDarkMode ? '#F8F8F2' : '#282A36',
+          autoSkip: true
+        },
+        grid: {
+          display: true,
+          drawBorder: false,
+          color: isDarkMode ? 'rgba(98, 114, 164, 0.2)' : 'rgba(98, 114, 164, 0.25)',
+          drawTicks: true,
+          tickColor: isDarkMode ? 'rgba(98, 114, 164, 0.4)' : 'rgba(98, 114, 164, 0.4)',
+          borderColor: isDarkMode ? 'rgba(98, 114, 164, 0.4)' : 'rgba(98, 114, 164, 0.4)',
+          borderWidth: 1,
+          z: 0
+        },
+        border: {
+          display: true,
+          color: isDarkMode ? '#6272A4' : '#E0E0E0',
+          width: 1,
+          dash: [2, 4]
+        }
+      };
+      
+      // 양수/음수 데이터가 없어도 0을 중심으로 대칭되게 설정
+      const data = config.data.datasets[0].data;
+      const max = Math.max(...data, 0);
+      const min = Math.min(...data, 0);
+      const absMax = Math.max(Math.abs(max), Math.abs(min));
+      
+      options.scales.y.min = -absMax * 1.1;
+      options.scales.y.max = absMax * 1.1;
     }
 
     return new Chart(ctx, {
@@ -439,7 +547,8 @@ const AssignmentMonitoring = () => {
             borderColor: isDarkMode ? '#BD93F9' : '#6272A4',
             borderWidth: 2,
             pointRadius: 0,
-            fill: false
+            fill: false,
+            stepped: 'before'
           }]
         }
       });
@@ -468,6 +577,11 @@ const AssignmentMonitoring = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('시간 단위 설정:', {
+          timeUnit,
+          minuteValue,
+        });
+
         // 과제 정보 조회
         const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
         const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
@@ -510,13 +624,17 @@ const AssignmentMonitoring = () => {
           assignment: 3,
           user: 16
         });
+        
+        console.log('API 요청 파라미터:', {
+          intervalValue,
+          params: params.toString()
+        });
+
         const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
         
-        console.log('Monitoring Data:', {
-          intervalValue,
-          dataPoints: monitoringResponse.data.trends.length,
-          firstPoint: monitoringResponse.data.trends[0],
-          lastPoint: monitoringResponse.data.trends[monitoringResponse.data.trends.length - 1]
+        console.log('API 응답 데이터:', {
+          trends: monitoringResponse.data.trends,
+          dataLength: monitoringResponse.data.trends.length
         });
 
         // API 응답 데이터를 차트에 맞는 형식으로 변환
@@ -541,10 +659,21 @@ const AssignmentMonitoring = () => {
           }
         }
         
+        // 변환된 차트 데이터 확인
+        console.log('변환된 차트 데이터:', {
+          chartDataLength: chartData.length,
+          firstPoint: chartData[0],
+          lastPoint: chartData[chartData.length - 1]
+        });
+
         setData(chartData);
         setLoading(false);
       } catch (error) {
-        console.error('데이터 조회 실패:', error);
+        console.error('데이터 조회 중 오류 발생:', error);
+        console.error('오류 상세:', {
+          message: error.message,
+          response: error.response?.data
+        });
         setLoading(false);
       }
     };
@@ -632,6 +761,37 @@ const AssignmentMonitoring = () => {
       setLoading(true);
     } finally {
       isUpdating.current = false;
+    }
+  };
+
+  // y축 범위를 계산하는 함수 추가
+  const calculateYAxisRange = (chart, isTotal) => {
+    const xMin = chart.scales.x.min;
+    const xMax = chart.scales.x.max;
+    const visibleData = chart.data.datasets[0].data.filter((_, index) => {
+      const timestamp = chart.data.labels[index];
+      return timestamp >= xMin && timestamp <= xMax;
+    });
+    
+    if (visibleData.length > 0) {
+      if (isTotal) {
+        // 총 코드량 차트
+        const max = Math.max(...visibleData);
+        // 500의 배수로 올림
+        const roundedMax = Math.ceil((max * 1.1) / 500) * 500;
+        chart.options.scales.y.min = 0;
+        chart.options.scales.y.max = roundedMax;
+      } else {
+        // 변화량 차트
+        const maxPositive = Math.max(...visibleData, 0);
+        const maxNegative = Math.abs(Math.min(...visibleData, 0));
+        const maxValue = Math.max(maxPositive, maxNegative);
+        // 500의 배수로 올림
+        const roundedMax = Math.ceil((maxValue * 1.1) / 500) * 500;
+        
+        chart.options.scales.y.min = -roundedMax;
+        chart.options.scales.y.max = roundedMax;
+      }
     }
   };
 
