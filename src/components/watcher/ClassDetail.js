@@ -420,6 +420,8 @@ const ClassDetail = () => {
   });
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState(null);
+  const [promotingStudent, setPromotingStudent] = useState(null);
+  const [openPromoteDialog, setOpenPromoteDialog] = useState(false);
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
@@ -463,6 +465,7 @@ const ClassDetail = () => {
   }, [courseId, user]);
 
   const getFilteredAndSortedStudents = () => {
+    // 검색 조건에 맞는 사용자들만 필터링
     const filtered = students.filter(student => {
       const searchLower = searchQuery.toLowerCase();
       const emailMatch = student.email?.toLowerCase().includes(searchLower);
@@ -471,8 +474,25 @@ const ClassDetail = () => {
       return emailMatch || nameMatch || studentNumMatch;
     });
 
+    // 정렬: 교수 > 조교 > 학생 순서로 정렬
     return filtered.sort((a, b) => {
-      let aValue, bValue;
+      // 역할 우선순위 정의 (순서 변경)
+      const roleOrder = {
+        'PROFESSOR': 0,
+        'ASSISTANT': 1,
+        'STUDENT': 2,
+        'ADMIN': 3
+      };
+
+      // 먼저 역할로 정렬
+      if (roleOrder[a.role] !== roleOrder[b.role]) {
+        return roleOrder[a.role] - roleOrder[b.role];
+      }
+      
+      // 역할이 같은 경우 선택된 정렬 기준으로 정렬
+      let aValue = '';
+      let bValue = '';
+      
       switch(sort.field) {
         case 'email':
           aValue = a.email || '';
@@ -486,9 +506,6 @@ const ClassDetail = () => {
           aValue = String(a.studentNum || '');
           bValue = String(b.studentNum || '');
           break;
-        default:
-          aValue = '';
-          bValue = '';
       }
       
       return sort.order === 'asc' 
@@ -569,6 +586,41 @@ const ClassDetail = () => {
     } catch (error) {
       console.error('과제 삭제 실패:', error);
       toast.error('과제 삭제에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handlePromoteToTA = async () => {
+    try {
+      console.log('권한 변경 요청:', {
+        userId: promotingStudent.userId,
+        newRole: promotingStudent.newRole,
+        courseId: course.courseId
+      });
+      
+      await api.put(`/api/users/${promotingStudent.userId}/role`, {
+        newRole: promotingStudent.newRole,
+                                        courseId: course.courseId
+      });
+      
+      // 성공 메시지 표시 - 메시지 수정
+      const roleText = {
+        'STUDENT': '학생',
+        'ASSISTANT': '조교',
+        'PROFESSOR': '교수'
+      }[promotingStudent.newRole];
+      
+      toast.success(`${promotingStudent.name}님의 권한을 ${roleText}(으)로 변경했습니다.`);
+      
+      // 학생 목록 새로고침
+      const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+      setStudents(studentsResponse.data);
+      
+      // 다이얼로그 닫기
+      setOpenPromoteDialog(false);
+      setPromotingStudent(null);
+    } catch (error) {
+      console.error('권한 변경 실패:', error);
+      toast.error('권한 변경에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -808,6 +860,18 @@ const ClassDetail = () => {
                           sx={{ 
                             transition: 'all 0.3s ease',
                             animation: 'fadeIn 0.3s ease',
+                            backgroundColor: theme => {
+                              if (student.courseRole === 'PROFESSOR') {
+                                return theme.palette.mode === 'dark' 
+                                  ? 'rgba(76, 175, 80, 0.08)' 
+                                  : 'rgba(76, 175, 80, 0.05)';
+                              } else if (student.courseRole === 'ASSISTANT') {
+                                return theme.palette.mode === 'dark' 
+                                  ? 'rgba(255, 167, 38, 0.08)' 
+                                  : 'rgba(255, 167, 38, 0.05)';
+                              }
+                              return 'transparent';
+                            },
                             '@keyframes fadeIn': {
                               '0%': {
                                 opacity: 0,
@@ -822,6 +886,36 @@ const ClassDetail = () => {
                         >
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                             {student.studentNum}
+                            {student.courseRole === 'PROFESSOR' && (
+                              <Chip
+                                label="교수"
+                                size="small"
+                                color="success"
+                                sx={{ 
+                                  ml: 1,
+                                  height: '20px',
+                                  '& .MuiChip-label': {
+                                    px: 1,
+                                    fontSize: '0.625rem'
+                                  }
+                                }}
+                              />
+                            )}
+                            {student.courseRole === 'ASSISTANT' && (
+                              <Chip
+                                label="조교"
+                                size="small"
+                                color="warning"
+                                sx={{ 
+                                  ml: 1,
+                                  height: '20px',
+                                  '& .MuiChip-label': {
+                                    px: 1,
+                                    fontSize: '0.625rem'
+                                  }
+                                }}
+                              />
+                            )}
                           </TableCell>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                             {student.name}
@@ -872,15 +966,36 @@ const ClassDetail = () => {
                                   px: 1.5,
                                   minHeight: '28px',
                                   borderRadius: '14px',
-                                  textTransform: 'none',
-                                  '&:hover': {
-                                    backgroundColor: (theme) => 
-                                      theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(33, 150, 243, 0.08)'
-                                  }
+                                  textTransform: 'none'
                                 }}
                               >
                                 Watcher
                               </Button>
+                              {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN') && (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<PeopleIcon sx={{ fontSize: '1rem' }} />}
+                                  onClick={() => {
+                                    setPromotingStudent({
+                                      ...student,
+                                      newRole: student.role
+                                    });
+                                    setOpenPromoteDialog(true);
+                                  }}
+                                  sx={{ 
+                                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                    fontSize: '0.75rem',
+                                    py: 0.5,
+                                    px: 1.5,
+                                    minHeight: '28px',
+                                    borderRadius: '14px',
+                                    textTransform: 'none'
+                                  }}
+                                >
+                                  권한 변경
+                                </Button>
+                              )}
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -1450,6 +1565,88 @@ const ClassDetail = () => {
                 }}
               >
                 삭제
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 권한 변경 다이얼로그 */}
+          <Dialog
+            open={openPromoteDialog}
+            onClose={() => {
+              setOpenPromoteDialog(false);
+              setPromotingStudent(null);
+            }}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ 
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              fontSize: '1.25rem',
+              py: 3
+            }}>
+              권한 변경
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  mb: 2 
+                }}>
+                  {promotingStudent?.name}님의 권한을 변경합니다.
+                </Typography>
+                <Select
+                  fullWidth
+                  value={promotingStudent?.newRole || 'STUDENT'}
+                  onChange={(e) => setPromotingStudent(prev => ({
+                    ...prev,
+                    newRole: e.target.value
+                  }))}
+                  size="small"
+                >
+                  <MenuItem value="STUDENT">학생</MenuItem>
+                  <MenuItem value="ASSISTANT">조교</MenuItem>
+                  {user?.role === 'ADMIN' && (
+                    <MenuItem value="PROFESSOR">교수</MenuItem>
+                  )}
+                </Select>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button
+                onClick={() => {
+                  setOpenPromoteDialog(false);
+                  setPromotingStudent(null);
+                }}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handlePromoteToTA}
+                variant="contained"
+                color="warning"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                변경
               </Button>
             </DialogActions>
           </Dialog>
