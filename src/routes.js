@@ -75,7 +75,7 @@ export const getDefaultRoute = (role) => {
     case 'ADMIN':
       return '/admin';
     case 'PROFESSOR':
-    case 'ASSISTANCE':
+    case 'ASSISTANT':
       return '/watcher';
     case 'STUDENT':
       return '/webide';
