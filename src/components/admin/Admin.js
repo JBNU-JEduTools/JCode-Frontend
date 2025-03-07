@@ -190,30 +190,23 @@ const Admin = () => {
       
       // 역할별로 사용자 분류
       const categorizedUsers = response.data.reduce((acc, user) => {
+        const userData = {
+          id: user.userId,
+          name: user.name,
+          studentId: user.studentNum?.toString() || '-',
+          email: user.email,
+          role: user.role
+        };
+
         switch (user.role) {
           case 'PROFESSOR':
-            acc.professors.push({
-              id: user.userId,
-              name: user.name,
-              studentId: user.studentNum?.toString() || '-',
-              email: user.email
-            });
+            acc.professors.push(userData);
             break;
           case 'ASSISTANT':
-            acc.assistants.push({
-              id: user.userId,
-              name: user.name,
-              studentId: user.studentNum?.toString() || '-',
-              email: user.email
-            });
+            acc.assistants.push(userData);
             break;
           case 'STUDENT':
-            acc.students.push({
-              id: user.userId,
-              name: user.name,
-              studentId: user.studentNum?.toString() || '-',
-              email: user.email
-            });
+            acc.students.push(userData);
             break;
           default:
             break;
@@ -446,18 +439,21 @@ const Admin = () => {
     const columns = {
       professors: [
         { id: 'name', label: '이름' },
-        { id: 'studentId', label: '교번' },
-        { id: 'email', label: '이메일' }
+        { id: 'studentId', label: '학번/교번' },
+        { id: 'email', label: '이메일' },
+        { id: 'role', label: '역할' }
       ],
       assistants: [
         { id: 'name', label: '이름' },
-        { id: 'studentId', label: '학번' },
-        { id: 'email', label: '이메일' }
+        { id: 'studentId', label: '학번/교번' },
+        { id: 'email', label: '이메일' },
+        { id: 'role', label: '역할' }
       ],
       students: [
         { id: 'name', label: '이름' },
-        { id: 'studentId', label: '학번' },
-        { id: 'email', label: '이메일' }
+        { id: 'studentId', label: '학번/교번' },
+        { id: 'email', label: '이메일' },
+        { id: 'role', label: '역할' }
       ],
       courses: [
         { id: 'courseName', label: '수업명' },
@@ -515,16 +511,18 @@ const Admin = () => {
                     }}
                   >
                     {column.label}
-                    <IconButton size="small" onClick={() => toggleSort(column.id)} sx={{ ml: 1 }}>
-                      <Box sx={{ 
-                        transform: sort.field !== column.id ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                        transition: 'transform 0.2s ease-in-out',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
-                        <KeyboardArrowDownIcon fontSize="small" />
-                      </Box>
-                    </IconButton>
+                    {column.id !== 'role' && (
+                      <IconButton size="small" onClick={() => toggleSort(column.id)} sx={{ ml: 1 }}>
+                        <Box sx={{ 
+                          transform: sort.field !== column.id ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                          transition: 'transform 0.2s ease-in-out',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <KeyboardArrowDownIcon fontSize="small" />
+                        </Box>
+                      </IconButton>
+                    )}
                   </TableCell>
                 ))}
                 <TableCell sx={{ 
@@ -572,6 +570,18 @@ const Admin = () => {
                       <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                         {item.email}
                       </TableCell>
+                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                        <Select
+                          size="small"
+                          value={item.role || 'STUDENT'}
+                          onChange={(e) => handleRoleChange(item.id, e.target.value)}
+                          sx={{ minWidth: 120 }}
+                        >
+                          <MenuItem value="STUDENT">학생</MenuItem>
+                          <MenuItem value="ASSISTANT">조교</MenuItem>
+                          <MenuItem value="PROFESSOR">교수</MenuItem>
+                        </Select>
+                      </TableCell>
                     </>
                   )}
                   <TableCell>
@@ -596,32 +606,6 @@ const Admin = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              <TableRow 
-                sx={{ 
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: (theme) => theme.palette.action.hover
-                  }
-                }}
-                onClick={() => handleOpenDialog('add')}
-              >
-                <TableCell 
-                  colSpan={currentTab === 3 ? 7 : 4} 
-                  align="center"
-                  sx={{ 
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    color: 'primary.main',
-                    py: 2
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                    <AddIcon />
-                    <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                      {sections[Object.keys(sections)[currentTab]].title.replace(' 관리', '') + ' 추가'}
-                    </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
@@ -638,6 +622,21 @@ const Admin = () => {
         )}
       </>
     );
+  };
+
+  // 역할 변경 핸들러 추가
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await api.put(`/api/users/${userId}/role`, {
+        newRole: newRole
+      });
+      
+      toast.success('사용자 역할이 변경되었습니다.');
+      fetchUsers(); // 사용자 목록 새로고침
+    } catch (error) {
+      console.error('역할 변경 실패:', error);
+      toast.error('역할 변경에 실패했습니다.');
+    }
   };
 
   // 다이얼로그 렌더링
