@@ -408,7 +408,7 @@ const ClassDetail = () => {
   });
   const [currentTab, setCurrentTab] = useState(() => {
     const params = new URLSearchParams(location.search);
-    return params.get('tab') || 'statistics';
+    return params.get('tab') || 'students';
   });
   const { user } = useAuth();
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -474,7 +474,7 @@ const ClassDetail = () => {
       return emailMatch || nameMatch || studentNumMatch;
     });
 
-    // 정렬: 교수 > 조교 > 학생 순서로 정렬
+    // 정렬: 교수 > 조교 > 학생 > 관리자 순서로 정렬
     return filtered.sort((a, b) => {
       // 역할 우선순위 정의 (순서 변경)
       const roleOrder = {
@@ -485,8 +485,8 @@ const ClassDetail = () => {
       };
 
       // 먼저 역할로 정렬
-      if (roleOrder[a.role] !== roleOrder[b.role]) {
-        return roleOrder[a.role] - roleOrder[b.role];
+      if (roleOrder[a.courseRole] !== roleOrder[b.courseRole]) {
+        return roleOrder[a.courseRole] - roleOrder[b.courseRole];
       }
       
       // 역할이 같은 경우 선택된 정렬 기준으로 정렬
@@ -753,18 +753,6 @@ const ClassDetail = () => {
             }}
           >
             <Tab 
-              icon={<BarChartIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
-              label="통계" 
-              value="statistics"
-              iconPosition="start"
-              sx={{ 
-                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                textTransform: 'none',
-                minHeight: '40px',
-                alignItems: 'center'
-              }}
-            />
-            <Tab 
               icon={<GroupIcon sx={{ fontSize: '1.2rem', mr: 1 }} />} 
               label="학생" 
               value="students"
@@ -809,6 +797,9 @@ const ClassDetail = () => {
                   <Table>
                     <TableHead>
                       <TableRow>
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '60px' }}>
+                          No.
+                        </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
                           학번
                           <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
@@ -884,6 +875,9 @@ const ClassDetail = () => {
                             }
                           }}
                         >
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", textAlign: 'center' }}>
+                            {index + 1}
+                          </TableCell>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                             {student.studentNum}
                             {student.courseRole === 'PROFESSOR' && (
@@ -925,53 +919,7 @@ const ClassDetail = () => {
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                                onClick={async () => {
-                                  try {
-                                    const response = await api.get(`/api/redirect/redirect`, {
-                                      params: {
-                                        userId: student.userId,
-                                        courseId: course.courseId
-                                      }
-                                    });
-                                    window.location.href = response.data.redirectUrl;
-                                  } catch (error) {
-                                    console.error('JCode 리다이렉트 실패:', error);
-                                  }
-                                }}
-                                sx={{ 
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  fontSize: '0.75rem',
-                                  py: 0.5,
-                                  px: 1.5,
-                                  minHeight: '28px',
-                                  borderRadius: '14px',
-                                  textTransform: 'none'
-                                }}
-                              >
-                                JCode
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                                onClick={() => navigate(`/watcher/monitoring/${student.userId}`)}
-                                sx={{ 
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  fontSize: '0.75rem',
-                                  py: 0.5,
-                                  px: 1.5,
-                                  minHeight: '28px',
-                                  borderRadius: '14px',
-                                  textTransform: 'none'
-                                }}
-                              >
-                                Watcher
-                              </Button>
-                              {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN') && (
+                              {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN') && student.courseRole !== 'PROFESSOR' && (
                                 <Button
                                   variant="outlined"
                                   size="small"
@@ -1195,15 +1143,6 @@ const ClassDetail = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </Box>
-            </Fade>
-          )}
-
-          {/* 통계 탭 */}
-          {currentTab === 'statistics' && (
-            <Fade in={currentTab === 'statistics'} timeout={300}>
-              <Box>
-                <Typography>통계 데이터가 준비중입니다.</Typography>
               </Box>
             </Fade>
           )}
