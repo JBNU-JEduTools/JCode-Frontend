@@ -77,3 +77,15 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+
+# Docker
+*.tar
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.tar.lzma
+*.tar.lzo
+*.tar.lrz
+
+# Nginx
+default.conf
