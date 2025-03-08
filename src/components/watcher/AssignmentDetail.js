@@ -72,6 +72,8 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 import crosshairPlugin from 'chartjs-plugin-crosshair';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import SortIcon from '@mui/icons-material/Sort';
+import NumbersIcon from '@mui/icons-material/Numbers';
 
 ChartJS.register(
   CategoryScale,
@@ -137,131 +139,34 @@ const AssignmentDetail = () => {
     setTabValue(newValue);
   };
 
-  // 목업 데이터 생성 함수
-  const generateMockData = (count) => {
-    const firstNames = [
-      '민준', '서준', '도윤', '예준', '시우', '하준', '지호', '주원', '지후', '준우',
-      '서연', '서윤', '지우', '서현', '하은', '하윤', '민서', '지유', '윤서', '지민',
-      '현우', '지훈', '건우', '우진', '선우', '서진', '민재', '현준', '연우', '유준',
-      '정우', '승우', '승현', '시윤', '준서', '유찬', '윤우', '준혁', '지환', '승민',
-      '수아', '지아', '소율', '지윤', '채원', '수빈', '다은', '예은', '수민', '예린',
-      '주현', '동현', '태현', '민성', '준영', '승준', '현서', '민규', '한결', '성민',
-      '예진', '지은', '혜원', '유진', '민지', '서영', '윤아', '유나', '은서', '예원',
-      '시현', '도현', '승원', '정민', '태민', '민찬', '윤호', '지성', '준호', '승호',
-      '채은', '나은', '서희', '윤지', '은지', '수연', '예서', '가은', '서율', '아린',
-      '준수', '현민', '건호', '성준', '지원', '재민', '윤재', '정현', '시원', '재현'
-    ];
+  // 목업 데이터 생성 함수 수정
+  const generateMockData = () => {
+    const mockSubmissions = [];
     
-    const lastNames = [
-      '김', '이', '박', '최', '정', '강', '조', '윤', '장', '임',
-      '한', '오', '서', '신', '권', '황', '안', '송', '류', '전',
-      '홍', '고', '문', '양', '손', '배', '조', '백', '허', '유',
-      '남', '심', '노', '정', '하', '곽', '성', '차', '주', '우',
-      '구', '신', '임', '나', '전', '민', '유', '진', '지', '엄'
-    ];
-
-    return Array.from({ length: count }, (_, i) => {
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const name = lastName + firstName;
-
-      const pattern = Math.random(); // 학생별 패턴 결정
-      let baseChanges;
+    for (let i = 1; i <= 150; i++) {
+      const totalChanges = Math.floor(Math.random() * 50000) + 1000; // 1000~51000 바이트 사이의 랜덤 값
+      const submissionCount = Math.floor(Math.random() * 30) + 1; // 1~30회 사이의 랜덤 제출 횟수
+      const avgChangesPerMin = totalChanges / (Math.floor(Math.random() * 100) + 20); // 랜덤 평균 변화량
       
-      if (pattern < 0.1) { // 매우 활발한 활동 (10%)
-        baseChanges = 800 + Math.random() * 400;  // 800-1200 bytes
-      } else if (pattern < 0.3) { // 활발한 활동 (20%)
-        baseChanges = 500 + Math.random() * 300;  // 500-800 bytes
-      } else if (pattern < 0.7) { // 보통 활동 (40%)
-        baseChanges = 200 + Math.random() * 300;  // 200-500 bytes
-      } else if (pattern < 0.9) { // 저조한 활동 (20%)
-        baseChanges = 50 + Math.random() * 150;   // 50-200 bytes
-      } else { // 매우 저조한 활동 (10%)
-        baseChanges = Math.random() * 50;         // 0-50 bytes
-      }
-
-      // 학생별 활동 시작 시간 랜덤화 (과제 시작 후 0~48시간 사이)
-      const startDelay = Math.floor(Math.random() * 48);
+      // 마지막 제출 시간을 랜덤하게 생성 (과제 시작일과 마감일 사이)
+      const lastSubmissionTime = new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)).toISOString();
       
-      // 학생별 활동 패턴 생성
-      const activityPattern = Math.random();
-      let activityTiming;
-      
-      if (activityPattern < 0.3) { // 초반 집중형 (30%)
-        activityTiming = (hour) => Math.max(0, 1 - (hour / 72) * 1.5);
-      } else if (activityPattern < 0.6) { // 중반 집중형 (30%)
-        activityTiming = (hour) => Math.max(0, 1 - Math.abs(hour - 36) / 36);
-      } else { // 후반 집중형 (40%)
-        activityTiming = (hour) => Math.max(0, (hour / 72) * 1.5);
-      }
-
-      // 과제 기간 동안의 활동 데이터 생성
-      const activityData = [];
-      const now = new Date();
-      const totalHours = Math.ceil((now - startDate) / (1000 * 60 * 60));
-      
-      for (let hour = startDelay; hour < totalHours; hour++) {
-        const timeOfDay = hour % 24; // 0-23
-        let multiplier = 1;
-
-        // 시간대별 활동량 조절
-        if (timeOfDay >= 1 && timeOfDay <= 6) { // 새벽 (1-6시)
-          multiplier = 0.2;
-        } else if (timeOfDay >= 7 && timeOfDay <= 9) { // 아침 (7-9시)
-          multiplier = 0.8;
-        } else if (timeOfDay >= 10 && timeOfDay <= 18) { // 낮/오후 (10-18시)
-          multiplier = 1.2;
-        } else if (timeOfDay >= 19 && timeOfDay <= 23) { // 저녁 (19-23시)
-          multiplier = 1.5;
-        } else { // 자정
-          multiplier = 0.5;
-        }
-
-        // 요일별 가중치 추가
-        const dayOfWeek = new Date(startDate.getTime() + hour * 3600000).getDay();
-        if (dayOfWeek === 0 || dayOfWeek === 6) { // 주말
-          multiplier *= 1.5;
-        }
-
-        // 활동 시점에 따른 가중치
-        multiplier *= activityTiming(hour);
-
-        // 무작위 변동 추가 (±20%)
-        multiplier *= (0.8 + Math.random() * 0.4);
-
-        // 간헐적인 큰 변화 추가 (5% 확률로 2~5배 증가)
-        if (Math.random() < 0.05) {
-          multiplier *= (2 + Math.random() * 3);
-        }
-
-        activityData.push({
-          timestamp: new Date(startDate.getTime() + hour * 3600000),
-          changes: Math.round(baseChanges * multiplier)
-        });
-      }
-
-      // 제출 횟수는 활동량과 시간에 비례하도록
-      const totalChanges = activityData.reduce((sum, data) => sum + data.changes, 0);
-      const submissionCount = Math.max(1, Math.floor((totalChanges / 10000) * (activityData.length / 24) + Math.random() * 3));
-
-      // 학번 생성 (2020~2024학번)
-      const admissionYear = 2020 + Math.floor(Math.random() * 5);
-      const studentNumber = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-      const studentNum = `${admissionYear}${studentNumber}`;
-
-      return {
-        userId: i + 1,
-        userEmail: `${studentNum}@university.ac.kr`,
-        name,
-        studentNum,
-        status: totalChanges > 5000 ? '완료' : '진행중',
-        activityData,
+      mockSubmissions.push({
+        userId: i,
+        name: `학생${i}`,
+        studentNum: `2023${100000 + i}`,
+        userEmail: `student${i}@example.com`,
+        lastSubmissionTime,
         submissionCount,
         totalChanges,
-        avgChangesPerMin: Math.round(totalChanges / (activityData.length * 60)),
-        isCorrect: totalChanges > 5000 ? Math.random() > 0.3 : Math.random() > 0.7
-      };
-    });
+        avgChangesPerMin,
+        activityData: Array(10).fill().map(() => ({
+          changes: Math.floor(Math.random() * 1000) - 200 // -200~800 사이의 랜덤 변화량
+        }))
+      });
+    }
+    
+    return mockSubmissions;
   };
 
   useEffect(() => {
@@ -302,6 +207,12 @@ const AssignmentDetail = () => {
 
         // 수강생 목록 조회
         const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+        // 실제 API 응답으로 submissions 설정
+        // setSubmissions(studentsResponse.data || []);
+        
+        // 목업 데이터로 대체
+        setSubmissions(generateMockData());
+        
         setLoading(false);
       } catch (error) {
         console.error('데이터 조회 실패:', error);
@@ -315,8 +226,8 @@ const AssignmentDetail = () => {
 
   useEffect(() => {
     if (assignment) {
-      const kickoff = new Date(assignment.kickoffDate);
-      const deadline = new Date(assignment.deadlineDate);
+      const kickoff = new Date(assignment.startDateTime || assignment.kickoffDate);
+      const deadline = new Date(assignment.endDateTime || assignment.deadlineDate);
       setStartDate(kickoff);
       setEndDate(deadline);
       setRangeStartDate(kickoff);
@@ -324,14 +235,6 @@ const AssignmentDetail = () => {
       setCurrentRange([0, 100]);
     }
   }, [assignment]);
-
-  useEffect(() => {
-    if (startDate && endDate) {
-      // startDate와 endDate가 설정된 후에 목업 데이터 생성
-      const mockSubmissions = generateMockData(150);
-      setSubmissions(mockSubmissions);
-    }
-  }, [startDate, endDate]);
 
   // 정렬 토글 함수
   const toggleSort = (field) => {
@@ -393,7 +296,7 @@ const AssignmentDetail = () => {
     });
   };
 
-  // 슬라이더 값이 변경될 때 호출되는 함수
+  // 슬라이더 값이 변경될 때 호출되는 함수 수정
   const handleRangeChange = (event, newValue) => {
     setCurrentRange(newValue);
     if (startDate && endDate) {
@@ -402,6 +305,24 @@ const AssignmentDetail = () => {
       const endMillis = totalMillis * (newValue[1] / 100);
       setRangeStartDate(new Date(startDate.getTime() + startMillis));
       setRangeEndDate(new Date(startDate.getTime() + endMillis));
+      
+      // 선택된 기간에 해당하는 학생 데이터만 필터링
+      const filteredSubmissions = submissions.map(submission => {
+        // 마지막 제출 시간이 선택된 범위 내에 있는지 확인
+        const submissionTime = new Date(submission.lastSubmissionTime).getTime();
+        const isInRange = submissionTime >= startDate.getTime() + startMillis && 
+                          submissionTime <= startDate.getTime() + endMillis;
+        
+        // 범위 내에 있으면 원래 데이터 반환, 아니면 변화량을 0으로 설정
+        return {
+          ...submission,
+          filteredTotalChanges: isInRange ? submission.totalChanges : 0
+        };
+      });
+      
+      // 필터링된 데이터로 차트 업데이트
+      // 실제 구현에서는 이 부분을 차트 업데이트 로직으로 연결해야 함
+      console.log('기간 필터링된 데이터:', filteredSubmissions);
     }
   };
 
@@ -418,36 +339,68 @@ const AssignmentDetail = () => {
     });
   };
 
-  // 차트 데이터 변환 함수 수정
+  // 차트 데이터 변환 함수 수정 - 라벨 형식 변경
   const getChartData = () => {
+    // 평균 변화량 계산
+    const totalChanges = submissions.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
+    const averageChanges = totalChanges / submissions.length;
+    
+    console.log(`평균 코드 변화량: ${averageChanges.toFixed(2)} 바이트`);
+    
+    // 색상 결정 함수 - 평균 이상/이하 두 가지 색상으로 단순화
+    const getBarColor = (submission) => {
+      // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 색상 사용
+      if (searchQuery && 
+          (submission.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           submission.studentNum.toLowerCase().includes(searchQuery.toLowerCase()))) {
+        return 'rgba(255, 152, 0, 0.8)'; // 검색 결과 하이라이트 색상 (주황색)
+      }
+      
+      return submission.totalChanges >= averageChanges 
+        ? 'rgba(66, 165, 245, 0.8)' // 평균 이상은 푸른색
+        : 'rgba(179, 157, 219, 0.7)'; // 평균 이하는 연한 보라색
+    };
+    
+    // 테두리 색상 결정 함수
+    const getBorderColor = (submission) => {
+      // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 테두리 색상 사용
+      if (searchQuery && 
+          (submission.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           submission.studentNum.toLowerCase().includes(searchQuery.toLowerCase()))) {
+        return 'rgba(230, 81, 0, 1)'; // 검색 결과 하이라이트 테두리 색상 (진한 주황색)
+      }
+      
+      return submission.totalChanges >= averageChanges 
+        ? 'rgb(30, 136, 229)' // 평균 이상은 진한 푸른색
+        : 'rgb(123, 97, 175)'; // 평균 이하는 진한 보라색
+    };
+    
+    // 실제 API 데이터를 사용하도록 수정
     const chartData = {
+      // 라벨 형식 변경 - 이름과 학번을 괄호로 구분
       labels: submissions.map(submission => `${submission.name}\n(${submission.studentNum})`),
       datasets: [
         {
           type: 'bar',
           label: '코드 변화량',
-          data: submissions.map(submission => {
-            // 선택된 시간 범위 내의 활동 데이터 필터링
-            const periodActivities = submission.activityData.filter(activity => 
-              activity.timestamp >= rangeStartDate && activity.timestamp <= rangeEndDate
-            );
-
-            if (periodActivities.length === 0) return 0;
-
-            // 시작 시점과 끝 시점의 변화량 차이 계산
-            const startActivity = periodActivities[0];
-            const endActivity = periodActivities[periodActivities.length - 1];
-            
-            // 끝 시점의 누적 변화량 - 시작 시점의 누적 변화량
-            return endActivity.changes - startActivity.changes;
-          }),
+          data: submissions.map(submission => submission.totalChanges || 0),
           backgroundColor: submissions.map(submission => 
-            submission.status === '완료' ? 'rgba(76, 175, 80, 0.7)' : 'rgba(136, 132, 216, 0.7)'
+            getBarColor(submission)
           ),
           borderColor: submissions.map(submission => 
-            submission.status === '완료' ? 'rgb(76, 175, 80)' : 'rgb(136, 132, 216)'
+            getBorderColor(submission)
           ),
           borderWidth: 1
+        },
+        {
+          type: 'line',
+          label: '평균',
+          data: Array(submissions.length).fill(averageChanges),
+          borderColor: 'rgba(255, 99, 132, 0.8)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0
         }
       ]
     };
@@ -455,10 +408,53 @@ const AssignmentDetail = () => {
     return chartData;
   };
 
+  // y축 범위를 계산하는 함수 수정
+  const calculateYAxisRange = (chart) => {
+    if (!chart || !chart.data || !chart.data.datasets || chart.data.datasets.length === 0) return;
+    
+    // 현재 보이는 x축 범위 가져오기
+    const xMin = chart.scales.x.min || 0;
+    const xMax = chart.scales.x.max || chart.data.labels.length - 1;
+    
+    // 현재 보이는 데이터 범위만 필터링
+    const visibleIndices = [];
+    for (let i = 0; i < chart.data.labels.length; i++) {
+      if (i >= xMin && i <= xMax) {
+        visibleIndices.push(i);
+      }
+    }
+    
+    // 보이는 범위의 데이터만 추출
+    const visibleData = visibleIndices.map(i => chart.data.datasets[0].data[i]);
+    
+    if (visibleData.length > 0) {
+      // 최대값 계산 및 여유 공간 추가 (20%)
+      const max = Math.max(...visibleData);
+      
+      // 500 단위로 올림
+      const roundedMax = Math.ceil(max / 500) * 500;
+      
+      // 최소 y축 값 설정 (너무 작은 값이면 기본값 사용)
+      const minYValue = 1000;
+      
+      // y축 범위 설정
+      chart.options.scales.y.max = Math.max(roundedMax * 1.2, minYValue);
+      chart.update('none');
+    }
+  };
+
+  // 차트 옵션 수정 - 애니메이션 추가
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: false,
+    animation: {
+      duration: 1000,  // 애니메이션 지속 시간 (밀리초)
+      easing: 'easeOutQuart',  // 애니메이션 이징 함수
+      delay: (context) => {
+        // 각 바마다 약간의 지연 시간을 두어 순차적으로 나타나도록 함
+        return context.dataIndex * 10;
+      }
+    },
     interaction: {
       mode: 'index',
       intersect: false,
@@ -466,6 +462,44 @@ const AssignmentDetail = () => {
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          generateLabels: (chart) => {
+            // 기본 범례 생성
+            const defaultLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
+            
+            // 커스텀 범례 추가 - 평균 이상/이하 두 가지로 단순화
+            const customLabels = [
+              {
+                text: '평균 이상',
+                fillStyle: 'rgba(66, 165, 245, 0.8)',
+                strokeStyle: 'rgb(30, 136, 229)',
+                lineWidth: 1,
+                hidden: false,
+                index: 1
+              },
+              {
+                text: '평균 이하',
+                fillStyle: 'rgba(179, 157, 219, 0.7)',
+                strokeStyle: 'rgb(123, 97, 175)',
+                lineWidth: 1,
+                hidden: false,
+                index: 2
+              },
+              {
+                text: '검색 결과',
+                fillStyle: 'rgba(255, 152, 0, 0.8)',
+                strokeStyle: 'rgba(230, 81, 0, 1)',
+                lineWidth: 1,
+                hidden: false,
+                index: 3
+              }
+            ];
+            
+            return [...defaultLabels, ...customLabels];
+          },
+          // 범례 클릭 시 동작 방지
+          onClick: () => {}
+        }
       },
       title: {
         display: false
@@ -478,13 +512,18 @@ const AssignmentDetail = () => {
         animation: false,
         callbacks: {
           label: (context) => {
+            if (context.dataset.label === '평균') {
+              return `평균: ${formatBytes(context.raw)}`;
+            }
+            
             const submission = submissions[context.dataIndex];
             if (submission) {
               const bytes = Math.round(context.raw);
+              const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
               return [
-                `${context.dataset.label}: ${bytes}B`,
-                `제출 횟수: ${submission.submissionCount}회`,
-                `상태: ${submission.status}`
+                `${context.dataset.label}: ${formatBytes(bytes)}`,
+                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`,
+                `제출 횟수: ${submission.submissionCount}회`
               ];
             }
             return context.dataset.label;
@@ -508,38 +547,49 @@ const AssignmentDetail = () => {
       zoom: {
         limits: {
           x: { min: 'original', max: 'original' },
-          y: { min: 'original', max: 'original' }
+          y: { min: 'original', max: 'original', minRange: 100 }
         },
         pan: {
           enabled: true,
-          mode: 'xy'
+          mode: 'x',  // x축만 패닝 가능
+          onPan: ({ chart }) => {
+            calculateYAxisRange(chart);
+          }
         },
         zoom: {
           wheel: {
             enabled: true,
-            mode: 'xy'
+            mode: 'x'  // x축만 줌 가능
           },
           pinch: {
-            enabled: true
+            enabled: true,
+            mode: 'x'  // x축만 줌 가능
           },
-          mode: 'xy',
+          mode: 'x',  // x축만 줌 가능
           drag: {
             enabled: false
           },
-          overScaleMode: 'xy'
+          onZoom: ({ chart }) => {
+            calculateYAxisRange(chart);
+          },
+          onZoomComplete: ({ chart }) => {
+            calculateYAxisRange(chart);
+          }
         }
       }
     },
     scales: {
       x: {
         ticks: {
-          maxRotation: 90,
-          minRotation: 90,
+          maxRotation: 45,
+          minRotation: 45,
           font: {
-            size: 7
+            size: 10,
+            family: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
           },
-          padding: 0,
-          autoSkip: false
+          padding: 8,
+          autoSkip: true,
+          maxTicksLimit: 30
         },
         grid: {
           display: false
@@ -554,15 +604,49 @@ const AssignmentDetail = () => {
         max: (context) => {
           if (!context?.chart?.data?.datasets?.[0]?.data) return 100;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          return Math.ceil(maxValue * 1.2); // 최대값보다 20% 더 큰 범위 설정
+          // 500 단위로 올림
+          return Math.ceil(maxValue / 500) * 500 * 1.2; // 최대값보다 20% 더 큰 범위 설정
         },
         ticks: {
           callback: (value) => {
-            return `${Math.round(value)}B`;
+            return formatBytes(value);
           }
         }
       }
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 300  // 호버 시 애니메이션 지속 시간
+        }
+      }
     }
+  };
+
+  // 바이트 형식화 함수 추가
+  const formatBytes = (bytes) => {
+    if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
+      return `${(bytes / 1048576).toFixed(1)}MB`;
+    } else if (Math.abs(bytes) >= 1024) { // 1KB
+      return `${(bytes / 1024).toFixed(1)}KB`;
+    }
+    return `${bytes}B`;
+  };
+
+  // 정렬 버튼 기능 개선
+  const handleSortByName = () => {
+    const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
+    setSubmissions(sorted);
+  };
+
+  const handleSortByChanges = () => {
+    const sorted = [...submissions].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
+    setSubmissions(sorted);
+  };
+
+  const handleSortByStudentNum = () => {
+    const sorted = [...submissions].sort((a, b) => a.studentNum.localeCompare(b.studentNum));
+    setSubmissions(sorted);
   };
 
   if (loading) {
@@ -618,7 +702,7 @@ const AssignmentDetail = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <Chip 
-                label={`시작: ${new Date(assignment?.kickoffDate).toLocaleDateString('ko-KR', {
+                label={`시작: ${new Date(assignment?.startDateTime || assignment?.kickoffDate).toLocaleDateString('ko-KR', {
                   year: 'numeric',
                   month: '2-digit',
                   day: '2-digit',
@@ -628,7 +712,7 @@ const AssignmentDetail = () => {
                 sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
               />
               <Chip 
-                label={`마감: ${new Date(assignment?.deadlineDate).toLocaleDateString('ko-KR', {
+                label={`마감: ${new Date(assignment?.endDateTime || assignment?.deadlineDate).toLocaleDateString('ko-KR', {
                   year: 'numeric',
                   month: '2-digit',
                   day: '2-digit',
@@ -637,7 +721,7 @@ const AssignmentDetail = () => {
                 })}`}
                 sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
               />
-              <RemainingTime deadline={assignment?.deadlineDate} />
+              <RemainingTime deadline={assignment?.endDateTime || assignment?.deadlineDate} />
             </Box>
             <Typography sx={{ 
               whiteSpace: 'pre-line',
@@ -678,67 +762,109 @@ const AssignmentDetail = () => {
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <Card sx={{ p: 2 }}>
-                      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                         <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           학생별 코드 변화량
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
-                              setSubmissions(sorted);
-                            }}
-                            sx={{ 
+                        <TextField
+                          size="small"
+                          placeholder="이름 또는 학번으로 검색"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          sx={{ 
+                            width: { xs: '100%', sm: '250px' },
+                            '& .MuiInputBase-root': {
+                              borderRadius: '20px',
                               fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                              textTransform: 'none'
-                            }}
-                          >
-                            이름순
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              const sorted = [...submissions].sort((a, b) => {
-                                const aTotal = a.activityData.reduce((sum, data) => sum + data.changes, 0);
-                                const bTotal = b.activityData.reduce((sum, data) => sum + data.changes, 0);
-                                return bTotal - aTotal;
-                              });
-                              setSubmissions(sorted);
-                            }}
-                            sx={{ 
-                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                              textTransform: 'none'
-                            }}
-                          >
-                            변화량순
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              const sorted = [...submissions].sort((a, b) => a.studentNum.localeCompare(b.studentNum));
-                              setSubmissions(sorted);
-                            }}
-                            sx={{ 
-                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                              textTransform: 'none'
-                            }}
-                          >
-                            학번순
-                          </Button>
-                          <IconButton
-                            onClick={() => setIsFullScreen(true)}
-                            sx={{ ml: 'auto' }}
-                          >
-                            <FullscreenIcon />
-                          </IconButton>
-                        </Box>
+                              fontSize: '0.875rem'
+                            }
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </Box>
+                      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          onClick={handleSortByName}
+                          startIcon={<SortIcon sx={{ fontSize: '1rem' }} />}
+                          sx={{ 
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            textTransform: 'none',
+                            borderRadius: '8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            px: 1.5
+                          }}
+                        >
+                          이름순
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          onClick={handleSortByChanges}
+                          startIcon={<BarChartIcon sx={{ fontSize: '1rem' }} />}
+                          sx={{ 
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            textTransform: 'none',
+                            borderRadius: '8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            px: 1.5
+                          }}
+                        >
+                          변화량순
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          onClick={handleSortByStudentNum}
+                          startIcon={<NumbersIcon sx={{ fontSize: '1rem' }} />}
+                          sx={{ 
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            textTransform: 'none',
+                            borderRadius: '8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            px: 1.5
+                          }}
+                        >
+                          학번순
+                        </Button>
+                        <IconButton
+                          onClick={() => setIsFullScreen(true)}
+                          sx={{ ml: 'auto' }}
+                          size="small"
+                        >
+                          <FullscreenIcon fontSize="small" />
+                        </IconButton>
                       </Box>
                       <Box sx={{ height: 600, position: 'relative' }}>
-                        <Bar options={chartOptions} data={getChartData()} />
+                        <Bar options={{
+                          ...chartOptions,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            ...chartOptions.plugins,
+                            zoom: {
+                              ...chartOptions.plugins.zoom,
+                              pan: {
+                                ...chartOptions.plugins.zoom.pan,
+                                onPan: ({ chart }) => {
+                                  calculateYAxisRange(chart);
+                                }
+                              }
+                            }
+                          }
+                        }} data={getChartData()} />
                       </Box>
                       <Box sx={{ px: 3, py: 2, mt: 2 }}>
                         <Stack spacing={2}>
@@ -990,68 +1116,108 @@ const AssignmentDetail = () => {
           onClose={() => setIsFullScreen(false)}
         >
           <Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                 학생별 코드 변화량
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
-                    setSubmissions(sorted);
-                  }}
-                  sx={{ 
+              <TextField
+                size="small"
+                placeholder="이름 또는 학번으로 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ 
+                  width: { xs: '100%', sm: '250px' },
+                  '& .MuiInputBase-root': {
+                    borderRadius: '20px',
                     fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    textTransform: 'none'
-                  }}
-                >
-                  이름순
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    const sorted = [...submissions].sort((a, b) => {
-                      const aTotal = a.activityData.reduce((sum, data) => sum + data.changes, 0);
-                      const bTotal = b.activityData.reduce((sum, data) => sum + data.changes, 0);
-                      return bTotal - aTotal;
-                    });
-                    setSubmissions(sorted);
-                  }}
-                  sx={{ 
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    textTransform: 'none'
-                  }}
-                >
-                  변화량순
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    const sorted = [...submissions].sort((a, b) => a.studentNum.localeCompare(b.studentNum));
-                    setSubmissions(sorted);
-                  }}
-                  sx={{ 
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    textTransform: 'none'
-                  }}
-                >
-                  학번순
-                </Button>
-                <IconButton
-                  onClick={() => setIsFullScreen(false)}
-                >
-                  <FullscreenExitIcon />
-                </IconButton>
-              </Box>
+                    fontSize: '0.875rem'
+                  }
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
+              <Button
+                size="small"
+                variant="text"
+                color="primary"
+                onClick={handleSortByName}
+                startIcon={<SortIcon sx={{ fontSize: '1rem' }} />}
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  px: 1.5
+                }}
+              >
+                이름순
+              </Button>
+              <Button
+                size="small"
+                variant="text"
+                color="primary"
+                onClick={handleSortByChanges}
+                startIcon={<BarChartIcon sx={{ fontSize: '1rem' }} />}
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  px: 1.5
+                }}
+              >
+                변화량순
+              </Button>
+              <Button
+                size="small"
+                variant="text"
+                color="primary"
+                onClick={handleSortByStudentNum}
+                startIcon={<NumbersIcon sx={{ fontSize: '1rem' }} />}
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  px: 1.5
+                }}
+              >
+                학번순
+              </Button>
+              <IconButton
+                onClick={() => setIsFullScreen(false)}
+                sx={{ ml: 'auto' }}
+                size="small"
+              >
+                <FullscreenExitIcon fontSize="small" />
+              </IconButton>
             </Box>
             <Box sx={{ flex: 1, position: 'relative' }}>
               <Bar options={{
                 ...chartOptions,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                  ...chartOptions.plugins,
+                  zoom: {
+                    ...chartOptions.plugins.zoom,
+                    pan: {
+                      ...chartOptions.plugins.zoom.pan,
+                      onPan: ({ chart }) => {
+                        calculateYAxisRange(chart);
+                      }
+                    }
+                  }
+                }
               }} data={getChartData()} />
             </Box>
             <Box sx={{ px: 3, py: 2, mt: 2 }}>
