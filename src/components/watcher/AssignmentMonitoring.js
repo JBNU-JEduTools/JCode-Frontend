@@ -15,7 +15,9 @@ import {
   useTheme,
   Typography,
   Chip,
-  CircularProgress
+  CircularProgress,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
@@ -25,6 +27,7 @@ import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import crosshairPlugin from 'chartjs-plugin-crosshair';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import api from '../../api/axios';
@@ -48,6 +51,11 @@ const AssignmentMonitoring = () => {
   const [course, setCourse] = useState(null);
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const autoRefreshIntervalRef = useRef(null);
+  const currentViewRef = useRef({ xMin: null, xMax: null });
 
   // 타임스탬프 변환 함수 (20250306_1519 형식을 Date 객체로 변환)
   const parseTimestamp = (timestamp) => {
@@ -72,9 +80,9 @@ const AssignmentMonitoring = () => {
   const formatBytes = (bytes) => {
     if (!Number.isInteger(bytes)) return '';
     if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
-      return `${(bytes / 1048576).toFixed(1)}M`;
+      return `${(bytes / 1048576).toFixed(1)}MB`;
     } else if (Math.abs(bytes) >= 1024) { // 1KB
-      return `${(bytes / 1024).toFixed(1)}K`;
+      return `${(bytes / 1024).toFixed(1)}KB`;
     }
     return `${bytes}B`;
   };
@@ -148,7 +156,7 @@ const AssignmentMonitoring = () => {
                 ? changeChartInstance.current 
                 : totalChartInstance.current;
               
-              if (targetChart) {
+              if (targetChart && context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
                 const tooltip = targetChart.tooltip;
                 if (context.tooltip.opacity === 0) {
                   tooltip.setActiveElements([], { x: 0, y: 0 });
@@ -156,23 +164,37 @@ const AssignmentMonitoring = () => {
                   return;
                 }
 
-                const activeElements = context.tooltip.dataPoints.map(dataPoint => ({
-                  datasetIndex: dataPoint.datasetIndex,
-                  index: dataPoint.dataIndex,
-                }));
+                // 안전하게 데이터 포인트 확인
+                const validDataPoints = context.tooltip.dataPoints.filter(dataPoint => 
+                  dataPoint !== undefined && 
+                  dataPoint.datasetIndex !== undefined && 
+                  dataPoint.dataIndex !== undefined
+                );
 
-                tooltip.setActiveElements(activeElements, {
-                  x: context.tooltip.x,
-                  y: context.tooltip.y,
-                });
-                targetChart.update('none');
+                if (validDataPoints.length > 0) {
+                  const activeElements = validDataPoints.map(dataPoint => ({
+                    datasetIndex: dataPoint.datasetIndex,
+                    index: dataPoint.dataIndex,
+                  }));
+
+                  tooltip.setActiveElements(activeElements, {
+                    x: context.tooltip.x,
+                    y: context.tooltip.y,
+                  });
+                  targetChart.update('none');
+                }
               }
+            } catch (error) {
+              console.error('툴팁 업데이트 중 오류 발생:', error);
             } finally {
               isUpdating.current = false;
             }
           },
           callbacks: {
             label: (context) => {
+              if (!context || !context.dataset || context.parsed === undefined || context.parsed.y === undefined) {
+                return '';
+              }
               const label = context.dataset.label || '';
               const value = context.parsed.y;
               return `${label}: ${formatBytes(value)}`;
@@ -487,50 +509,75 @@ const AssignmentMonitoring = () => {
     
     // 과제 시작일과 마감일 가져오기
     const startTime = new Date(assignment.startDateTime).getTime();
-    const endTime = new Date(assignment.endDateTime).getTime();
-    console.log('startTime', startTime);
-    console.log('endTime', endTime);
+    const endTime = Math.max(new Date(assignment.endDateTime).getTime(), new Date().getTime());
+    
+    console.log('차트 업데이트:', {
+      dataLength: sampledData.length,
+      startTime: new Date(startTime).toLocaleString(),
+      endTime: new Date(endTime).toLocaleString(),
+      currentView: currentViewRef.current
+    });
+    
     const updateChartInstance = (chart, isTotal) => {
       if (!chart) return;
 
-      // 데이터 업데이트
-      chart.data.labels = sampledData.map(d => d.timestamp);
-      if (isTotal) {
-        chart.data.datasets[0].data = sampledData.map(d => d.totalBytes);
-      } else {
-        chart.data.datasets[0].data = sampledData.map(d => d.change);
-        chart.data.datasets[0].backgroundColor = sampledData.map(d => 
-          d.change >= 0 
-            ? isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(98, 114, 164, 0.5)'
-            : isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(255, 121, 198, 0.5)'
-        );
-        chart.data.datasets[0].borderColor = sampledData.map(d =>
-          d.change >= 0 
-            ? isDarkMode ? '#50FA7B' : '#6272A4'
-            : isDarkMode ? '#FF5555' : '#FF79C6'
-        );
+      try {
+        // 현재 뷰 저장
+        const currentXMin = chart.scales.x.min;
+        const currentXMax = chart.scales.x.max;
+        const hasCustomView = currentXMin !== undefined && currentXMax !== undefined &&
+                             (currentXMin !== startTime || currentXMax !== endTime);
+
+        // 데이터 업데이트
+        chart.data.labels = sampledData.map(d => d.timestamp);
+        if (isTotal) {
+          chart.data.datasets[0].data = sampledData.map(d => d.totalBytes);
+        } else {
+          chart.data.datasets[0].data = sampledData.map(d => d.change);
+          chart.data.datasets[0].backgroundColor = sampledData.map(d => 
+            d.change >= 0 
+              ? isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(98, 114, 164, 0.5)'
+              : isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(255, 121, 198, 0.5)'
+          );
+          chart.data.datasets[0].borderColor = sampledData.map(d =>
+            d.change >= 0 
+              ? isDarkMode ? '#50FA7B' : '#6272A4'
+              : isDarkMode ? '#FF5555' : '#FF79C6'
+          );
+        }
+
+        // 옵션 업데이트
+        Object.assign(chart.options, getChartOptions(isTotal));
+        
+        // 시간 범위 설정 (과제 시작일과 마감일 사이)
+        if (!hasCustomView) {
+          chart.options.scales.x.min = startTime;
+          chart.options.scales.x.max = endTime;
+        } else {
+          // 사용자가 설정한 뷰 유지
+          chart.options.scales.x.min = currentXMin;
+          chart.options.scales.x.max = currentXMax;
+        }
+
+        // 줌 제한 설정
+        chart.options.plugins.zoom.limits = {
+          x: {
+            min: startTime,
+            max: Math.max(endTime, new Date().getTime()),
+            minRange: 60 * 1000 // 최소 1분
+          },
+          y: { min: 'original', max: 'original' }
+        };
+
+        // 툴팁 초기화
+        chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+
+        requestAnimationFrame(() => {
+          chart.update('none');
+        });
+      } catch (error) {
+        console.error('차트 업데이트 중 오류:', error);
       }
-
-      // 옵션 업데이트
-      Object.assign(chart.options, getChartOptions(isTotal));
-      
-      // 시간 범위 설정 (과제 시작일과 마감일 사이)
-      chart.options.scales.x.min = startTime;
-      chart.options.scales.x.max = endTime;
-
-      // 줌 제한 설정
-      chart.options.plugins.zoom.limits = {
-        x: {
-          min: startTime,
-          max: endTime,
-          minRange: 60 * 1000 // 최소 1분
-        },
-        y: { min: 'original', max: 'original' }
-      };
-
-      requestAnimationFrame(() => {
-        chart.update('none');
-      });
     };
 
     // 차트 업데이트 또는 생성
@@ -577,6 +624,7 @@ const AssignmentMonitoring = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsRefreshing(true);
         console.log('시간 단위 설정:', {
           timeUnit,
           minuteValue,
@@ -659,6 +707,36 @@ const AssignmentMonitoring = () => {
           }
         }
         
+        // 현재 시간까지 데이터 확장 (마지막 데이터 이후부터 현재까지)
+        if (chartData.length > 0) {
+          const lastDataPoint = chartData[chartData.length - 1];
+          const currentTime = new Date().getTime();
+          
+          // 마지막 데이터 포인트가 현재 시간보다 이전인 경우에만 추가
+          if (lastDataPoint.timestamp < currentTime) {
+            // 시간 간격 계산 (분 단위)
+            let timeInterval = 5 * 60 * 1000; // 기본 5분
+            if (timeUnit === 'minute') {
+              timeInterval = parseInt(minuteValue) * 60 * 1000;
+            } else if (timeUnit === 'hour') {
+              timeInterval = 60 * 60 * 1000;
+            } else if (timeUnit === 'day') {
+              timeInterval = 24 * 60 * 60 * 1000;
+            }
+            
+            // 마지막 데이터 포인트부터 현재 시간까지 빈 데이터 포인트 추가
+            let nextTimestamp = lastDataPoint.timestamp + timeInterval;
+            while (nextTimestamp <= currentTime) {
+              chartData.push({
+                timestamp: nextTimestamp,
+                totalBytes: lastDataPoint.totalBytes, // 마지막 값 유지
+                change: 0 // 변화 없음
+              });
+              nextTimestamp += timeInterval;
+            }
+          }
+        }
+        
         // 변환된 차트 데이터 확인
         console.log('변환된 차트 데이터:', {
           chartDataLength: chartData.length,
@@ -667,7 +745,9 @@ const AssignmentMonitoring = () => {
         });
 
         setData(chartData);
+        setLastUpdated(new Date());
         setLoading(false);
+        setIsRefreshing(false);
       } catch (error) {
         console.error('데이터 조회 중 오류 발생:', error);
         console.error('오류 상세:', {
@@ -675,11 +755,294 @@ const AssignmentMonitoring = () => {
           response: error.response?.data
         });
         setLoading(false);
+        setIsRefreshing(false);
       }
     };
 
     fetchData();
   }, [courseId, assignmentId, userId, timeUnit, minuteValue]);
+
+  // 자동 새로고침 설정
+  useEffect(() => {
+    if (autoRefresh && !loading) {
+      // 이전 인터벌 정리
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+      
+      // 새 인터벌 설정 - 1분마다 업데이트
+      autoRefreshIntervalRef.current = setInterval(() => {
+        handleSilentRefresh();
+      }, 60000); // 60초(1분)마다 자동 새로고침
+      
+      // 컴포넌트 마운트 시 즉시 첫 번째 새로고침 실행
+      handleSilentRefresh();
+      
+      console.log('자동 새로고침 활성화: 1분마다 업데이트');
+    } else {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
+        console.log('자동 새로고침 비활성화');
+      }
+    }
+    
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
+      }
+    };
+  }, [autoRefresh, loading, timeUnit, minuteValue]);
+
+  // 조용한 데이터 새로고침 핸들러 (UI 상태 변경 없이 차트만 업데이트)
+  const handleSilentRefresh = async () => {
+    if (isRefreshing || !totalChartInstance.current) return;
+    
+    try {
+      // 현재 차트 뷰 저장
+      const currentXMin = totalChartInstance.current.scales.x.min;
+      const currentXMax = totalChartInstance.current.scales.x.max;
+      
+      // interval 값 계산
+      let intervalValue = 1; // 기본값
+      if (timeUnit === 'minute') {
+        intervalValue = parseInt(minuteValue);
+      } else if (timeUnit === 'hour') {
+        intervalValue = 60; // 60분 = 1시간
+      } else if (timeUnit === 'day') {
+        intervalValue = 1440; // 1440분 = 24시간 = 1일
+      } else if (timeUnit === 'week') {
+        intervalValue = 10080; // 10080분 = 7일 = 1주
+      } else if (timeUnit === 'month') {
+        intervalValue = 43200; // 43200분 = 30일 = 1개월 (근사값)
+      }
+
+      // 모니터링 데이터 조회
+      const params = new URLSearchParams({
+        course: 1,
+        assignment: 3,
+        user: 16
+      });
+
+      const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+      
+      // API 응답 데이터를 차트에 맞는 형식으로 변환
+      const chartData = monitoringResponse.data.trends.map(item => ({
+        timestamp: parseTimestamp(item.timestamp),
+        totalBytes: item.total_size,
+        change: item.size_change
+      }));
+
+      // 과제 시작 시간에 초기 데이터 포인트 추가
+      if (assignment && assignment.startDateTime && chartData.length > 0) {
+        const startTime = new Date(assignment.startDateTime).getTime();
+        const firstDataPoint = chartData[0];
+        
+        // 첫 데이터 포인트가 시작 시간 이후인 경우에만 추가
+        if (firstDataPoint.timestamp > startTime) {
+          chartData.unshift({
+            timestamp: startTime,
+            totalBytes: 0,
+            change: 0
+          });
+        }
+      }
+      
+      // 현재 시간까지 데이터 확장 (마지막 데이터 이후부터 현재까지)
+      if (chartData.length > 0) {
+        const lastDataPoint = chartData[chartData.length - 1];
+        const currentTime = new Date().getTime();
+        
+        // 마지막 데이터 포인트가 현재 시간보다 이전인 경우에만 추가
+        if (lastDataPoint.timestamp < currentTime) {
+          // 시간 간격 계산 (분 단위)
+          let timeInterval = 5 * 60 * 1000; // 기본 5분
+          if (timeUnit === 'minute') {
+            timeInterval = parseInt(minuteValue) * 60 * 1000;
+          } else if (timeUnit === 'hour') {
+            timeInterval = 60 * 60 * 1000;
+          } else if (timeUnit === 'day') {
+            timeInterval = 24 * 60 * 60 * 1000;
+          }
+          
+          // 마지막 데이터 포인트부터 현재 시간까지 빈 데이터 포인트 추가
+          let nextTimestamp = lastDataPoint.timestamp + timeInterval;
+          while (nextTimestamp <= currentTime) {
+            chartData.push({
+              timestamp: nextTimestamp,
+              totalBytes: lastDataPoint.totalBytes, // 마지막 값 유지
+              change: 0 // 변화 없음
+            });
+            nextTimestamp += timeInterval;
+          }
+        }
+      }
+      
+      // 다운샘플링된 데이터 생성
+      const sampledData = downsampleData(chartData);
+      
+      // 차트 직접 업데이트 (차트 인스턴스 재생성 없이)
+      if (totalChartInstance.current) {
+        try {
+          // 데이터 업데이트
+          totalChartInstance.current.data.labels = sampledData.map(d => d.timestamp);
+          totalChartInstance.current.data.datasets[0].data = sampledData.map(d => d.totalBytes);
+          
+          // 현재 뷰 유지
+          if (currentXMin && currentXMax) {
+            totalChartInstance.current.options.scales.x.min = currentXMin;
+            totalChartInstance.current.options.scales.x.max = currentXMax;
+          }
+          
+          // 차트 업데이트 전에 툴팁 숨기기
+          totalChartInstance.current.tooltip.setActiveElements([], { x: 0, y: 0 });
+          
+          // 차트 업데이트
+          totalChartInstance.current.update('none');
+        } catch (error) {
+          console.error('총 코드량 차트 업데이트 중 오류:', error);
+        }
+      }
+      
+      if (changeChartInstance.current) {
+        try {
+          // 데이터 업데이트
+          changeChartInstance.current.data.labels = sampledData.map(d => d.timestamp);
+          changeChartInstance.current.data.datasets[0].data = sampledData.map(d => d.change);
+          changeChartInstance.current.data.datasets[0].backgroundColor = sampledData.map(d => 
+            d.change >= 0 
+              ? isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(98, 114, 164, 0.5)'
+              : isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(255, 121, 198, 0.5)'
+          );
+          changeChartInstance.current.data.datasets[0].borderColor = sampledData.map(d =>
+            d.change >= 0 
+              ? isDarkMode ? '#50FA7B' : '#6272A4'
+              : isDarkMode ? '#FF5555' : '#FF79C6'
+          );
+          
+          // 현재 뷰 유지
+          if (currentXMin && currentXMax) {
+            changeChartInstance.current.options.scales.x.min = currentXMin;
+            changeChartInstance.current.options.scales.x.max = currentXMax;
+          }
+          
+          // 차트 업데이트 전에 툴팁 숨기기
+          changeChartInstance.current.tooltip.setActiveElements([], { x: 0, y: 0 });
+          
+          // 차트 업데이트
+          changeChartInstance.current.update('none');
+        } catch (error) {
+          console.error('코드 변화량 차트 업데이트 중 오류:', error);
+        }
+      }
+      
+      // 마지막 업데이트 시간 갱신 (UI에 표시)
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('자동 데이터 업데이트 중 오류 발생:', error);
+    }
+  };
+
+  // 수동 새로고침 핸들러 (UI 상태 변경 포함)
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    // 현재 차트 뷰 저장
+    if (totalChartInstance.current) {
+      currentViewRef.current = {
+        xMin: totalChartInstance.current.scales.x.min,
+        xMax: totalChartInstance.current.scales.x.max
+      };
+    }
+    
+    try {
+      setIsRefreshing(true);
+      
+      // interval 값 계산
+      let intervalValue = 1; // 기본값
+      if (timeUnit === 'minute') {
+        intervalValue = parseInt(minuteValue);
+      } else if (timeUnit === 'hour') {
+        intervalValue = 60; // 60분 = 1시간
+      } else if (timeUnit === 'day') {
+        intervalValue = 1440; // 1440분 = 24시간 = 1일
+      } else if (timeUnit === 'week') {
+        intervalValue = 10080; // 10080분 = 7일 = 1주
+      } else if (timeUnit === 'month') {
+        intervalValue = 43200; // 43200분 = 30일 = 1개월 (근사값)
+      }
+
+      // 모니터링 데이터 조회
+      const params = new URLSearchParams({
+        course: 1,
+        assignment: 3,
+        user: 16
+      });
+      
+      const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+      
+      // API 응답 데이터를 차트에 맞는 형식으로 변환
+      const chartData = monitoringResponse.data.trends.map(item => ({
+        timestamp: parseTimestamp(item.timestamp),
+        totalBytes: item.total_size,
+        change: item.size_change
+      }));
+
+      // 과제 시작 시간에 초기 데이터 포인트 추가
+      if (assignment && assignment.startDateTime && chartData.length > 0) {
+        const startTime = new Date(assignment.startDateTime).getTime();
+        const firstDataPoint = chartData[0];
+        
+        // 첫 데이터 포인트가 시작 시간 이후인 경우에만 추가
+        if (firstDataPoint.timestamp > startTime) {
+          chartData.unshift({
+            timestamp: startTime,
+            totalBytes: 0,
+            change: 0
+          });
+        }
+      }
+      
+      // 현재 시간까지 데이터 확장
+      if (chartData.length > 0) {
+        const lastDataPoint = chartData[chartData.length - 1];
+        const currentTime = new Date().getTime();
+        
+        if (lastDataPoint.timestamp < currentTime) {
+          let timeInterval = 5 * 60 * 1000; // 기본 5분
+          if (timeUnit === 'minute') {
+            timeInterval = parseInt(minuteValue) * 60 * 1000;
+          } else if (timeUnit === 'hour') {
+            timeInterval = 60 * 60 * 1000;
+          } else if (timeUnit === 'day') {
+            timeInterval = 24 * 60 * 60 * 1000;
+          }
+          
+          let nextTimestamp = lastDataPoint.timestamp + timeInterval;
+          while (nextTimestamp <= currentTime) {
+            chartData.push({
+              timestamp: nextTimestamp,
+              totalBytes: lastDataPoint.totalBytes,
+              change: 0
+            });
+            nextTimestamp += timeInterval;
+          }
+        }
+      }
+      
+      setData(chartData);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('데이터 새로고침 중 오류 발생:', error);
+      console.error('오류 상세:', {
+        message: error.message,
+        response: error.response?.data
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // 데이터가 변경될 때마다 차트 업데이트
   useEffect(() => {
@@ -824,7 +1187,7 @@ const AssignmentMonitoring = () => {
               to: `/watcher/class/${courseId}/assignment/${assignmentId}`
             },
             {
-              text: '코드 변화량',
+              text: 'Watcher',
               to: `/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${userId}`
             }
           ]}
@@ -853,35 +1216,78 @@ const AssignmentMonitoring = () => {
           </Box>
         </Box>
 
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>분</InputLabel>
-            <Select
-              value={minuteValue}
-              label="분"
-              onChange={handleMinuteChange}
-              onClick={() => setTimeUnit('minute')}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Tooltip title="새로고침">
+              <IconButton 
+                onClick={handleRefresh} 
+                disabled={isRefreshing}
+                color="primary"
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={autoRefresh ? "자동 새로고침 중지" : "자동 새로고침 시작"}>
+              <IconButton 
+                onClick={() => setAutoRefresh(!autoRefresh)} 
+                color={autoRefresh ? (isDarkMode ? "info" : "secondary") : "default"}
+              >
+                <RestartAltIcon />
+              </IconButton>
+            </Tooltip>
+            {isRefreshing && <CircularProgress size={24} />}
+            {autoRefresh && <CircularProgress 
+              size={16} 
+              sx={{ 
+                color: isDarkMode ? 'info.main' : 'secondary.main',
+                opacity: 0.8
+              }} 
+            />}
+            {lastUpdated && (
+              <Typography variant="caption" sx={{ ml: 1 }}>
+                마지막 업데이트: {lastUpdated.toLocaleTimeString()}
+                {autoRefresh && (
+                  <span style={{ 
+                    color: isDarkMode ? '#8be9fd' : '#7b1fa2',
+                    fontWeight: 'normal'
+                  }}>
+                    {" (1분마다 자동 업데이트 중)"}
+                  </span>
+                )}
+              </Typography>
+            )}
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>분</InputLabel>
+              <Select
+                value={minuteValue}
+                label="분"
+                onChange={handleMinuteChange}
+                onClick={() => setTimeUnit('minute')}
+              >
+                <MenuItem value="1">1분</MenuItem>
+                <MenuItem value="3">3분</MenuItem>
+                <MenuItem value="5">5분</MenuItem>
+                <MenuItem value="10">10분</MenuItem>
+                <MenuItem value="15">15분</MenuItem>
+                <MenuItem value="30">30분</MenuItem>
+                <MenuItem value="60">60분</MenuItem>
+              </Select>
+            </FormControl>
+            <ToggleButtonGroup
+              value={timeUnit}
+              exclusive
+              onChange={handleTimeUnitChange}
+              size="small"
             >
-              <MenuItem value="1">1분</MenuItem>
-              <MenuItem value="3">3분</MenuItem>
-              <MenuItem value="5">5분</MenuItem>
-              <MenuItem value="10">10분</MenuItem>
-              <MenuItem value="15">15분</MenuItem>
-              <MenuItem value="30">30분</MenuItem>
-              <MenuItem value="60">60분</MenuItem>
-            </Select>
-          </FormControl>
-          <ToggleButtonGroup
-            value={timeUnit}
-            exclusive
-            onChange={handleTimeUnitChange}
-            size="small"
-          >
-            <ToggleButton value="hour">시간</ToggleButton>
-            <ToggleButton value="day">일</ToggleButton>
-            <ToggleButton value="week">주</ToggleButton>
-            <ToggleButton value="month">월</ToggleButton>
-          </ToggleButtonGroup>
+              <ToggleButton value="hour">시간</ToggleButton>
+              <ToggleButton value="day">일</ToggleButton>
+              <ToggleButton value="week">주</ToggleButton>
+              <ToggleButton value="month">월</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         </Box>
 
         <Box sx={{ height: '400px', mb: 2 }}>
