@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 import ProfileSetup from '../auth/ProfileSetup';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAvatar } from '../../contexts/AvatarContext';
 import { auth } from '../../api/axios';
 import EmailIcon from '@mui/icons-material/Email';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -96,7 +95,6 @@ const InfoItem = ({ icon, label, value }) => (
 const ProfileSettings = () => {
   const [currentTab, setCurrentTab] = useState(0);
   const { user } = useAuth();
-  const { currentStyle, setCurrentStyle } = useAvatar();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -146,7 +144,7 @@ const ProfileSettings = () => {
   }, [user]);
 
   const handleRandomAvatar = () => {
-    setCurrentStyle(getRandomStyle());
+    // This function is no longer used in the component
   };
 
   const handleTabChange = (event, newValue) => {

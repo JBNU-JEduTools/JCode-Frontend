@@ -9,7 +9,6 @@ const Watcher = () => {
     <Routes>
       <Route path="/" element={<ClassList />} />
       <Route path="/class/:courseId" element={<ClassDetail />} />
-      <Route path="/monitoring/:studentId" element={<MonitoringData />} />
     </Routes>
   );
 };

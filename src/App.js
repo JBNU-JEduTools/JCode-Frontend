@@ -15,7 +15,6 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoginCallback from './components/auth/LoginCallback';
 import { getDefaultRoute } from './routes';
-import { AvatarProvider } from './contexts/AvatarContext';
 
 const AppRoutes = () => {
   const { loading, isAuthenticated, user } = useAuth();
@@ -106,9 +105,7 @@ const App = () => {
     <Router>
       <AuthProvider>
         <ThemeProvider>
-          <AvatarProvider>
-            <ThemedApp />
-          </AvatarProvider>
+          <ThemedApp />
         </ThemeProvider>
       </AuthProvider>
     </Router>

@@ -15,7 +15,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAvatar } from '../../contexts/AvatarContext';
 import { routes, getDefaultRoute } from '../../routes';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -28,7 +27,6 @@ import { getAvatarUrl } from '../../utils/avatar';
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const { user, login, logout, loading } = useAuth();
-  const { currentStyle } = useAvatar();
   const navigate = useNavigate();
   const location = useLocation();
   const buttonRefs = useRef([]);
