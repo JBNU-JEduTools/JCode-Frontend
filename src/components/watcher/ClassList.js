@@ -72,17 +72,13 @@ const ClassList = () => {
         let response;
         
         if (user?.role === 'ADMIN') {
-          // 관리자는 모든 강의를 볼 수 있음
           response = await axios.get('/api/courses');
         } else if (user?.role === 'ASSISTANT') {
-          // 조교는 자신이 조교하는 강의만 볼 수 있음
           response = await axios.get('/api/users/me/assistant/courses');
         } else {
-          // 교수는 자신의 강의만 볼 수 있음
           response = await axios.get('/api/users/me/courses');
         }
         
-        // 응답 데이터 형식 통일
         const formattedData = user?.role === 'ADMIN' ? 
           response.data.map(course => ({
             courseId: course.courseId,
@@ -97,7 +93,6 @@ const ClassList = () => {
         setClasses(formattedData);
         setLoading(false);
       } catch (error) {
-        console.error('수업 목록 조회 실패:', error);
         setError('수업 목록을 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -177,7 +172,6 @@ const ClassList = () => {
       });
 
     } catch (error) {
-      console.error('수업 추가 실패:', error);
       setError('수업 추가에 실패했습니다.');
     }
   };
@@ -199,7 +193,6 @@ const ClassList = () => {
         courseId: courseId
       });
     } catch (error) {
-      console.error('참가 코드 재발급 실패:', error);
       setError('참가 코드 재발급에 실패했습니다.');
     }
   };
@@ -397,7 +390,7 @@ const ClassList = () => {
                         }}ddddddd
                       />
                     </Box>
-                    {user?.role !== 'ASSISTANT' && (
+                    {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -441,7 +434,7 @@ const ClassList = () => {
             </Typography>
           )}
 
-          {user?.role !== 'ASSISTANT' && (
+          {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
             <ListItem 
               disablePadding 
               divider

@@ -44,7 +44,7 @@ export const routes = [
   {
     path: '/watcher/*',
     element: WatcherPage,
-    roles: ['PROFESSOR', 'ASSISTANT', 'ADMIN'],
+    roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'],
     showInNav: true,
     label: 'Watcher',
     order: 2,
