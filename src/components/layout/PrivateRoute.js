@@ -15,7 +15,6 @@ const PrivateRoute = ({ roles, children }) => {
         const { studentNum, name } = response.data;
         setIsProfileSet(Boolean(studentNum && name));
       } catch (error) {
-        console.error('프로필 확인 실패:', error);
         setIsProfileSet(false);
       } finally {
         setLoading(false);

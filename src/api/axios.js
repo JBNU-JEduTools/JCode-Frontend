@@ -19,7 +19,6 @@ const isTokenExpiringSoon = (token) => {
     const timeUntilExpiry = expirationTime - currentTime;
     return timeUntilExpiry < 5 * 60 * 1000;
   } catch (error) {
-    console.error('Token decode failed:', error);
     return true;
   }
 };
@@ -39,7 +38,6 @@ const refreshToken = async (currentToken) => {
       return newToken;
     }
   } catch (error) {
-    console.error('Token refresh failed:', error);
     toast.error('세션이 만료되어 로그아웃됩니다.', {
       autoClose: 2000,
       onClose: () => auth.logout()
@@ -61,7 +59,7 @@ api.interceptors.request.use(async (config) => {
     try {
       await refreshToken(token);
     } catch (error) {
-      console.error('Token refresh failed in request interceptor:', error);
+      // 에러 처리는 refreshToken 함수 내에서 수행
     }
   }
 
@@ -129,11 +127,9 @@ export const auth = {
       const token = authHeader.substring(7);
       sessionStorage.setItem('jwt', token);
 
-
-
       return token;
     } catch (error) {
-      console.error('Token request failed:', error);
+      toast.error('토큰 요청에 실패했습니다.');
       throw error;
     }
   },
@@ -149,10 +145,9 @@ export const auth = {
           'Authorization': `Bearer ${token}`
         }
       });
-      window.location.href = '/login'; // 로그인 페이지로 리다이렉트
+      window.location.href = '/login';
     } catch (error) {
-      console.error('Logout failed:', error);
-      sessionStorage.removeItem('jwt'); // 에러가 발생해도 토큰은 삭제
+      sessionStorage.removeItem('jwt');
       window.location.href = '/login';
     }
   },
@@ -162,7 +157,7 @@ export const auth = {
       const response = await api.get('/api/users/me');
       return response;
     } catch (error) {
-      console.error('Failed to get user profile:', error);
+      toast.error('사용자 프로필을 가져오는데 실패했습니다.');
       throw error;
     }
   },
@@ -172,7 +167,7 @@ export const auth = {
       const response = await api.put('/api/users/me', profileData);
       return response;
     } catch (error) {
-      console.error('Failed to update user profile:', error);
+      toast.error('프로필 업데이트에 실패했습니다.');
       throw error;
     }
   },

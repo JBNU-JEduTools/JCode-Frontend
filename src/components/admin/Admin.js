@@ -181,14 +181,11 @@ const Admin = () => {
       setLoading(true);
       const response = await api.get('/api/users');
       
-      // 응답 데이터가 배열인지 확인
       if (!Array.isArray(response.data)) {
-        console.error('사용자 목록 조회 실패: 응답 데이터가 배열이 아닙니다.', response.data);
         toast.error('사용자 목록을 불러오는데 실패했습니다.');
         return;
       }
       
-      // 역할별로 사용자 분류
       const categorizedUsers = response.data.reduce((acc, user) => {
         const userData = {
           id: user.userId,
@@ -224,7 +221,6 @@ const Admin = () => {
         courses: prev.courses || []
       }));
     } catch (error) {
-      console.error('사용자 목록 조회 실패:', error);
       toast.error('사용자 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -234,7 +230,6 @@ const Admin = () => {
   const fetchCourses = async () => {
     try {
       const response = await api.get('/api/courses');
-      console.log('Course API Response:', response.data);
       if (Array.isArray(response.data)) {
         const coursesData = response.data.map(course => ({
           courseId: course.courseId,
@@ -247,20 +242,16 @@ const Admin = () => {
         }));
 
         setUsers(prev => ({
-          professors: prev.professors || [],
-          assistants: prev.assistants || [],
-          students: prev.students || [],
+          ...prev,
           courses: coursesData
         }));
       } else {
-        console.error('수업 데이터가 배열 형식이 아닙니다:', response.data);
         setUsers(prev => ({
           ...prev,
           courses: []
         }));
       }
     } catch (error) {
-      console.error('수업 목록 조회 실패:', error);
       toast.error('수업 목록을 불러오는데 실패했습니다.');
       setUsers(prev => ({
         ...prev,

@@ -13,29 +13,20 @@ function LoginCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('1. 로그인 콜백 시작');
         const token = await auth.getAccessToken();
-        console.log('2. 받은 토큰:', token);
-        
-        const storedToken = sessionStorage.getItem('jwt');
-        console.log('3. 저장된 토큰:', storedToken);
-        
         const decodedToken = jwtDecode(token);
-        console.log('4. 디코딩된 토큰:', decodedToken);
-        console.log('5. 사용자 역할:', decodedToken.role);
         
         if (!decodedToken.role) {
           throw new Error('토큰에 역할 정보가 없습니다');
         }
 
-        await checkAuth();  // 인증 상태 업데이트
+        await checkAuth();
 
-        // 프로필 정보 확인 - 한 번만 실행되도록 수정
+        // 프로필 정보 확인
         const response = await auth.getUserProfile();
         const { studentNum, name } = response.data;
         
         if (!studentNum || !name) {
-          // 토스트 메시지를 한 번만 표시
           const toastId = 'profile-setup-toast';
           if (!toast.isActive(toastId)) {
             toast.info('학번과 이름 설정이 필요합니다.', {
@@ -48,17 +39,15 @@ function LoginCallback() {
         }
 
         const defaultPath = getDefaultRoute(decodedToken.role);
-        console.log('6. 리다이렉트 경로:', defaultPath);
-        
         navigate(defaultPath, { replace: true });
       } catch (error) {
-        console.error('Login callback failed:', error);
+        toast.error('로그인 처리 중 오류가 발생했습니다.');
         navigate('/login', { replace: true });
       }
     };
 
     handleCallback();
-  }, []); // 의존성 배열 비움 - 컴포넌트 마운트 시 한 번만 실행
+  }, []);
 
   return <div>로그인 처리중...</div>;
 }

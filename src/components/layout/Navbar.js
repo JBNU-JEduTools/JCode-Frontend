@@ -45,12 +45,10 @@ const Navbar = () => {
       
       try {
         const response = await auth.getUserProfile();
-        console.log('response.data: ', response.data);
         const { studentNum, name } = response.data;
         setIsProfileSet(Boolean(studentNum && name));
         setProfileData({ studentNum, name });
       } catch (error) {
-        console.error('프로필 확인 실패:', error);
         setIsProfileSet(false);
       } finally {
         setProfileLoading(false);

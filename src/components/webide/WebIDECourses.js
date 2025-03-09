@@ -61,11 +61,8 @@ const WebIDECourses = () => {
     const fetchCourses = async () => {
       try {
         const response = await api.get('/api/users/me/courses');
-        console.log('API Response:', response.data);
-        console.log('Response type:', typeof response.data);
         if (Array.isArray(response.data)) {
           setCourses(response.data);
-          // 수업이 있을 때만 현재 연도와 학기로 설정
           if (response.data.length > 0) {
             const currentDate = new Date();
             const currentYear = currentDate.getFullYear();
@@ -74,23 +71,19 @@ const WebIDECourses = () => {
             setSelectedYear(currentYear);
             setSelectedTerm(currentTerm);
           } else {
-            // 수업이 없을 때는 전체 연도와 전체 학기로 설정
             setSelectedYear('all');
             setSelectedTerm('all');
           }
         } else {
           setCourses([]);
-          // 에러 시에도 전체 연도와 전체 학기로 설정
           setSelectedYear('all');
           setSelectedTerm('all');
         }
         setLoading(false);
       } catch (err) {
-        console.error('API Error:', err);
         setError('수업 목록을 불러오는데 실패했습니다.');
         setCourses([]);
         setLoading(false);
-        // 에러 시에도 전체 연도와 전체 학기로 설정
         setSelectedYear('all');
         setSelectedTerm('all');
       }

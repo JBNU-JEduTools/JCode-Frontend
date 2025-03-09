@@ -709,13 +709,6 @@ const AssignmentMonitoring = () => {
           }
         }
         
-        // 변환된 차트 데이터 확인
-        console.log('변환된 차트 데이터:', {
-          chartDataLength: chartData.length,
-          firstPoint: chartData[0],
-          lastPoint: chartData[chartData.length - 1]
-        });
-
         setData(chartData);
         setLastUpdated(new Date());
         setLoading(false);
@@ -745,13 +738,10 @@ const AssignmentMonitoring = () => {
       
       // 컴포넌트 마운트 시 즉시 첫 번째 새로고침 실행
       handleSilentRefresh();
-      
-      console.log('자동 새로고침 활성화: 1분마다 업데이트');
     } else {
       if (autoRefreshIntervalRef.current) {
         clearInterval(autoRefreshIntervalRef.current);
         autoRefreshIntervalRef.current = null;
-        console.log('자동 새로고침 비활성화');
       }
     }
     
