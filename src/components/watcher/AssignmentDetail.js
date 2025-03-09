@@ -134,50 +134,19 @@ const AssignmentDetail = () => {
   const [rangeStartDate, setRangeStartDate] = useState(null);
   const [rangeEndDate, setRangeEndDate] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [chartData, setChartData] = useState([]);
   
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-  };
-
-  // 목업 데이터 생성 함수 수정
-  const generateMockData = () => {
-    const mockSubmissions = [];
-    
-    for (let i = 1; i <= 150; i++) {
-      const totalChanges = Math.floor(Math.random() * 50000) + 1000; // 1000~51000 바이트 사이의 랜덤 값
-      const submissionCount = Math.floor(Math.random() * 30) + 1; // 1~30회 사이의 랜덤 제출 횟수
-      const avgChangesPerMin = totalChanges / (Math.floor(Math.random() * 100) + 20); // 랜덤 평균 변화량
-      
-      // 마지막 제출 시간을 랜덤하게 생성 (과제 시작일과 마감일 사이)
-      const lastSubmissionTime = new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)).toISOString();
-      
-      mockSubmissions.push({
-        userId: i,
-        name: `학생${i}`,
-        studentNum: `2023${100000 + i}`,
-        userEmail: `student${i}@example.com`,
-        lastSubmissionTime,
-        submissionCount,
-        totalChanges,
-        avgChangesPerMin,
-        activityData: Array(10).fill().map(() => ({
-          changes: Math.floor(Math.random() * 1000) - 200 // -200~800 사이의 랜덤 변화량
-        }))
-      });
-    }
-    
-    return mockSubmissions;
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (user?.role === 'ADMIN') {
-          // 관리자는 직접 강의 정보를 조회
           const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
           setCourse(coursesResponse.data);
           
-          // 과제 정보 조회
           const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
           const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
           
@@ -185,8 +154,10 @@ const AssignmentDetail = () => {
             throw new Error('과제를 찾을 수 없습니다.');
           }
           setAssignment(currentAssignment);
-        } else {
-          // 교수는 자신의 강의 목록에서 조회
+
+          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+          setSubmissions(studentsResponse.data || []);
+        } else if (user?.role === 'PROFESSOR') {
           const coursesResponse = await api.get('/api/users/me/courses/details');
           const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
           
@@ -195,7 +166,6 @@ const AssignmentDetail = () => {
           }
           setCourse(foundCourse);
 
-          // 과제 정보 조회
           const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
           const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
           
@@ -203,19 +173,31 @@ const AssignmentDetail = () => {
             throw new Error('과제를 찾을 수 없습니다.');
           }
           setAssignment(currentAssignment);
-        }
 
-        // 수강생 목록 조회
-        const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
-        // 실제 API 응답으로 submissions 설정
-        // setSubmissions(studentsResponse.data || []);
-        
-        // 목업 데이터로 대체
-        setSubmissions(generateMockData());
+          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+          setSubmissions(studentsResponse.data || []);
+        } else {
+          const coursesResponse = await api.get('/api/users/me/courses/details');
+          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
+          
+          if (!foundCourse) {
+            throw new Error('강의를 찾을 수 없습니다.');
+          }
+          setCourse(foundCourse);
+
+          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
+          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+          
+          if (!currentAssignment) {
+            throw new Error('과제를 찾을 수 없습니다.');
+          }
+          setAssignment(currentAssignment);
+
+          setSubmissions([]);
+        }
         
         setLoading(false);
       } catch (error) {
-        console.error('데이터 조회 실패:', error);
         setError('데이터를 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -223,6 +205,24 @@ const AssignmentDetail = () => {
 
     fetchData();
   }, [courseId, assignmentId, user]);
+
+  // 차트 데이터 조회 함수 수정
+  const fetchChartData = async () => {
+    try {
+      if (!rangeStartDate || !rangeEndDate) return;
+      
+      const response = await api.get(`/api/watcher/assignments/${assignmentId}/courses/${courseId}/between`, {
+        params: {
+          st: rangeStartDate.toISOString(),
+          end: rangeEndDate.toISOString()
+        }
+      });
+      
+      setChartData(response.data.results || []);
+    } catch (error) {
+      setError('차트 데이터를 불러오는데 실패했습니다.');
+    }
+  };
 
   useEffect(() => {
     if (assignment) {
@@ -236,6 +236,14 @@ const AssignmentDetail = () => {
     }
   }, [assignment]);
 
+  // 초기 데이터 로딩 시 한 번만 API 호출하는 useEffect 추가
+  useEffect(() => {
+    // 필요한 데이터가 모두 로드되었고, 차트 데이터가 아직 없을 때만 API 호출
+    if (assignment && rangeStartDate && rangeEndDate && submissions.length > 0 && chartData.length === 0) {
+      fetchChartData();
+    }
+  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length]);
+
   // 정렬 토글 함수
   const toggleSort = (field) => {
     setSort(prev => ({
@@ -244,12 +252,20 @@ const AssignmentDetail = () => {
     }));
   };
 
-  // 필터링 및 정렬 함수
+  // 필터링 및 정렬 함수 수정
   const getFilteredAndSortedSubmissions = () => {
+    // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = submissions.filter(submission => {
+      // role이 'PROFESSOR' 또는 'ASSISTANT'가 아닌 경우만 포함
+      if (submission.role === 'PROFESSOR' || submission.courseRole === 'PROFESSOR' || 
+          submission.role === 'ASSISTANT' || submission.courseRole === 'ASSISTANT') {
+        return false;
+      }
+      
+      // 검색어 필터링
       const searchLower = searchQuery.toLowerCase();
       return (
-        submission.userEmail?.toLowerCase().includes(searchLower) ||
+        submission.email?.toLowerCase().includes(searchLower) ||
         submission.name?.toLowerCase().includes(searchLower) ||
         String(submission.studentNum || '').toLowerCase().includes(searchLower)
       );
@@ -263,24 +279,12 @@ const AssignmentDetail = () => {
           bValue = b.name || '';
           break;
         case 'email':
-          aValue = a.userEmail || '';
-          bValue = b.userEmail || '';
+          aValue = a.email || '';
+          bValue = b.email || '';
           break;
         case 'studentNum':
           aValue = String(a.studentNum || '');
           bValue = String(b.studentNum || '');
-          break;
-        case 'lastSubmission':
-          aValue = a.lastSubmissionTime || '';
-          bValue = b.lastSubmissionTime || '';
-          break;
-        case 'submissionCount':
-          aValue = a.submissionCount || 0;
-          bValue = b.submissionCount || 0;
-          break;
-        case 'avgChanges':
-          aValue = a.avgChangesPerMin || 0;
-          bValue = b.avgChangesPerMin || 0;
           break;
         default:
           aValue = '';
@@ -296,33 +300,54 @@ const AssignmentDetail = () => {
     });
   };
 
-  // 슬라이더 값이 변경될 때 호출되는 함수 수정
+  // 슬라이더 값이 변경될 때 호출되는 함수 - API 호출 제거
   const handleRangeChange = (event, newValue) => {
     setCurrentRange(newValue);
     if (startDate && endDate) {
       const totalMillis = endDate.getTime() - startDate.getTime();
       const startMillis = totalMillis * (newValue[0] / 100);
       const endMillis = totalMillis * (newValue[1] / 100);
-      setRangeStartDate(new Date(startDate.getTime() + startMillis));
-      setRangeEndDate(new Date(startDate.getTime() + endMillis));
       
-      // 선택된 기간에 해당하는 학생 데이터만 필터링
-      const filteredSubmissions = submissions.map(submission => {
-        // 마지막 제출 시간이 선택된 범위 내에 있는지 확인
-        const submissionTime = new Date(submission.lastSubmissionTime).getTime();
-        const isInRange = submissionTime >= startDate.getTime() + startMillis && 
-                          submissionTime <= startDate.getTime() + endMillis;
-        
-        // 범위 내에 있으면 원래 데이터 반환, 아니면 변화량을 0으로 설정
-        return {
-          ...submission,
-          filteredTotalChanges: isInRange ? submission.totalChanges : 0
-        };
-      });
+      // 새로운 시작 및 종료 날짜 설정 (상태만 업데이트)
+      const newRangeStartDate = new Date(startDate.getTime() + startMillis);
+      const newRangeEndDate = new Date(startDate.getTime() + endMillis);
       
-      // 필터링된 데이터로 차트 업데이트
-      // 실제 구현에서는 이 부분을 차트 업데이트 로직으로 연결해야 함
-      console.log('기간 필터링된 데이터:', filteredSubmissions);
+      setRangeStartDate(newRangeStartDate);
+      setRangeEndDate(newRangeEndDate);
+    }
+  };
+
+  // 사용자 입력 날짜/시간 변경 핸들러 추가
+  const handleStartDateChange = (newDate) => {
+    if (newDate && endDate && newDate < endDate) {
+      setRangeStartDate(newDate);
+      // 슬라이더 값도 업데이트
+      updateSliderFromDates(newDate, rangeEndDate);
+    }
+  };
+
+  const handleEndDateChange = (newDate) => {
+    if (newDate && startDate && newDate > rangeStartDate) {
+      setRangeEndDate(newDate);
+      // 슬라이더 값도 업데이트
+      updateSliderFromDates(rangeStartDate, newDate);
+    }
+  };
+
+  // 날짜에서 슬라이더 값 계산하는 함수 추가
+  const updateSliderFromDates = (start, end) => {
+    if (startDate && endDate && start && end) {
+      const totalMillis = endDate.getTime() - startDate.getTime();
+      const startPosition = ((start.getTime() - startDate.getTime()) / totalMillis) * 100;
+      const endPosition = ((end.getTime() - startDate.getTime()) / totalMillis) * 100;
+      setCurrentRange([startPosition, endPosition]);
+    }
+  };
+
+  // 조회 버튼 클릭 시 API 호출하는 함수
+  const handleFetchData = () => {
+    if (startDate && endDate) {
+      fetchChartData();
     }
   };
 
@@ -339,20 +364,37 @@ const AssignmentDetail = () => {
     });
   };
 
-  // 차트 데이터 변환 함수 수정 - 라벨 형식 변경
+  // 차트 데이터 변환 함수 수정 - API 응답 데이터 사용
   const getChartData = () => {
-    // 평균 변화량 계산
-    const totalChanges = submissions.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
-    const averageChanges = totalChanges / submissions.length;
+    // 학생만 필터링 (교수/조교/관리자 제외)
+    const filteredSubmissions = submissions.filter(submission => 
+      submission.role !== 'PROFESSOR' && submission.courseRole !== 'PROFESSOR' &&
+      submission.role !== 'ASSISTANT' && submission.courseRole !== 'ASSISTANT'
+    );
     
-    console.log(`평균 코드 변화량: ${averageChanges.toFixed(2)} 바이트`);
+    // 학생 정보와 차트 데이터 매핑
+    const mappedData = filteredSubmissions.map(student => {
+      // 해당 학생의 변화량 데이터 찾기
+      const changeData = chartData.find(item => 
+        String(item.student_num) === String(student.studentNum)
+      );
+      
+      return {
+        ...student,
+        totalChanges: changeData ? changeData.size_change : 0
+      };
+    });
+    
+    // 평균 변화량 계산
+    const totalChanges = mappedData.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
+    const averageChanges = mappedData.length > 0 ? totalChanges / mappedData.length : 0;
     
     // 색상 결정 함수 - 평균 이상/이하 두 가지 색상으로 단순화
     const getBarColor = (submission) => {
       // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 색상 사용
       if (searchQuery && 
-          (submission.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-           submission.studentNum.toLowerCase().includes(searchQuery.toLowerCase()))) {
+          ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+           (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
         return 'rgba(255, 152, 0, 0.8)'; // 검색 결과 하이라이트 색상 (주황색)
       }
       
@@ -365,8 +407,8 @@ const AssignmentDetail = () => {
     const getBorderColor = (submission) => {
       // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 테두리 색상 사용
       if (searchQuery && 
-          (submission.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-           submission.studentNum.toLowerCase().includes(searchQuery.toLowerCase()))) {
+          ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+           (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
         return 'rgba(230, 81, 0, 1)'; // 검색 결과 하이라이트 테두리 색상 (진한 주황색)
       }
       
@@ -375,19 +417,19 @@ const AssignmentDetail = () => {
         : 'rgb(123, 97, 175)'; // 평균 이하는 진한 보라색
     };
     
-    // 실제 API 데이터를 사용하도록 수정
-    const chartData = {
+    // API 데이터를 사용하도록 수정
+    const chartDataObj = {  // 변수명 변경: chartData -> chartDataObj
       // 라벨 형식 변경 - 이름과 학번을 괄호로 구분
-      labels: submissions.map(submission => `${submission.name}\n(${submission.studentNum})`),
+      labels: mappedData.map(submission => `${submission.name || ''}\n(${submission.studentNum || ''})`),
       datasets: [
         {
           type: 'bar',
           label: '코드 변화량',
-          data: submissions.map(submission => submission.totalChanges || 0),
-          backgroundColor: submissions.map(submission => 
+          data: mappedData.map(submission => submission.totalChanges || 0),
+          backgroundColor: mappedData.map(submission => 
             getBarColor(submission)
           ),
-          borderColor: submissions.map(submission => 
+          borderColor: mappedData.map(submission => 
             getBorderColor(submission)
           ),
           borderWidth: 1
@@ -395,7 +437,7 @@ const AssignmentDetail = () => {
         {
           type: 'line',
           label: '평균',
-          data: Array(submissions.length).fill(averageChanges),
+          data: Array(mappedData.length).fill(averageChanges),
           borderColor: 'rgba(255, 99, 132, 0.8)',
           borderWidth: 2,
           borderDash: [5, 5],
@@ -405,7 +447,7 @@ const AssignmentDetail = () => {
       ]
     };
 
-    return chartData;
+    return chartDataObj;  // 변경된 변수명 반환
   };
 
   // y축 범위를 계산하는 함수 수정
@@ -640,12 +682,31 @@ const AssignmentDetail = () => {
   };
 
   const handleSortByChanges = () => {
-    const sorted = [...submissions].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
+    // 차트 데이터에서 학생별 변화량 정보 가져오기
+    const submissionsWithChanges = submissions.map(student => {
+      // 해당 학생의 변화량 데이터 찾기
+      const changeData = chartData.find(item => 
+        String(item.student_num) === String(student.studentNum)
+      );
+      
+      return {
+        ...student,
+        totalChanges: changeData ? changeData.size_change : 0
+      };
+    });
+    
+    // 변화량 기준으로 정렬
+    const sorted = [...submissionsWithChanges].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
     setSubmissions(sorted);
   };
 
   const handleSortByStudentNum = () => {
-    const sorted = [...submissions].sort((a, b) => a.studentNum.localeCompare(b.studentNum));
+    const sorted = [...submissions].sort((a, b) => {
+      // 문자열로 변환하여 비교
+      const aNum = String(a.studentNum || '');
+      const bNum = String(b.studentNum || '');
+      return aNum.localeCompare(bNum);
+    });
     setSubmissions(sorted);
   };
 
@@ -869,9 +930,29 @@ const AssignmentDetail = () => {
                       <Box sx={{ px: 3, py: 2, mt: 2 }}>
                         <Stack spacing={2}>
                           <Box>
-                            <Typography variant="caption" color="textSecondary" gutterBottom>
-                              기간 선택
-                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Typography variant="caption" color="textSecondary" gutterBottom>
+                                기간 선택
+                              </Typography>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                onClick={handleFetchData}
+                                sx={{ 
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  textTransform: 'none',
+                                  borderRadius: '8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  py: 0.5,
+                                  px: 1.5
+                                }}
+                              >
+                                조회
+                              </Button>
+                            </Box>
+                            
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                               <Typography variant="caption" color="textSecondary">
                                 {startDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -883,6 +964,7 @@ const AssignmentDetail = () => {
                                 {endDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                               </Typography>
                             </Box>
+                            
                             <Slider
                               value={currentRange}
                               onChange={handleRangeChange}
@@ -912,6 +994,64 @@ const AssignmentDetail = () => {
                                 }
                               }}
                             />
+                            
+                            <Box sx={{ 
+                              display: 'flex', 
+                              justifyContent: 'center', 
+                              mt: 3,
+                              gap: 2 
+                            }}>
+                              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+                                <DateTimePicker
+                                  label="시작 검색 시간"
+                                  value={rangeStartDate}
+                                  onChange={handleStartDateChange}
+                                  renderInput={(params) => 
+                                    <TextField 
+                                      {...params} 
+                                      size="small" 
+                                      fullWidth
+                                      sx={{ 
+                                        '& .MuiInputBase-root': {
+                                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                          fontSize: '0.75rem'
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                          fontSize: '0.75rem'
+                                        },
+                                        maxWidth: '160px'
+                                      }}
+                                    />
+                                  }
+                                  minDateTime={startDate}
+                                  maxDateTime={rangeEndDate}
+                                />
+                                <DateTimePicker
+                                  label="끝 검색 시간"
+                                  value={rangeEndDate}
+                                  onChange={handleEndDateChange}
+                                  renderInput={(params) => 
+                                    <TextField 
+                                      {...params} 
+                                      size="small" 
+                                      fullWidth
+                                      sx={{ 
+                                        '& .MuiInputBase-root': {
+                                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                          fontSize: '0.75rem'
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                          fontSize: '0.75rem'
+                                        },
+                                        maxWidth: '160px'
+                                      }}
+                                    />
+                                  }
+                                  minDateTime={rangeStartDate}
+                                  maxDateTime={endDate}
+                                />
+                              </LocalizationProvider>
+                            </Box>
                           </Box>
                         </Stack>
                       </Box>
@@ -990,32 +1130,6 @@ const AssignmentDetail = () => {
                           </Box>
                         </IconButton>
                       </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        최근 수정일
-                        <IconButton size="small" onClick={() => toggleSort('lastSubmission')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'lastSubmission' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        평균 코드 변화량
-                        <IconButton size="small" onClick={() => toggleSort('avgChanges')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'avgChanges' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
                       <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
                         작업
                       </TableCell>
@@ -1034,21 +1148,7 @@ const AssignmentDetail = () => {
                           {submission.name}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.userEmail}
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.lastSubmissionTime ? 
-                            new Date(submission.lastSubmissionTime).toLocaleDateString('ko-KR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : '-'
-                          }
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.avgChangesPerMin ? `${submission.avgChangesPerMin.toFixed(2)}/분` : '-'}
+                          {submission.email}
                         </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -1223,9 +1323,29 @@ const AssignmentDetail = () => {
             <Box sx={{ px: 3, py: 2, mt: 2 }}>
               <Stack spacing={2}>
                 <Box>
-                  <Typography variant="caption" color="textSecondary" gutterBottom>
-                    기간 선택
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="caption" color="textSecondary" gutterBottom>
+                      기간 선택
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      onClick={handleFetchData}
+                      sx={{ 
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        py: 0.5,
+                        px: 1.5
+                      }}
+                    >
+                      조회
+                    </Button>
+                  </Box>
+                  
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="caption" color="textSecondary">
                       {startDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -1237,6 +1357,7 @@ const AssignmentDetail = () => {
                       {endDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                     </Typography>
                   </Box>
+                  
                   <Slider
                     value={currentRange}
                     onChange={handleRangeChange}
@@ -1266,6 +1387,64 @@ const AssignmentDetail = () => {
                       }
                     }}
                   />
+                  
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    mt: 3,
+                    gap: 2 
+                  }}>
+                    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+                      <DateTimePicker
+                        label="시작 시간"
+                        value={rangeStartDate}
+                        onChange={handleStartDateChange}
+                        renderInput={(params) => 
+                          <TextField 
+                            {...params} 
+                            size="small" 
+                            fullWidth
+                            sx={{ 
+                              '& .MuiInputBase-root': {
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem'
+                              },
+                              '& .MuiInputLabel-root': {
+                                fontSize: '0.75rem'
+                              },
+                              maxWidth: '160px'
+                            }}
+                          />
+                        }
+                        minDateTime={startDate}
+                        maxDateTime={rangeEndDate}
+                      />
+                      <DateTimePicker
+                        label="종료 시간"
+                        value={rangeEndDate}
+                        onChange={handleEndDateChange}
+                        renderInput={(params) => 
+                          <TextField 
+                            {...params} 
+                            size="small" 
+                            fullWidth
+                            sx={{ 
+                              '& .MuiInputBase-root': {
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem'
+                              },
+                              '& .MuiInputLabel-root': {
+                                fontSize: '0.75rem'
+                              },
+                              maxWidth: '160px'
+                            }}
+                          />
+                        }
+                        minDateTime={rangeStartDate}
+                        maxDateTime={endDate}
+                      />
+                    </LocalizationProvider>
+                  </Box>
                 </Box>
               </Stack>
             </Box>
