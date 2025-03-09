@@ -22,7 +22,6 @@ import {
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 import { ko } from 'date-fns/locale';
-import { timeUnits } from '../../mocks/monitoringData';
 import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import crosshairPlugin from 'chartjs-plugin-crosshair';
@@ -56,6 +55,16 @@ const AssignmentMonitoring = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const autoRefreshIntervalRef = useRef(null);
   const currentViewRef = useRef({ xMin: null, xMax: null });
+  const [error, setError] = useState(null);
+
+  // timeUnits를 직접 컴포넌트 내에서 정의
+  const timeUnits = {
+    minute: '분',
+    hour: '시간',
+    day: '일',
+    week: '주',
+    month: '월'
+  };
 
   // 타임스탬프 변환 함수 (20250306_1519 형식을 Date 객체로 변환)
   const parseTimestamp = (timestamp) => {
@@ -401,15 +410,6 @@ const AssignmentMonitoring = () => {
     const startTime = new Date(assignment.startDateTime).getTime();
     const endTime = new Date(assignment.endDateTime).getTime();
 
-    console.log('Assignment Info:', {
-      startDateTime: assignment.startDateTime,
-      endDateTime: assignment.endDateTime,
-      parsedStartTime: new Date(startTime).toLocaleString(),
-      parsedEndTime: new Date(endTime).toLocaleString(),
-      startTime,
-      endTime
-    });
-
     const isBar = config.type === 'bar';
     const options = {
       ...getChartOptions(config.type === 'line'),
@@ -502,6 +502,7 @@ const AssignmentMonitoring = () => {
       options
     });
   };
+
   // 차트 업데이트 함수
   const updateCharts = () => {
     if (!data || !assignment) return;
@@ -510,13 +511,6 @@ const AssignmentMonitoring = () => {
     // 과제 시작일과 마감일 가져오기
     const startTime = new Date(assignment.startDateTime).getTime();
     const endTime = Math.max(new Date(assignment.endDateTime).getTime(), new Date().getTime());
-    
-    console.log('차트 업데이트:', {
-      dataLength: sampledData.length,
-      startTime: new Date(startTime).toLocaleString(),
-      endTime: new Date(endTime).toLocaleString(),
-      currentView: currentViewRef.current
-    });
     
     const updateChartInstance = (chart, isTotal) => {
       if (!chart) return;
@@ -576,7 +570,7 @@ const AssignmentMonitoring = () => {
           chart.update('none');
         });
       } catch (error) {
-        console.error('차트 업데이트 중 오류:', error);
+        setError('차트 업데이트에 실패했습니다.');
       }
     };
 
@@ -625,23 +619,11 @@ const AssignmentMonitoring = () => {
     const fetchData = async () => {
       try {
         setIsRefreshing(true);
-        console.log('시간 단위 설정:', {
-          timeUnit,
-          minuteValue,
-        });
 
         // 과제 정보 조회
         const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
         const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
         setAssignment(currentAssignment);
-
-        console.log('Fetched Assignment:', {
-          assignment: currentAssignment,
-          startDateTime: currentAssignment?.startDateTime,
-          endDateTime: currentAssignment?.endDateTime,
-          parsedStartTime: currentAssignment?.startDateTime ? new Date(currentAssignment.startDateTime).toLocaleString() : null,
-          parsedEndTime: currentAssignment?.endDateTime ? new Date(currentAssignment.endDateTime).toLocaleString() : null
-        });
 
         // 강의 정보 조회
         const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
@@ -653,17 +635,17 @@ const AssignmentMonitoring = () => {
         setStudent(currentStudent);
 
         // interval 값 계산
-        let intervalValue = 1; // 기본값
+        let intervalValue = 1;
         if (timeUnit === 'minute') {
           intervalValue = parseInt(minuteValue);
         } else if (timeUnit === 'hour') {
-          intervalValue = 60; // 60분 = 1시간
+          intervalValue = 60;
         } else if (timeUnit === 'day') {
-          intervalValue = 1440; // 1440분 = 24시간 = 1일
+          intervalValue = 1440;
         } else if (timeUnit === 'week') {
-          intervalValue = 10080; // 10080분 = 7일 = 1주
+          intervalValue = 10080;
         } else if (timeUnit === 'month') {
-          intervalValue = 43200; // 43200분 = 30일 = 1개월 (근사값)
+          intervalValue = 43200;
         }
 
         // 모니터링 데이터 조회
@@ -672,19 +654,9 @@ const AssignmentMonitoring = () => {
           assignment: 3,
           user: 16
         });
-        
-        console.log('API 요청 파라미터:', {
-          intervalValue,
-          params: params.toString()
-        });
 
         const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
         
-        console.log('API 응답 데이터:', {
-          trends: monitoringResponse.data.trends,
-          dataLength: monitoringResponse.data.trends.length
-        });
-
         // API 응답 데이터를 차트에 맞는 형식으로 변환
         const chartData = monitoringResponse.data.trends.map(item => ({
           timestamp: parseTimestamp(item.timestamp),
@@ -749,11 +721,7 @@ const AssignmentMonitoring = () => {
         setLoading(false);
         setIsRefreshing(false);
       } catch (error) {
-        console.error('데이터 조회 중 오류 발생:', error);
-        console.error('오류 상세:', {
-          message: error.message,
-          response: error.response?.data
-        });
+        setError('데이터를 불러오는데 실패했습니다.');
         setLoading(false);
         setIsRefreshing(false);
       }
@@ -809,16 +777,15 @@ const AssignmentMonitoring = () => {
       if (timeUnit === 'minute') {
         intervalValue = parseInt(minuteValue);
       } else if (timeUnit === 'hour') {
-        intervalValue = 60; // 60분 = 1시간
+        intervalValue = 60;
       } else if (timeUnit === 'day') {
-        intervalValue = 1440; // 1440분 = 24시간 = 1일
+        intervalValue = 1440;
       } else if (timeUnit === 'week') {
-        intervalValue = 10080; // 10080분 = 7일 = 1주
+        intervalValue = 10080;
       } else if (timeUnit === 'month') {
-        intervalValue = 43200; // 43200분 = 30일 = 1개월 (근사값)
+        intervalValue = 43200;
       }
 
-      // 모니터링 데이터 조회
       const params = new URLSearchParams({
         course: 1,
         assignment: 3,
@@ -940,7 +907,7 @@ const AssignmentMonitoring = () => {
       // 마지막 업데이트 시간 갱신 (UI에 표시)
       setLastUpdated(new Date());
     } catch (error) {
-      console.error('자동 데이터 업데이트 중 오류 발생:', error);
+      setError('데이터 업데이트에 실패했습니다.');
     }
   };
 
