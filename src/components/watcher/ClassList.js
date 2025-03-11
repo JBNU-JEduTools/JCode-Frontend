@@ -25,6 +25,8 @@ import {
   InputLabel,
   IconButton,
   Card,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios';
@@ -50,9 +52,11 @@ const ClassList = () => {
     year: new Date().getFullYear(),
     term: 1,
     clss: '',
+    vnc: false,
   });
   const [formErrors, setFormErrors] = useState({
-    courseClss: ''
+    courseClss: '',
+    courseCode: ''
   });
   const [courseKeyDialog, setCourseKeyDialog] = useState({
     open: false,
@@ -120,11 +124,17 @@ const ClassList = () => {
   // 유효성 검사 함수
   const validateForm = () => {
     let isValid = true;
-    const errors = { courseClss: '' };
+    const errors = { courseClss: '', courseCode: '' };
 
     // 분반 유효성 검사 - 숫자만 허용
     if (!/^\d+$/.test(newClass.clss)) {
       errors.courseClss = '분반은 숫자만 입력 가능합니다';
+      isValid = false;
+    }
+
+    // 과목 코드 유효성 검사 - 영문자로 시작하고 영문자+숫자 조합만 허용
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(newClass.code)) {
+      errors.courseCode = '영문자로 시작하고 영문자와 숫자만 사용 가능합니다';
       isValid = false;
     }
 
@@ -142,7 +152,8 @@ const ClassList = () => {
         professor: newClass.professor,
         year: newClass.year,
         term: newClass.term,
-        clss: parseInt(newClass.clss)
+        clss: parseInt(newClass.clss),
+        vnc: newClass.vnc
       });
 
       const { courseId, courseKey } = createResponse.data;
@@ -162,8 +173,9 @@ const ClassList = () => {
         year: new Date().getFullYear(),
         term: 1,
         clss: '',
+        vnc: false,
       });
-      setFormErrors({ courseClss: '' });
+      setFormErrors({ courseClss: '', courseCode: '' });
 
       setCourseKeyDialog({
         open: true,
@@ -387,7 +399,7 @@ const ClassList = () => {
                         secondaryTypographyProps={{ 
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                           sx: { mt: 0.5 }
-                        }}ddddddd
+                        }}
                       />
                     </Box>
                     {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
@@ -493,9 +505,27 @@ const ClassList = () => {
                     fullWidth
                     label="과목 코드"
                     value={newClass.code}
-                    onChange={(e) => setNewClass({ ...newClass, code: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // 영문자와 숫자만 허용
+                      setNewClass({ ...newClass, code: value });
+                      if (formErrors.courseCode) {
+                        setFormErrors({ ...formErrors, courseCode: '' });
+                      }
+                    }}
+                    onBlur={() => {
+                      if (newClass.code && !/^[A-Za-z][A-Za-z0-9]*$/.test(newClass.code)) {
+                        setFormErrors({
+                          ...formErrors,
+                          courseCode: '영문자로 시작하고 영문자와 숫자만 사용 가능합니다'
+                        });
+                      }
+                    }}
                     placeholder="ex) CSE1001"
-                    helperText="학수번호를 입력하세요 (ex: CSE1001)"
+                    helperText={formErrors.courseCode || "영문자로 시작하고 영문자와 숫자만 입력 가능합니다 | 별칭이므로 오아시스와 상관 없습니다"}
+                    error={Boolean(formErrors.courseCode)}
+                    inputProps={{
+                      style: { textTransform: 'uppercase' } // 자동으로 대문자 변환
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -518,62 +548,117 @@ const ClassList = () => {
                     helperText="교수님 성함을 입력해주십시오"
                   />
                 </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>연도</InputLabel>
-                    <Select
-                      value={newClass.year}
-                      onChange={(e) => setNewClass({ ...newClass, year: e.target.value })}
-                      label="연도"
-                      size="medium"
-                    >
-                      {[2024, 2025, 2026].map(year => (
-                        <MenuItem key={year} value={year}>
-                          {year}년
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <Grid item xs={12}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 2,
+                    alignItems: 'flex-start'
+                  }}>
+                    <FormControl sx={{ flex: 1 }}>
+                      <InputLabel>연도</InputLabel>
+                      <Select
+                        value={newClass.year}
+                        onChange={(e) => setNewClass({ ...newClass, year: e.target.value })}
+                        label="연도"
+                        size="medium"
+                        fullWidth
+                      >
+                        {[2024, 2025, 2026].map(year => (
+                          <MenuItem key={year} value={year}>
+                            {year}년
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ flex: 1 }}>
+                      <InputLabel>학기</InputLabel>
+                      <Select
+                        value={newClass.term}
+                        onChange={(e) => setNewClass({ ...newClass, term: e.target.value })}
+                        label="학기"
+                        size="medium"
+                        fullWidth
+                      >
+                        {[1, 2].map(term => (
+                          <MenuItem key={term} value={term}>
+                            {term}학기
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="분반"
+                      value={newClass.clss}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setNewClass({ ...newClass, clss: value });
+                        if (formErrors.courseClss) {
+                          setFormErrors({ ...formErrors, courseClss: '' });
+                        }
+                      }}
+                      type="text"
+                      inputProps={{
+                        pattern: '[0-9]*',
+                        inputMode: 'numeric',
+                        style: { textAlign: 'center' }
+                      }}
+                      placeholder="1"
+                      helperText={formErrors.courseClss || "숫자만 입력"}
+                      error={Boolean(formErrors.courseClss)}
+                      sx={{ flex: 1 }}
+                    />
+                  </Box>
                 </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>학기</InputLabel>
-                    <Select
-                      value={newClass.term}
-                      onChange={(e) => setNewClass({ ...newClass, term: e.target.value })}
-                      label="학기"
-                      size="medium"
-                    >
-                      {[1, 2].map(term => (
-                        <MenuItem key={term} value={term}>
-                          {term}학기
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={4}>
-                  <TextField
-                    fullWidth
-                    label="분반"
-                    value={newClass.clss}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      setNewClass({ ...newClass, clss: value });
-                      if (formErrors.courseClss) {
-                        setFormErrors({ ...formErrors, courseClss: '' });
+                <Grid item xs={12}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 2, 
+                      mt: 1,
+                      backgroundColor: (theme) => 
+                        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                      borderRadius: 2,
+                      border: (theme) =>
+                        `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                    }}
+                  >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={newClass.vnc}
+                          onChange={(e) => setNewClass({ ...newClass, vnc: e.target.checked })}
+                          sx={{
+                            '&.Mui-checked': {
+                              color: 'primary.main',
+                            }
+                          }}
+                        />
                       }
-                    }}
-                    type="text"
-                    inputProps={{
-                      pattern: '[0-9]*',
-                      inputMode: 'numeric',
-                      style: { textAlign: 'center' }
-                    }}
-                    placeholder="1"
-                    helperText={formErrors.courseClss || "숫자만 입력"}
-                    error={Boolean(formErrors.courseClss)}
-                  />
+                      label={
+                        <Box>
+                          <Typography 
+                            sx={{ 
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              fontWeight: 500,
+                              mb: 0.5
+                            }}
+                          >
+                            VNC 사용
+                          </Typography>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            VNC를 사용하여 Python GUI 환경을 설정합니다.
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Paper>
                 </Grid>
               </Grid>
             </DialogContent>
