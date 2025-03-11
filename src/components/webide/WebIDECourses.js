@@ -134,9 +134,40 @@ const WebIDECourses = () => {
 
   const handleJoinCourse = async () => {
     try {
-      await api.post('/api/users/me/courses', {
+      const joinResponse = await api.post('/api/users/me/courses', {
         courseKey: joinDialog.courseKey
       });
+      console.log(joinResponse.data);
+      // 수업 참가 성공 후 JCode 생성 API 호출
+      const courseId = joinResponse.data.courseId;
+      try {
+        await api.post(`/api/courses/${courseId}/jcodes`, {
+          userEmail: user.email
+        });
+      } catch (jcodeError) {
+        // JCode 생성 실패 시 오류 메시지 표시
+        toast.error('JCode 생성에 실패했습니다. 나중에 다시 시도해주세요.', {
+          icon: ({theme, type}) => <ErrorIcon sx={{ 
+            color: '#fff',
+            fontSize: '1.5rem',
+            mr: 1
+          }}/>,
+          style: {
+            background: isDarkMode ? '#d32f2f' : '#f44336',
+            color: '#fff',
+            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+            borderRadius: '8px',
+            fontSize: '0.95rem',
+            padding: '12px 20px',
+            maxWidth: '500px',
+            width: 'auto',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center'
+          }
+        });
+      }
       
       // 수업 목록 새로고침
       const response = await api.get('/api/users/me/courses');
