@@ -33,7 +33,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useNavigate } from 'react-router-dom';
-import LogoutIcon from '@mui/icons-material/Logout';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ReactDOM from 'react-dom';
 
 const IDE_URL = process.env.REACT_APP_IDE_URL;
@@ -50,6 +50,13 @@ const WebIDECourses = () => {
   const [joinDialog, setJoinDialog] = useState({
     open: false,
     courseKey: ''
+  });
+  const [withdrawDialog, setWithdrawDialog] = useState({
+    open: false,
+    courseId: null,
+    courseName: '',
+    confirmText: '',
+    doubleCheck: false
   });
   const navigate = useNavigate();
 
@@ -228,6 +235,63 @@ const WebIDECourses = () => {
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center'
+        }
+      });
+    }
+  };
+
+  const handleWithdrawCourse = async () => {
+    if (withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다') {
+      toast.error('정확한 확인 문구를 입력해주세요.', {
+        icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+        style: {
+          background: isDarkMode ? '#d32f2f' : '#f44336',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px'
+        }
+      });
+      return;
+    }
+
+    try {
+      await api.delete(`/api/users/me/courses/${withdrawDialog.courseId}`);
+      
+      // 강의 목록 새로고침
+      const response = await api.get('/api/users/me/courses');
+      setCourses(response.data);
+      
+      setWithdrawDialog({
+        open: false,
+        courseId: null,
+        courseName: '',
+        confirmText: '',
+        doubleCheck: false
+      });
+      
+      toast.success('강의 탈퇴가 완료되었습니다.', {
+        icon: ({theme, type}) => <CheckCircleIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+        style: {
+          background: isDarkMode ? '#2e7d32' : '#4caf50',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px'
+        }
+      });
+    } catch (error) {
+      toast.error('강의 탈퇴 중 오류가 발생했습니다.', {
+        icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+        style: {
+          background: isDarkMode ? '#d32f2f' : '#f44336',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px'
         }
       });
     }
@@ -453,7 +517,31 @@ const WebIDECourses = () => {
                       }
                     }}
                   >
-                    <CardContent sx={{ flexGrow: 1 }}>
+                    <CardContent sx={{ flexGrow: 1, position: 'relative' }}>
+                      <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWithdrawDialog({
+                              open: true,
+                              courseId: course.courseId,
+                              courseName: course.courseName,
+                              confirmText: '',
+                              doubleCheck: false
+                            });
+                          }}
+                          sx={{
+                            color: (theme) => theme.palette.mode === 'dark' ? '#FF5555' : '#f44336',
+                            '&:hover': {
+                              backgroundColor: (theme) => 
+                                theme.palette.mode === 'dark' ? 'rgba(255, 85, 85, 0.1)' : 'rgba(244, 67, 54, 0.1)'
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                       <Typography 
                         variant="h5" 
                         component="h2" 
@@ -491,6 +579,18 @@ const WebIDECourses = () => {
                         sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                       >
                         {course.courseClss}분반
+                      </Typography>
+                      <Typography 
+                        color="warning.main" 
+                        variant="caption"
+                        sx={{ 
+                          display: 'block',
+                          mt: 0,
+                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        ⚠️ 첫 접속 시 JCode 생성 중이므로 오류 발생 가능 <br />(잠시 후 재시도)
                       </Typography>
                     </CardContent>
                     <CardActions>
@@ -631,6 +731,62 @@ const WebIDECourses = () => {
                 disabled={!joinDialog.courseKey.trim()}
               >
                 참가
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={withdrawDialog.open}
+            onClose={() => setWithdrawDialog({ ...withdrawDialog, open: false })}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ 
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              color: '#f44336'
+            }}>
+              강의 탈퇴 확인
+            </DialogTitle>
+            <DialogContent>
+              <Typography sx={{ mt: 2, mb: 2 }} color="error">
+                ⚠️ 주의: 강의 탈퇴 시 다음 사항을 확인해주세요
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • 모든 강의 데이터와 제출물이 삭제됩니다.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • 삭제된 데이터는 복구가 불가능합니다.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 3 }}>
+                • 재참가 시 새로운 참가 코드가 필요합니다.
+              </Typography>
+              
+              <Typography sx={{ mb: 2 }}>
+                정말로 <strong>{withdrawDialog.courseName}</strong> 강의를 탈퇴하시겠습니까?
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="확인을 위해 '강의를 탈퇴하겠습니다'를 입력하세요"
+                value={withdrawDialog.confirmText}
+                onChange={(e) => setWithdrawDialog({ ...withdrawDialog, confirmText: e.target.value })}
+                error={withdrawDialog.confirmText !== '' && withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다'}
+                helperText={withdrawDialog.confirmText !== '' && withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다' ? 
+                  '정확한 문구를 입력해주세요' : ''}
+                sx={{ mt: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setWithdrawDialog({ ...withdrawDialog, open: false })}>
+                취소
+              </Button>
+              <Button 
+                onClick={handleWithdrawCourse}
+                variant="contained"
+                color="error"
+                disabled={withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다'}
+              >
+                탈퇴
               </Button>
             </DialogActions>
           </Dialog>
