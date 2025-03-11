@@ -35,7 +35,8 @@ import {
   FormControl,
   InputLabel,
   Grid,
-  Slider
+  Slider,
+  useTheme
 } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
@@ -74,6 +75,8 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import SortIcon from '@mui/icons-material/Sort';
 import NumbersIcon from '@mui/icons-material/Numbers';
+import { toast } from 'react-toastify';
+import ErrorIcon from '@mui/icons-material/Error';
 
 ChartJS.register(
   CategoryScale,
@@ -87,6 +90,42 @@ ChartJS.register(
   zoomPlugin,
   crosshairPlugin
 );
+
+// noDataText 플러그인 추가
+const noDataTextPlugin = {
+  id: 'noDataText',
+  beforeDraw: (chart) => {
+    const { ctx, width, height } = chart;
+    
+    // 데이터가 없는 경우에만 메시지 표시
+    if (!chart.data.datasets[0].data.length || 
+        chart.data.datasets[0].data.every(d => d === 0)) {
+      
+      // 배경 반투명하게 채우기
+      ctx.save();
+      ctx.fillStyle = chart.options.plugins.noDataText.backgroundColor || 'rgba(255, 255, 255, 0.7)';
+      ctx.fillRect(0, 0, width, height);
+      
+      // 텍스트 설정
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = chart.options.plugins.noDataText.font || '16px "JetBrains Mono", "Noto Sans KR", sans-serif';
+      ctx.fillStyle = chart.options.plugins.noDataText.color || '#282A36';
+      
+      // 텍스트 그리기
+      ctx.fillText(
+        chart.options.plugins.noDataText.text || '아직 학생이 코드를 입력하지 않았습니다',
+        width / 2,
+        height / 2
+      );
+      
+      ctx.restore();
+    }
+  }
+};
+
+// Chart.js에 플러그인 등록
+ChartJS.register(noDataTextPlugin);
 
 // TabPanel 컴포넌트 추가
 function TabPanel(props) {
@@ -116,6 +155,9 @@ const AssignmentDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [assignment, setAssignment] = useState(null);
@@ -135,8 +177,38 @@ const AssignmentDetail = () => {
   const [rangeEndDate, setRangeEndDate] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [chartData, setChartData] = useState([]);
+  const [chartError, setChartError] = useState('');
   
+  // 학생인 경우에만 사용자 정보를 가져오는 useEffect
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        // user.role이 'STUDENT'인 경우에만 API 호출
+        if (user?.role === 'STUDENT') {
+          const response = await api.get('/api/users/me');
+          setCurrentUser(response.data);
+        }
+      } catch (error) {
+        console.error('사용자 정보 로딩 실패:', error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, [user?.role]); // user.role이 변경될 때만 실행
+
+  // handleTabChange 수정
   const handleTabChange = (event, newValue) => {
+    if (user?.role === 'STUDENT' && newValue === 1) {
+      // 학생이 나의 통계 탭을 클릭했을 때
+      const studentId = currentUser?.userId || user?.userId;
+      if (!studentId) {
+        console.error('사용자 ID를 찾을 수 없습니다.');
+        return;
+      }
+      navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${studentId}`);
+      return;
+    }
+    
     setTabValue(newValue);
   };
 
@@ -144,7 +216,7 @@ const AssignmentDetail = () => {
     const fetchData = async () => {
       try {
         if (user?.role === 'ADMIN') {
-          const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
+          const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
           setCourse(coursesResponse.data);
           
           const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
@@ -211,6 +283,9 @@ const AssignmentDetail = () => {
     try {
       if (!rangeStartDate || !rangeEndDate) return;
       
+      console.log('시작 날짜:', rangeStartDate);
+      console.log('종료 날짜:', rangeEndDate);
+      
       const response = await api.get(`/api/watcher/assignments/${assignmentId}/courses/${courseId}/between`, {
         params: {
           st: rangeStartDate.toISOString(),
@@ -218,9 +293,15 @@ const AssignmentDetail = () => {
         }
       });
       
+      console.log('차트 데이터:', response);
       setChartData(response.data.results || []);
+      setChartError(''); // 차트 오류 상태 초기화
     } catch (error) {
-      setError('차트 데이터를 불러오는데 실패했습니다.');
+      console.error('차트 데이터 로딩 오류:', error);
+      // 전체 페이지 오류가 아닌 차트 전용 오류 상태 설정
+      setChartError('차트 데이터를 불러오는데 실패했습니다.');
+      // 빈 배열로 설정하여 차트가 그려지지 않도록 함
+      setChartData([]);
     }
   };
 
@@ -485,7 +566,7 @@ const AssignmentDetail = () => {
     }
   };
 
-  // 차트 옵션 수정 - 애니메이션 추가
+  // 차트 옵션 수정 - 툴팁 콜백 부분만 변경
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -555,7 +636,7 @@ const AssignmentDetail = () => {
         callbacks: {
           label: (context) => {
             if (context.dataset.label === '평균') {
-              return `평균: ${formatBytes(context.raw)}`;
+              return `평균: ${Math.round(context.raw)}B`;
             }
             
             const submission = submissions[context.dataIndex];
@@ -563,9 +644,8 @@ const AssignmentDetail = () => {
               const bytes = Math.round(context.raw);
               const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
               return [
-                `${context.dataset.label}: ${formatBytes(bytes)}`,
-                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`,
-                `제출 횟수: ${submission.submissionCount}회`
+                `${context.dataset.label}: ${Math.round(bytes)}B`,
+                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${Math.round(avgDiff)}B`
               ];
             }
             return context.dataset.label;
@@ -618,6 +698,12 @@ const AssignmentDetail = () => {
             calculateYAxisRange(chart);
           }
         }
+      },
+      noDataText: {
+        text: '아직 학생이 코드를 입력하지 않았습니다',
+        font: '16px "JetBrains Mono", "Noto Sans KR", sans-serif',
+        color: isDarkMode ? '#F8F8F2' : '#282A36',
+        backgroundColor: isDarkMode ? 'rgba(40, 42, 54, 0.8)' : 'rgba(255, 255, 255, 0.8)'
       }
     },
     scales: {
@@ -808,13 +894,22 @@ const AssignmentDetail = () => {
                 <Tab 
                   icon={<BarChartIcon />} 
                   iconPosition="start" 
-                  label="통계" 
+                  label="전체 통계" 
                 />
-                <Tab 
-                  icon={<PeopleIcon />} 
-                  iconPosition="start" 
-                  label={`학생 (${getFilteredAndSortedSubmissions().length})`} 
-                />
+                {user?.role === 'STUDENT' && (
+                  <Tab 
+                    icon={<MonitorIcon />} 
+                    iconPosition="start" 
+                    label="나의 통계" 
+                  />
+                )}
+                {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && (
+                  <Tab 
+                    icon={<PeopleIcon />} 
+                    iconPosition="start" 
+                    label={`학생 (${getFilteredAndSortedSubmissions().length})`} 
+                  />
+                )}
               </Tabs>
             </Box>
             
@@ -910,22 +1005,44 @@ const AssignmentDetail = () => {
                         </IconButton>
                       </Box>
                       <Box sx={{ height: 600, position: 'relative' }}>
-                        <Bar options={{
-                          ...chartOptions,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            ...chartOptions.plugins,
-                            zoom: {
-                              ...chartOptions.plugins.zoom,
-                              pan: {
-                                ...chartOptions.plugins.zoom.pan,
-                                onPan: ({ chart }) => {
-                                  calculateYAxisRange(chart);
+                        {chartError ? (
+                          <Box 
+                            display="flex" 
+                            justifyContent="center" 
+                            alignItems="center" 
+                            height="100%"
+                            flexDirection="column"
+                            gap={2}
+                          >
+                            <Typography color="error" align="center">
+                              {chartError}
+                            </Typography>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={handleFetchData}
+                            >
+                              다시 시도
+                            </Button>
+                          </Box>
+                        ) : (
+                          <Bar options={{
+                            ...chartOptions,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              ...chartOptions.plugins,
+                              zoom: {
+                                ...chartOptions.plugins.zoom,
+                                pan: {
+                                  ...chartOptions.plugins.zoom.pan,
+                                  onPan: ({ chart }) => {
+                                    calculateYAxisRange(chart);
+                                  }
                                 }
                               }
                             }
-                          }
-                        }} data={getChartData()} />
+                          }} data={getChartData()} />
+                        )}
                       </Box>
                       <Box sx={{ px: 3, py: 2, mt: 2 }}>
                         <Stack spacing={2}>
@@ -1061,151 +1178,178 @@ const AssignmentDetail = () => {
               </Box>
             </TabPanel>
             
-            <TabPanel value={tabValue} index={1}>
-              <Box sx={{ mb: 3 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="이메일, 이름, 학번으로 검색"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  sx={{ 
-                    mt: 2,
-                    '& .MuiInputBase-root': {
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                    }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ width: '50px', fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        No.
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        학번
-                        <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이름
-                        <IconButton size="small" onClick={() => toggleSort('name')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'name' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        이메일
-                        <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
-                          <Box sx={{ 
-                            transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
-                            transition: 'transform 0.2s ease-in-out',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          </Box>
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                        작업
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {getFilteredAndSortedSubmissions().map((submission, index) => (
-                      <TableRow key={submission.userId}>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {index + 1}
+            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && (
+              <TabPanel value={tabValue} index={1}>
+                <Box sx={{ mb: 3 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="이메일, 이름, 학번으로 검색"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ 
+                      mt: 2,
+                      '& .MuiInputBase-root': {
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '50px', fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          No.
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.studentNum}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          학번
+                          <IconButton size="small" onClick={() => toggleSort('studentNum')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'studentNum' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.name}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          이름
+                          <IconButton size="small" onClick={() => toggleSort('name')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'name' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          {submission.email}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          이메일
+                          <IconButton size="small" onClick={() => toggleSort('email')} sx={{ ml: 1 }}>
+                            <Box sx={{ 
+                              transform: sort.field !== 'email' ? 'rotate(0deg)' : (sort.order === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'),
+                              transition: 'transform 0.2s ease-in-out',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </Box>
+                          </IconButton>
                         </TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Button
-                              variant="contained"
-                              size="small"
-                              startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                              onClick={async () => {
-                                try {
-                                  const response = await api.get(`/api/redirect/redirect`, {
-                                    params: {
-                                      userId: submission.userId,
-                                      courseId: course.courseId
-                                    }
-                                  });
-                                  window.location.href = response.data.redirectUrl;
-                                } catch (error) {
-                                  console.error('JCode 리다이렉트 실패:', error);
-                                }
-                              }}
-                              sx={{ 
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                                px: 1.5,
-                                minHeight: '28px',
-                                borderRadius: '14px',
-                                textTransform: 'none'
-                              }}
-                            >
-                              JCode
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                              onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${submission.userId}`)}
-                              sx={{ 
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                                px: 1.5,
-                                minHeight: '28px',
-                                borderRadius: '14px',
-                                textTransform: 'none'
-                              }}
-                            >
-                              Watcher
-                            </Button>
-                          </Stack>
+                        <TableCell align="right" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
+                          작업
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </TabPanel>
+                    </TableHead>
+                    <TableBody>
+                      {getFilteredAndSortedSubmissions().map((submission, index) => (
+                        <TableRow key={submission.userId}>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {index + 1}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {submission.studentNum}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {submission.name}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+                            {submission.email}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                                onClick={async () => {
+                                  try {
+                                    // API 요청으로 리다이렉트 URL 가져오기
+                                    const response = await api.post('/api/redirect', {
+                                      userEmail: submission.email,
+                                      courseId: courseId
+                                    }, { withCredentials: true });
+                                    
+                                    // 응답에서 최종 URL 추출
+                                    const finalUrl = response.request?.responseURL || response.data?.url;
+                                    
+                                    if (!finalUrl) {
+                                      throw new Error("리다이렉트 URL을 찾을 수 없습니다");
+                                    }
+                                    
+                                    // 새 탭에서 URL 열기
+                                    window.open(finalUrl, '_blank');
+                                    
+                                  } catch (err) {
+                                    toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
+                                      icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+                                      style: {
+                                        background: isDarkMode ? '#d32f2f' : '#f44336',
+                                        color: '#fff',
+                                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                        borderRadius: '8px',
+                                        fontSize: '0.95rem',
+                                        padding: '12px 20px',
+                                        maxWidth: '500px',
+                                        width: 'auto',
+                                        textOverflow: 'ellipsis',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                      }
+                                    });
+                                  }
+                                }}
+                                sx={{ 
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  fontSize: '0.75rem',
+                                  py: 0.5,
+                                  px: 1.5,
+                                  minHeight: '28px',
+                                  borderRadius: '14px',
+                                  textTransform: 'none'
+                                }}
+                              >
+                                JCode
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
+                                onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${submission.userId}`)}
+                                sx={{ 
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  fontSize: '0.75rem',
+                                  py: 0.5,
+                                  px: 1.5,
+                                  minHeight: '28px',
+                                  borderRadius: '14px',
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Watcher
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </TabPanel>
+            )}
           </Box>
         </Paper>
 
@@ -1303,22 +1447,44 @@ const AssignmentDetail = () => {
               </IconButton>
             </Box>
             <Box sx={{ flex: 1, position: 'relative' }}>
-              <Bar options={{
-                ...chartOptions,
-                maintainAspectRatio: false,
-                plugins: {
-                  ...chartOptions.plugins,
-                  zoom: {
-                    ...chartOptions.plugins.zoom,
-                    pan: {
-                      ...chartOptions.plugins.zoom.pan,
-                      onPan: ({ chart }) => {
-                        calculateYAxisRange(chart);
+              {chartError ? (
+                <Box 
+                  display="flex" 
+                  justifyContent="center" 
+                  alignItems="center" 
+                  height="100%"
+                  flexDirection="column"
+                  gap={2}
+                >
+                  <Typography color="error" align="center">
+                    {chartError}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleFetchData}
+                  >
+                    다시 시도
+                  </Button>
+                </Box>
+              ) : (
+                <Bar options={{
+                  ...chartOptions,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    zoom: {
+                      ...chartOptions.plugins.zoom,
+                      pan: {
+                        ...chartOptions.plugins.zoom.pan,
+                        onPan: ({ chart }) => {
+                          calculateYAxisRange(chart);
+                        }
                       }
                     }
                   }
-                }
-              }} data={getChartData()} />
+                }} data={getChartData()} />
+              )}
             </Box>
             <Box sx={{ px: 3, py: 2, mt: 2 }}>
               <Stack spacing={2}>
@@ -1396,7 +1562,7 @@ const AssignmentDetail = () => {
                   }}>
                     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
                       <DateTimePicker
-                        label="시작 시간"
+                        label="시작 검색 시간"
                         value={rangeStartDate}
                         onChange={handleStartDateChange}
                         renderInput={(params) => 
@@ -1420,7 +1586,7 @@ const AssignmentDetail = () => {
                         maxDateTime={rangeEndDate}
                       />
                       <DateTimePicker
-                        label="종료 시간"
+                        label="종료 검색 시간"
                         value={rangeEndDate}
                         onChange={handleEndDateChange}
                         renderInput={(params) => 
