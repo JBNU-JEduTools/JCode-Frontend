@@ -42,28 +42,10 @@ import api from '../../api/axios';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SearchIcon from '@mui/icons-material/Search';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
 import { useTheme } from '../../contexts/ThemeContext';
 import RemainingTime from './RemainingTime';
 import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
@@ -71,6 +53,8 @@ import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import CodeIcon from '@mui/icons-material/Code';
+import ErrorIcon from '@mui/icons-material/Error';
 
 const ClassDetail = () => {
   const { user } = useAuth();
@@ -108,15 +92,11 @@ const ClassDetail = () => {
   });
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState(null);
   const [promotingStudent, setPromotingStudent] = useState(null);
   const [openPromoteDialog, setOpenPromoteDialog] = useState(false);
+  const { isDarkMode } = useTheme();
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
@@ -135,7 +115,7 @@ const ClassDetail = () => {
   const fetchData = async () => {
     try {
       if (user?.role === 'ADMIN') {
-        const coursesResponse = await api.get(`/api/courses/${courseId}/admin/details`);
+        const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
         setCourse(coursesResponse.data);
         setAssignments(coursesResponse.data.assignments || []);
         
@@ -230,6 +210,11 @@ const ClassDetail = () => {
       field: field,
       order: prev.field === field ? (prev.order === 'asc' ? 'desc' : 'asc') : 'asc'
     }));
+  };
+
+  // 과제 코드 중복 체크 함수 추가
+  const isAssignmentCodeExists = (code) => {
+    return assignments.some(assignment => assignment.assignmentName === code);
   };
 
   const handleAddAssignment = async () => {
@@ -639,6 +624,65 @@ const ClassDetail = () => {
                                   권한 변경
                                 </Button>
                               )}
+                              
+                              {/* 교수, 관리자, 조교에게만 JCode 버튼 표시 */}
+                              {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN' || user?.role === 'ASSISTANT') && (
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                                  onClick={async () => {
+                                    try {
+                                      // API 요청으로 리다이렉트 URL 가져오기
+                                      const response = await api.post('/api/redirect', {
+                                        userEmail: student.email,
+                                        courseId: courseId
+                                      }, { withCredentials: true });
+                                      
+                                      // 응답에서 최종 URL 추출
+                                      const finalUrl = response.request?.responseURL || response.data?.url;
+                                      
+                                      if (!finalUrl) {
+                                        throw new Error("리다이렉트 URL을 찾을 수 없습니다");
+                                      }
+                                      
+                                      // 새 탭에서 URL 열기
+                                      window.open(finalUrl, '_blank');
+                                      
+                                    } catch (err) {
+                                      // 에러 처리
+                                      toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
+                                        icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+                                        style: {
+                                          background: isDarkMode ? '#d32f2f' : '#f44336',
+                                          color: '#fff',
+                                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                          borderRadius: '8px',
+                                          fontSize: '0.95rem',
+                                          padding: '12px 20px',
+                                          maxWidth: '500px',
+                                          width: 'auto',
+                                          textOverflow: 'ellipsis',
+                                          overflow: 'hidden',
+                                          display: 'flex',
+                                          alignItems: 'center'
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  sx={{ 
+                                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                    fontSize: '0.75rem',
+                                    py: 0.5,
+                                    px: 1.5,
+                                    minHeight: '28px',
+                                    borderRadius: '14px',
+                                    textTransform: 'none'
+                                  }}
+                                >
+                                  JCode
+                                </Button>
+                              )}
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -671,10 +715,10 @@ const ClassDetail = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                          과제명
+                          과제코드
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
-                          설명
+                          과제명
                         </TableCell>
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold' }}>
                           시작일
@@ -685,12 +729,9 @@ const ClassDetail = () => {
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
                           남은 시간
                         </TableCell>
-                        {/* 학생이 아닌 경우에만 작업 열을 표시 */}
-                        {user?.role !== 'STUDENT' && (
-                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
-                            작업
-                          </TableCell>
-                        )}
+                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
+                          작업
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -766,6 +807,7 @@ const ClassDetail = () => {
                                     e.stopPropagation();
                                     setEditingAssignment({
                                       ...assignment,
+                                      originalAssignmentName: assignment.assignmentName, // 원래 과제 코드 저장
                                       kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
                                       deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
                                     });
@@ -782,25 +824,25 @@ const ClassDetail = () => {
                               >
                                 <EditIcon fontSize="small" />
                               </IconButton>
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeletingAssignment(assignment);
-                                  setOpenDeleteDialog(true);
-                                }}
-                                size="small"
-                                sx={{ 
-                                  color: 'error.main',
-                                  '&:hover': {
-                                    backgroundColor: (theme) => 
-                                      theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.08)'
-                                  }
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Stack>
-                          </TableCell>
+                                <IconButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingAssignment(assignment);
+                                    setOpenDeleteDialog(true);
+                                  }}
+                                  size="small"
+                                  sx={{ 
+                                    color: 'error.main',
+                                    '&:hover': {
+                                      backgroundColor: (theme) => 
+                                        theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.08)'
+                                    }
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+                            </TableCell>
                           )}
                         </TableRow>
                       ))}
@@ -872,28 +914,60 @@ const ClassDetail = () => {
               새 과제 추가
             </DialogTitle>
             <DialogContent>
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 1, color: 'info.contrastText' }}>
+                <Typography sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
+                  현재 버전에서는 과제코드가 hw1~hw10까지만 지원됩니다.
+                </Typography>
+              </Box>
               <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12}>
                   <TextField
+                    select
                     fullWidth
-                    label="과제명"
+                    label="과제코드"
                     value={newAssignment.assignmentName}
                     onChange={(e) => setNewAssignment({ 
                       ...newAssignment, 
                       assignmentName: e.target.value 
                     })}
-                    placeholder="ex) 1주차 과제: Hello World"
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
                       }
                     }}
-                  />
+                  >
+                    {[...Array(10)].map((_, index) => {
+                      const code = `hw${index + 1}`;
+                      const exists = isAssignmentCodeExists(code);
+                      return (
+                        <MenuItem 
+                          key={index} 
+                          value={code}
+                          disabled={exists}
+                          sx={{
+                            color: exists ? 'text.disabled' : 'text.primary',
+                            '&.Mui-disabled': {
+                              opacity: 0.7,
+                            }
+                          }}
+                        >
+                          {code} {exists && '(이미 존재함)'}
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="과제 설명"
+                    label="과제명"
                     value={newAssignment.assignmentDescription}
                     onChange={(e) => setNewAssignment({ 
                       ...newAssignment, 
@@ -901,7 +975,7 @@ const ClassDetail = () => {
                     })}
                     multiline
                     rows={6}
-                    placeholder="과제에 대한 설명을 입력하세요"
+                    placeholder="과제명을 입력하세요"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -981,6 +1055,7 @@ const ClassDetail = () => {
                 onClick={handleAddAssignment} 
                 variant="contained"
                 size="small"
+                disabled={!newAssignment.assignmentName || isAssignmentCodeExists(newAssignment.assignmentName)}
                 sx={{ 
                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                   fontSize: '0.75rem',
@@ -1021,28 +1096,60 @@ const ClassDetail = () => {
               과제 수정
             </DialogTitle>
             <DialogContent>
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 1, color: 'info.contrastText' }}>
+                <Typography sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
+                  현재 버전에서는 과제코드가 hw1~hw10까지만 지원됩니다.
+                </Typography>
+              </Box>
               <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12}>
                   <TextField
+                    select
                     fullWidth
-                    label="과제명"
+                    label="과제코드"
                     value={editingAssignment?.assignmentName || ''}
                     onChange={(e) => setEditingAssignment({ 
                       ...editingAssignment, 
                       assignmentName: e.target.value 
                     })}
-                    placeholder="ex) 1주차 과제: Hello World"
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
                       }
                     }}
-                  />
+                  >
+                    {[...Array(10)].map((_, index) => {
+                      const code = `hw${index + 1}`;
+                      const exists = isAssignmentCodeExists(code) && code !== editingAssignment?.assignmentName;
+                      return (
+                        <MenuItem 
+                          key={index} 
+                          value={code}
+                          disabled={exists}
+                          sx={{
+                            color: exists ? 'text.disabled' : 'text.primary',
+                            '&.Mui-disabled': {
+                              opacity: 0.7,
+                            }
+                          }}
+                        >
+                          {code} {exists && '(이미 존재함)'}
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="과제 설명"
+                    label="과제명"
                     value={editingAssignment?.assignmentDescription || ''}
                     onChange={(e) => setEditingAssignment({ 
                       ...editingAssignment, 
@@ -1133,6 +1240,7 @@ const ClassDetail = () => {
                 onClick={handleEditAssignment} 
                 variant="contained"
                 size="small"
+                disabled={!editingAssignment?.assignmentName || (isAssignmentCodeExists(editingAssignment?.assignmentName) && editingAssignment?.assignmentName !== editingAssignment?.originalAssignmentName)}
                 sx={{ 
                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                   fontSize: '0.75rem',
