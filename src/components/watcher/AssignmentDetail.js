@@ -621,7 +621,7 @@ const AssignmentDetail = () => {
     }
   };
 
-  // 차트 옵션 수정 - 툴팁 콜백 부분만 변경
+  // 차트 옵션 수정 - 범례 부분 수정
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -645,35 +645,68 @@ const AssignmentDetail = () => {
             // 기본 범례 생성
             const defaultLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
             
-            // 커스텀 범례 추가 - 평균 이상/이하 두 가지로 단순화
-            const customLabels = [
-              {
-                text: '평균 이상',
-                fillStyle: 'rgba(66, 165, 245, 0.8)',
-                strokeStyle: 'rgb(30, 136, 229)',
-                lineWidth: 1,
-                hidden: false,
-                index: 1
-              },
-              {
-                text: '평균 이하',
-                fillStyle: 'rgba(179, 157, 219, 0.7)',
-                strokeStyle: 'rgb(123, 97, 175)',
-                lineWidth: 1,
-                hidden: false,
-                index: 2
-              },
-              {
-                text: '검색 결과',
-                fillStyle: 'rgba(255, 152, 0, 0.8)',
-                strokeStyle: 'rgba(230, 81, 0, 1)',
-                lineWidth: 1,
-                hidden: false,
-                index: 3
-              }
-            ];
-            
-            return [...defaultLabels, ...customLabels];
+            // 학생인 경우와 교수/관리자인 경우 분리
+            if (user?.role === 'STUDENT') {
+              // 학생인 경우 커스텀 범례
+              const customLabels = [
+                {
+                  text: '평균 이상',
+                  fillStyle: 'rgba(66, 165, 245, 0.8)',
+                  strokeStyle: 'rgb(30, 136, 229)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 1
+                },
+                {
+                  text: '평균 이하',
+                  fillStyle: 'rgba(179, 157, 219, 0.7)',
+                  strokeStyle: 'rgb(123, 97, 175)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 2
+                },
+                {
+                  text: '나',
+                  fillStyle: 'rgba(255, 152, 0, 0.8)',
+                  strokeStyle: 'rgba(230, 81, 0, 1)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 3
+                }
+              ];
+              
+              return [...defaultLabels, ...customLabels];
+            } else {
+              // 교수/관리자인 경우 기존 코드 유지
+              const customLabels = [
+                {
+                  text: '평균 이상',
+                  fillStyle: 'rgba(66, 165, 245, 0.8)',
+                  strokeStyle: 'rgb(30, 136, 229)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 1
+                },
+                {
+                  text: '평균 이하',
+                  fillStyle: 'rgba(179, 157, 219, 0.7)',
+                  strokeStyle: 'rgb(123, 97, 175)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 2
+                },
+                {
+                  text: '검색 결과',
+                  fillStyle: 'rgba(255, 152, 0, 0.8)',
+                  strokeStyle: 'rgba(230, 81, 0, 1)',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: 3
+                }
+              ];
+              
+              return [...defaultLabels, ...customLabels];
+            }
           },
           // 범례 클릭 시 동작 방지
           onClick: () => {}
@@ -694,16 +727,34 @@ const AssignmentDetail = () => {
               return `평균: ${Math.round(context.raw)}B`;
             }
             
-            const submission = submissions[context.dataIndex];
-            if (submission) {
+            // 학생인 경우와 교수/관리자인 경우 분리
+            if (user?.role === 'STUDENT') {
               const bytes = Math.round(context.raw);
               const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
+              
+              // 현재 학생의 데이터인지 확인
+              const isCurrentUser = currentUser && 
+                chartData[context.dataIndex] && 
+                String(currentUser.studentNum) === String(chartData[context.dataIndex].student_num);
+              
               return [
-                `${context.dataset.label}: ${Math.round(bytes)}B`,
-                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${Math.round(avgDiff)}B`
-              ];
+                `${context.dataset.label}: ${formatBytes(bytes)}`,
+                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`,
+                isCurrentUser ? '(나)' : ''
+              ].filter(Boolean); // 빈 문자열 제거
+            } else {
+              // 교수/관리자인 경우 기존 코드 유지
+              const submission = submissions[context.dataIndex];
+              if (submission) {
+                const bytes = Math.round(context.raw);
+                const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
+                return [
+                  `${context.dataset.label}: ${formatBytes(bytes)}`,
+                  `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`
+                ];
+              }
+              return context.dataset.label;
             }
-            return context.dataset.label;
           }
         }
       },
@@ -818,37 +869,63 @@ const AssignmentDetail = () => {
 
   // 정렬 버튼 기능 개선
   const handleSortByName = () => {
-    const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
-    setSubmissions(sorted);
+    if (user?.role === 'STUDENT') {
+      // 학생인 경우 chartData 정렬
+      const sorted = [...chartData].sort((a, b) => {
+        // 학번 기준으로 정렬 (이름 정보가 없으므로)
+        return String(a.student_num).localeCompare(String(b.student_num));
+      });
+      setChartData(sorted);
+    } else {
+      // 교수/관리자인 경우 기존 코드 유지
+      const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
+      setSubmissions(sorted);
+    }
   };
 
   const handleSortByChanges = () => {
-    // 차트 데이터에서 학생별 변화량 정보 가져오기
-    const submissionsWithChanges = submissions.map(student => {
-      // 해당 학생의 변화량 데이터 찾기
-      const changeData = chartData.find(item => 
-        String(item.student_num) === String(student.studentNum)
-      );
+    if (user?.role === 'STUDENT') {
+      // 학생인 경우 chartData 정렬
+      const sorted = [...chartData].sort((a, b) => (b.size_change || 0) - (a.size_change || 0));
+      setChartData(sorted);
+    } else {
+      // 교수/관리자인 경우 기존 코드 유지
+      const submissionsWithChanges = submissions.map(student => {
+        // 해당 학생의 변화량 데이터 찾기
+        const changeData = chartData.find(item => 
+          String(item.student_num) === String(student.studentNum)
+        );
+        
+        return {
+          ...student,
+          totalChanges: changeData ? changeData.size_change : 0
+        };
+      });
       
-      return {
-        ...student,
-        totalChanges: changeData ? changeData.size_change : 0
-      };
-    });
-    
-    // 변화량 기준으로 정렬
-    const sorted = [...submissionsWithChanges].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
-    setSubmissions(sorted);
+      // 변화량 기준으로 정렬
+      const sorted = [...submissionsWithChanges].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
+      setSubmissions(sorted);
+    }
   };
 
   const handleSortByStudentNum = () => {
-    const sorted = [...submissions].sort((a, b) => {
-      // 문자열로 변환하여 비교
-      const aNum = String(a.studentNum || '');
-      const bNum = String(b.studentNum || '');
-      return aNum.localeCompare(bNum);
-    });
-    setSubmissions(sorted);
+    if (user?.role === 'STUDENT') {
+      // 학생인 경우 chartData 정렬
+      const sorted = [...chartData].sort((a, b) => {
+        // 학번 기준으로 정렬
+        return String(a.student_num).localeCompare(String(b.student_num));
+      });
+      setChartData(sorted);
+    } else {
+      // 교수/관리자인 경우 기존 코드 유지
+      const sorted = [...submissions].sort((a, b) => {
+        // 문자열로 변환하여 비교
+        const aNum = String(a.studentNum || '');
+        const bNum = String(b.studentNum || '');
+        return aNum.localeCompare(bNum);
+      });
+      setSubmissions(sorted);
+    }
   };
 
   if (loading) {
@@ -977,27 +1054,30 @@ const AssignmentDetail = () => {
                         <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                           학생별 코드 변화량
                         </Typography>
-                        <TextField
-                          size="small"
-                          placeholder="이름 또는 학번으로 검색"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          sx={{ 
-                            width: { xs: '100%', sm: '250px' },
-                            '& .MuiInputBase-root': {
-                              borderRadius: '20px',
-                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                              fontSize: '0.875rem'
-                            }
-                          }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <SearchIcon fontSize="small" />
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
+                        {/* 학생이 아닌 경우에만 검색 필드 표시 */}
+                        {user?.role !== 'STUDENT' && (
+                          <TextField
+                            size="small"
+                            placeholder="이름 또는 학번으로 검색"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{ 
+                              width: { xs: '100%', sm: '250px' },
+                              '& .MuiInputBase-root': {
+                                borderRadius: '20px',
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.875rem'
+                              }
+                            }}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <SearchIcon fontSize="small" />
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        )}
                       </Box>
                       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
                         <Button
@@ -1419,27 +1499,30 @@ const AssignmentDetail = () => {
               <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                 학생별 코드 변화량
               </Typography>
-              <TextField
-                size="small"
-                placeholder="이름 또는 학번으로 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ 
-                  width: { xs: '100%', sm: '250px' },
-                  '& .MuiInputBase-root': {
-                    borderRadius: '20px',
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    fontSize: '0.875rem'
-                  }
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              {/* 학생이 아닌 경우에만 검색 필드 표시 */}
+              {user?.role !== 'STUDENT' && (
+                <TextField
+                  size="small"
+                  placeholder="이름 또는 학번으로 검색"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{ 
+                    width: { xs: '100%', sm: '250px' },
+                    '& .MuiInputBase-root': {
+                      borderRadius: '20px',
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
             </Box>
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
               <Button
