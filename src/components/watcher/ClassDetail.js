@@ -39,7 +39,6 @@ import {
 } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/People';
@@ -97,6 +96,12 @@ const ClassDetail = () => {
   const [promotingStudent, setPromotingStudent] = useState(null);
   const [openPromoteDialog, setOpenPromoteDialog] = useState(false);
   const { isDarkMode } = useTheme();
+  const [withdrawDialog, setWithdrawDialog] = useState({
+    open: false,
+    userId: null,
+    userName: '',
+    confirmText: ''
+  });
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
@@ -299,6 +304,32 @@ const ClassDetail = () => {
       setPromotingStudent(null);
     } catch (error) {
       toast.error('권한 변경에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleWithdrawUser = async () => {
+    if (withdrawDialog.confirmText !== '사용자를 탈퇴시키겠습니다') {
+      toast.error('정확한 확인 문구를 입력해주세요.');
+      return;
+    }
+
+    try {
+      await api.delete(`/api/users/${withdrawDialog.userId}/courses/${courseId}`);
+      
+      // 학생 목록 새로고침
+      const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+      setStudents(studentsResponse.data);
+      
+      setWithdrawDialog({
+        open: false,
+        userId: null,
+        userName: '',
+        confirmText: ''
+      });
+      
+      toast.success('사용자가 성공적으로 탈퇴되었습니다.');
+    } catch (error) {
+      toast.error('사용자 탈퇴 중 오류가 발생했습니다.');
     }
   };
 
@@ -599,6 +630,34 @@ const ClassDetail = () => {
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN') && 
+                               student.courseRole !== 'PROFESSOR' && (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    setWithdrawDialog({
+                                      open: true,
+                                      userId: student.userId,
+                                      userName: student.name,
+                                      confirmText: ''
+                                    });
+                                  }}
+                                  sx={{ 
+                                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                    fontSize: '0.75rem',
+                                    py: 0.5,
+                                    px: 1.5,
+                                    minHeight: '28px',
+                                    borderRadius: '14px',
+                                    textTransform: 'none'
+                                  }}
+                                >
+                                  탈퇴
+                                </Button>
+                              )}
+                              
                               {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN') && student.courseRole !== 'PROFESSOR' && (
                                 <Button
                                   variant="outlined"
@@ -625,7 +684,6 @@ const ClassDetail = () => {
                                 </Button>
                               )}
                               
-                              {/* 교수, 관리자, 조교에게만 JCode 버튼 표시 */}
                               {(user?.role === 'PROFESSOR' || user?.role === 'ADMIN' || user?.role === 'ASSISTANT') && (
                                 <Button
                                   variant="contained"
@@ -729,9 +787,11 @@ const ClassDetail = () => {
                         <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '250px' }}>
                           남은 시간
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
-                          작업
-                        </TableCell>
+                        {user?.role !== 'STUDENT' && (
+                          <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", fontWeight: 'bold', width: '100px' }}>
+                            작업
+                          </TableCell>
+                        )}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -807,7 +867,7 @@ const ClassDetail = () => {
                                     e.stopPropagation();
                                     setEditingAssignment({
                                       ...assignment,
-                                      originalAssignmentName: assignment.assignmentName, // 원래 과제 코드 저장
+                                      originalAssignmentName: assignment.assignmentName,
                                       kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
                                       deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
                                     });
@@ -1398,6 +1458,86 @@ const ClassDetail = () => {
                 }}
               >
                 변경
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 사용자 탈퇴 다이얼로그 */}
+          <Dialog
+            open={withdrawDialog.open}
+            onClose={() => setWithdrawDialog({ ...withdrawDialog, open: false })}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ 
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              color: '#f44336'
+            }}>
+              사용자 탈퇴 확인
+            </DialogTitle>
+            <DialogContent>
+              <Typography sx={{ mt: 2, mb: 2 }} color="error">
+                ⚠️ 주의: 사용자 탈퇴 시 다음 사항을 확인해주세요
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • 해당 사용자의 모든 강의 데이터와 제출물이 삭제됩니다.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • 삭제된 데이터는 복구가 불가능합니다.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 3 }}>
+                • 재참가 시 새로운 참가 코드가 필요합니다.
+              </Typography>
+              
+              <Typography sx={{ mb: 2 }}>
+                정말로 <strong>{withdrawDialog.userName}</strong> 님을 강의에서 탈퇴시키겠습니까?
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="확인을 위해 '사용자를 탈퇴시키겠습니다'를 입력하세요"
+                value={withdrawDialog.confirmText}
+                onChange={(e) => setWithdrawDialog({ ...withdrawDialog, confirmText: e.target.value })}
+                error={withdrawDialog.confirmText !== '' && withdrawDialog.confirmText !== '사용자를 탈퇴시키겠습니다'}
+                helperText={withdrawDialog.confirmText !== '' && withdrawDialog.confirmText !== '사용자를 탈퇴시키겠습니다' ? 
+                  '정확한 문구를 입력해주세요' : ''}
+                sx={{ mt: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setWithdrawDialog({ ...withdrawDialog, open: false })}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleWithdrawUser}
+                variant="contained"
+                color="error"
+                disabled={withdrawDialog.confirmText !== '사용자를 탈퇴시키겠습니다'}
+                size="small"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                  minHeight: '28px',
+                  borderRadius: '14px',
+                  textTransform: 'none'
+                }}
+              >
+                탈퇴
               </Button>
             </DialogActions>
           </Dialog>

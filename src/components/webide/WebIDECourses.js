@@ -257,6 +257,15 @@ const WebIDECourses = () => {
     }
 
     try {
+      // JCode 삭제 시도
+      try {
+        await api.delete(`/api/users/me/courses/${withdrawDialog.courseId}/jcodes`);
+      } catch (jcodeError) {
+        console.error('JCode 삭제 중 오류:', jcodeError);
+        // JCode 삭제 실패 시에도 강의 탈퇴는 계속 진행
+      }
+
+      // 강의 탈퇴 진행
       await api.delete(`/api/users/me/courses/${withdrawDialog.courseId}`);
       
       // 강의 목록 새로고침
@@ -581,16 +590,16 @@ const WebIDECourses = () => {
                         {course.courseClss}분반
                       </Typography>
                       <Typography 
-                        color="warning.main" 
                         variant="caption"
                         sx={{ 
+                          color: '#FF8000',
                           display: 'block',
                           mt: 0,
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                           fontSize: '0.7rem'
                         }}
                       >
-                        ⚠️ 첫 접속 시 JCode 생성 중이므로 오류 발생 가능 <br />(잠시 후 재시도)
+                        ⚠️ 강의 첫 참가 시 JCode 생성 중이므로 오류 발생 가능<br/>(잠시 후 재시도)
                       </Typography>
                     </CardContent>
                     <CardActions>
