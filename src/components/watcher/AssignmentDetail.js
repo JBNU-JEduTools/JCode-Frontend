@@ -317,13 +317,21 @@ const AssignmentDetail = () => {
     }
   }, [assignment]);
 
-  // 초기 데이터 로딩 시 한 번만 API 호출하는 useEffect 추가
+  // 초기 데이터 로딩 시 한 번만 API 호출하는 useEffect 수정
   useEffect(() => {
     // 필요한 데이터가 모두 로드되었고, 차트 데이터가 아직 없을 때만 API 호출
-    if (assignment && rangeStartDate && rangeEndDate && submissions.length > 0 && chartData.length === 0) {
+    if (assignment && rangeStartDate && rangeEndDate && chartData.length === 0) {
+      // 교수/관리자인 경우 submissions 배열이 로드된 후에만 호출
+      if ((user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || 
+           user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && 
+          submissions.length === 0) {
+        return; // submissions가 로드되지 않았으면 아직 호출하지 않음
+      }
+      
+      // 학생인 경우 또는 submissions가 로드된 경우 API 호출
       fetchChartData();
     }
-  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length]);
+  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length, user?.role, user?.courseRole]);
 
   // 정렬 토글 함수
   const toggleSort = (field) => {
@@ -447,88 +455,135 @@ const AssignmentDetail = () => {
 
   // 차트 데이터 변환 함수 수정 - API 응답 데이터 사용
   const getChartData = () => {
-    // 학생만 필터링 (교수/조교/관리자 제외)
-    const filteredSubmissions = submissions.filter(submission => 
-      submission.role !== 'PROFESSOR' && submission.courseRole !== 'PROFESSOR' &&
-      submission.role !== 'ASSISTANT' && submission.courseRole !== 'ASSISTANT'
-    );
-    
-    // 학생 정보와 차트 데이터 매핑
-    const mappedData = filteredSubmissions.map(student => {
-      // 해당 학생의 변화량 데이터 찾기
-      const changeData = chartData.find(item => 
-        String(item.student_num) === String(student.studentNum)
+    // 학생인 경우와 교수/관리자인 경우 분리
+    if (user?.role === 'STUDENT') {
+      // 학생인 경우 직접 chartData 사용
+      const labels = chartData.map(item => {
+        // 자신의 학번인 경우 "나"로 표시, 아닌 경우 학번만 표시
+        const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
+        return isCurrentUser ? `나 (${item.student_num})` : `학생${item.student_num}`;
+      });
+      
+      const chartDataObj = {
+        labels: labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: '코드 변화량',
+            data: chartData.map(item => item.size_change || 0),
+            backgroundColor: chartData.map(item => {
+              // 자신의 학번인 경우 강조 색상 사용
+              const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
+              return isCurrentUser ? 'rgba(255, 152, 0, 0.8)' : 'rgba(66, 165, 245, 0.8)';
+            }),
+            borderColor: chartData.map(item => {
+              const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
+              return isCurrentUser ? 'rgba(230, 81, 0, 1)' : 'rgb(30, 136, 229)';
+            }),
+            borderWidth: 1
+          },
+          {
+            type: 'line',
+            label: '평균',
+            data: Array(chartData.length).fill(
+              chartData.reduce((sum, item) => sum + (item.size_change || 0), 0) / 
+              (chartData.length || 1)
+            ),
+            borderColor: 'rgba(255, 99, 132, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0
+          }
+        ]
+      };
+
+      return chartDataObj;
+    } else {
+      // 교수/관리자인 경우 기존 코드 유지
+      // 학생만 필터링 (교수/조교/관리자 제외)
+      const filteredSubmissions = submissions.filter(submission => 
+        submission.role !== 'PROFESSOR' && submission.courseRole !== 'PROFESSOR' &&
+        submission.role !== 'ASSISTANT' && submission.courseRole !== 'ASSISTANT'
       );
       
-      return {
-        ...student,
-        totalChanges: changeData ? changeData.size_change : 0
-      };
-    });
-    
-    // 평균 변화량 계산
-    const totalChanges = mappedData.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
-    const averageChanges = mappedData.length > 0 ? totalChanges / mappedData.length : 0;
-    
-    // 색상 결정 함수 - 평균 이상/이하 두 가지 색상으로 단순화
-    const getBarColor = (submission) => {
-      // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 색상 사용
-      if (searchQuery && 
-          ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
-           (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
-        return 'rgba(255, 152, 0, 0.8)'; // 검색 결과 하이라이트 색상 (주황색)
-      }
+      // 학생 정보와 차트 데이터 매핑
+      const mappedData = filteredSubmissions.map(student => {
+        // 해당 학생의 변화량 데이터 찾기
+        const changeData = chartData.find(item => 
+          String(item.student_num) === String(student.studentNum)
+        );
+        
+        return {
+          ...student,
+          totalChanges: changeData ? changeData.size_change : 0
+        };
+      });
       
-      return submission.totalChanges >= averageChanges 
-        ? 'rgba(66, 165, 245, 0.8)' // 평균 이상은 푸른색
-        : 'rgba(179, 157, 219, 0.7)'; // 평균 이하는 연한 보라색
-    };
-    
-    // 테두리 색상 결정 함수
-    const getBorderColor = (submission) => {
-      // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 테두리 색상 사용
-      if (searchQuery && 
-          ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
-           (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
-        return 'rgba(230, 81, 0, 1)'; // 검색 결과 하이라이트 테두리 색상 (진한 주황색)
-      }
+      // 평균 변화량 계산
+      const totalChanges = mappedData.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
+      const averageChanges = mappedData.length > 0 ? totalChanges / mappedData.length : 0;
       
-      return submission.totalChanges >= averageChanges 
-        ? 'rgb(30, 136, 229)' // 평균 이상은 진한 푸른색
-        : 'rgb(123, 97, 175)'; // 평균 이하는 진한 보라색
-    };
-    
-    // API 데이터를 사용하도록 수정
-    const chartDataObj = {  // 변수명 변경: chartData -> chartDataObj
-      // 라벨 형식 변경 - 이름과 학번을 괄호로 구분
-      labels: mappedData.map(submission => `${submission.name || ''}\n(${submission.studentNum || ''})`),
-      datasets: [
-        {
-          type: 'bar',
-          label: '코드 변화량',
-          data: mappedData.map(submission => submission.totalChanges || 0),
-          backgroundColor: mappedData.map(submission => 
-            getBarColor(submission)
-          ),
-          borderColor: mappedData.map(submission => 
-            getBorderColor(submission)
-          ),
-          borderWidth: 1
-        },
-        {
-          type: 'line',
-          label: '평균',
-          data: Array(mappedData.length).fill(averageChanges),
-          borderColor: 'rgba(255, 99, 132, 0.8)',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          fill: false,
-          pointRadius: 0
+      // 색상 결정 함수 - 평균 이상/이하 두 가지 색상으로 단순화
+      const getBarColor = (submission) => {
+        // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 색상 사용
+        if (searchQuery && 
+            ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+             (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
+          return 'rgba(255, 152, 0, 0.8)'; // 검색 결과 하이라이트 색상 (주황색)
         }
-      ]
-    };
+        
+        return submission.totalChanges >= averageChanges 
+          ? 'rgba(66, 165, 245, 0.8)' // 평균 이상은 푸른색
+          : 'rgba(179, 157, 219, 0.7)'; // 평균 이하는 연한 보라색
+      };
+      
+      // 테두리 색상 결정 함수
+      const getBorderColor = (submission) => {
+        // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 테두리 색상 사용
+        if (searchQuery && 
+            ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+             (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
+          return 'rgba(230, 81, 0, 1)'; // 검색 결과 하이라이트 테두리 색상 (진한 주황색)
+        }
+        
+        return submission.totalChanges >= averageChanges 
+          ? 'rgb(30, 136, 229)' // 평균 이상은 진한 푸른색
+          : 'rgb(123, 97, 175)'; // 평균 이하는 진한 보라색
+      };
+      
+      // API 데이터를 사용하도록 수정
+      const chartDataObj = {
+        // 라벨 형식 변경 - 이름과 학번을 괄호로 구분
+        labels: mappedData.map(submission => `${submission.name || ''}\n(${submission.studentNum || ''})`),
+        datasets: [
+          {
+            type: 'bar',
+            label: '코드 변화량',
+            data: mappedData.map(submission => submission.totalChanges || 0),
+            backgroundColor: mappedData.map(submission => 
+              getBarColor(submission)
+            ),
+            borderColor: mappedData.map(submission => 
+              getBorderColor(submission)
+            ),
+            borderWidth: 1
+          },
+          {
+            type: 'line',
+            label: '평균',
+            data: Array(mappedData.length).fill(averageChanges),
+            borderColor: 'rgba(255, 99, 132, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0
+          }
+        ]
+      };
 
-    return chartDataObj;  // 변경된 변수명 반환
+      return chartDataObj;
+    }
   };
 
   // y축 범위를 계산하는 함수 수정
