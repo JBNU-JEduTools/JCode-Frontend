@@ -798,36 +798,24 @@ const AssignmentMonitoring = () => {
         const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
         setAssignment(currentAssignment);
 
-        // 강의 정보 조회 - 사용자 역할에 따른 분기 처리
-        if (user?.role === 'ADMIN') {
-          const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
-          setCourse(coursesResponse.data);
-        } else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
-          const coursesResponse = await api.get('/api/users/me/courses/details');
-          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
-          if (!foundCourse) {
-            throw new Error('강의를 찾을 수 없습니다.');
-          }
-          setCourse(foundCourse);
-        } else {
-          const coursesResponse = await api.get('/api/users/me/courses/details');
-          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
-          if (!foundCourse) {
-            throw new Error('강의를 찾을 수 없습니다.');
-          }
-          setCourse(foundCourse);
-        }
+        // 강의 정보 조회
+        const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
+        setCourse(coursesResponse.data);
 
-        // 학생 정보 조회 - 사용자 역할에 따른 분기 처리
-        if (user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
-          // 관리자/교수/조교인 경우 전체 학생 목록에서 찾기
-          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
-          const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
-          setStudent(currentStudent);
-        } else {
-          // 학생인 경우 자기 자신의 정보 가져오기
+        // 학생 정보 조회 - 사용자 역할에 따라 다르게 처리
+        if (user?.role === 'STUDENT') {
+          // 학생인 경우 자신의 정보만 가져옴
           const studentResponse = await api.get('/api/users/me');
           setStudent(studentResponse.data);
+        } else {
+          // 교수/조교인 경우 해당 학생의 정보를 가져옴
+          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+          const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
+          
+          if (!currentStudent) {
+            throw new Error('학생 정보를 찾을 수 없습니다.');
+          }
+          setStudent(currentStudent);
         }
 
         // interval 값 계산
@@ -917,7 +905,7 @@ const AssignmentMonitoring = () => {
     };
 
     fetchData();
-  }, [courseId, assignmentId, userId, timeUnit, minuteValue]);
+  }, [courseId, assignmentId, userId, timeUnit, minuteValue, user?.role]);
 
   // user 정보를 가져오는 useEffect 추가 (다른 useEffect들 위에 배치)
   useEffect(() => {
