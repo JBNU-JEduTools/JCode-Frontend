@@ -17,7 +17,15 @@ import {
   Chip,
   CircularProgress,
   IconButton,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
@@ -29,10 +37,13 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import CloseIcon from '@mui/icons-material/Close';
 import api from '../../api/axios';
+import annotationPlugin from 'chartjs-plugin-annotation';
 
 Chart.register(zoomPlugin);
 Chart.register(crosshairPlugin);
+Chart.register(annotationPlugin);
 
 // 컴포넌트 상단에 커스텀 플러그인 정의
 const noDataTextPlugin = {
@@ -93,6 +104,13 @@ const AssignmentMonitoring = () => {
   const autoRefreshIntervalRef = useRef(null);
   const currentViewRef = useRef({ xMin: null, xMax: null });
   const [error, setError] = useState(null);
+  
+  // 실행 로그와 빌드 로그 상태 추가
+  const [runLogs, setRunLogs] = useState([]);
+  const [buildLogs, setBuildLogs] = useState([]);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [logDialogOpen, setLogDialogOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   // timeUnits를 직접 컴포넌트 내에서 정의
   const timeUnits = {
@@ -173,7 +191,7 @@ const AssignmentMonitoring = () => {
         padding: {
           left: 0,
           right: 60,
-          top: isTotal ? 20 : 10,
+          top: 40, // 상단 여백 증가
           bottom: isTotal ? 0 : 20
         }
       },
@@ -234,7 +252,7 @@ const AssignmentMonitoring = () => {
                 }
               }
             } catch (error) {
-              console.error('툴팁 업데이트 중 오류 발생:', error);
+              console.error('툴크 업데이트 중 오류 발생:', error);
             } finally {
               isUpdating.current = false;
             }
@@ -346,6 +364,23 @@ const AssignmentMonitoring = () => {
           font: '16px "JetBrains Mono", "Noto Sans KR", sans-serif',
           color: isDarkMode ? '#F8F8F2' : '#282A36',
           backgroundColor: isDarkMode ? 'rgba(40, 42, 54, 0.8)' : 'rgba(255, 255, 255, 0.8)'
+        },
+        // annotation 플러그인 설정 추가
+        annotation: {
+          annotations: {},
+          interaction: {
+            mode: 'point',  // nearest에서 point로 변경
+            axis: 'xy',
+            intersect: false
+          },
+          // 라벨이 항상 보이도록 설정
+          common: {
+            drawTime: 'afterDraw',
+            label: {
+              display: true,
+              drawTime: 'afterDraw'
+            }
+          }
         }
       },
       scales: {
@@ -497,10 +532,15 @@ const AssignmentMonitoring = () => {
       }
     }
     
-    return new Chart(ctx, {
+    const chart = new Chart(ctx, {
       ...config,
       options: chartOptions
     });
+    
+    // annotation 추가
+    addAnnotationsToChart(chart, isLine);
+    
+    return chart;
   };
 
   // 차트 업데이트 함수 수정
@@ -616,6 +656,9 @@ const AssignmentMonitoring = () => {
 
       // 툴팁 초기화
       chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+      
+      // annotation 업데이트
+      addAnnotationsToChart(chart, isTotal);
 
       requestAnimationFrame(() => {
         chart.update('none');
@@ -702,7 +745,25 @@ const AssignmentMonitoring = () => {
     return await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
   };
 
-  // handleSilentRefresh와 handleRefresh 함수를 하나로 통합
+  // 로그 데이터를 가져오는 useEffect 추가
+  useEffect(() => {
+    if (!loading && courseId && assignmentId && userId) {
+      fetchRunLogs();
+      fetchBuildLogs();
+    }
+  }, [courseId, assignmentId, userId, loading]);
+
+  // 로그 데이터가 변경될 때 차트 annotation 업데이트
+  useEffect(() => {
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+    if (changeChartInstance.current) {
+      addAnnotationsToChart(changeChartInstance.current, false);
+    }
+  }, [runLogs, buildLogs, isDarkMode]);
+
+  // 데이터 새로고침 함수에 로그 데이터 가져오기 추가
   const handleDataRefresh = async (isSilent = false) => {
     if (isRefreshing || (!isSilent && !totalChartInstance.current)) return;
     
@@ -726,6 +787,12 @@ const AssignmentMonitoring = () => {
       } else {
         updateChartsDirectly(chartData, currentView);
       }
+      
+      // 로그 데이터도 함께 새로고침
+      await Promise.all([
+        fetchRunLogs(),
+        fetchBuildLogs()
+      ]);
       
       setLastUpdated(new Date());
     } catch (error) {
@@ -785,6 +852,557 @@ const AssignmentMonitoring = () => {
         ? isDarkMode ? '#50FA7B' : '#6272A4'
         : isDarkMode ? '#FF5555' : '#FF79C6'
     );
+  };
+
+  // 실행 로그 가져오기 함수
+  const fetchRunLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const params = new URLSearchParams({
+        course: courseId,
+        assignment: assignmentId,
+        user: userId
+      });
+      
+      const response = await api.get(`/api/watcher/logs/run?${params}`);
+      
+      // 타임스탬프를 Date 객체로 변환하여 정렬
+      const logs = response.data.run_logs.map(log => ({
+        ...log,
+        timestamp: new Date(log.timestamp).getTime()
+      })).sort((a, b) => a.timestamp - b.timestamp);
+      
+      setRunLogs(logs);
+    } catch (error) {
+      console.error('실행 로그를 불러오는데 실패했습니다:', error);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  // 빌드 로그 가져오기 함수
+  const fetchBuildLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const params = new URLSearchParams({
+        course: courseId,
+        assignment: assignmentId,
+        user: userId
+      });
+      
+      const response = await api.get(`/api/watcher/logs/build?${params}`);
+      
+      // 타임스탬프를 Date 객체로 변환하여 정렬
+      const logs = response.data.build_logs.map(log => ({
+        ...log,
+        timestamp: new Date(log.timestamp).getTime()
+      })).sort((a, b) => a.timestamp - b.timestamp);
+      
+      setBuildLogs(logs);
+    } catch (error) {
+      console.error('빌드 로그를 불러오는데 실패했습니다:', error);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  // 로그 다이얼로그 열기 함수
+  const handleLogClick = (log, type) => {
+    setSelectedLog({ ...log, type });
+    setLogDialogOpen(true);
+  };
+
+  // 로그 다이얼로그 닫기 함수
+  const handleCloseLogDialog = () => {
+    setLogDialogOpen(false);
+    setSelectedLog(null);
+  };
+
+  // 로그 다이얼로그 렌더링 함수
+  const renderLogDialog = () => {
+    if (!selectedLog) return null;
+    
+    const isRunLog = selectedLog.type === 'run';
+    const title = isRunLog ? '실행 로그 정보' : '빌드 로그 정보';
+    const statusText = selectedLog.exit_code === 0 ? '성공' : '실패';
+    const statusColor = selectedLog.exit_code === 0 ? 
+      (isDarkMode ? '#50FA7B' : '#4CAF50') : 
+      (isDarkMode ? '#FF5555' : '#F44336');
+    
+    return (
+      <Dialog 
+        open={logDialogOpen} 
+        onClose={handleCloseLogDialog}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          style: {
+            borderRadius: '8px',
+            boxShadow: isDarkMode ? 
+              '0 4px 20px rgba(0, 0, 0, 0.3)' : 
+              '0 4px 20px rgba(0, 0, 0, 0.1)',
+            backgroundColor: isDarkMode ? '#282A36' : '#FFFFFF'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '20px 24px'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isRunLog ? '▶️' : '🔨'} {title}
+            <Chip 
+              label={statusText} 
+              size="small" 
+              sx={{ 
+                ml: 1,
+                backgroundColor: statusColor,
+                color: '#FFF',
+                fontWeight: 'bold'
+              }} 
+            />
+          </Box>
+          <IconButton 
+            onClick={handleCloseLogDialog}
+            size="small"
+            sx={{ color: isDarkMode ? '#6272A4' : '#9E9E9E' }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ 
+          padding: '24px',
+          backgroundColor: isDarkMode ? '#282A36' : '#FFFFFF'
+        }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {/* 왼쪽 컬럼 */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ 
+                color: isDarkMode ? '#F8F8F2' : '#282A36',
+                mb: 2,
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                borderBottom: `2px solid ${isDarkMode ? '#BD93F9' : '#6272A4'}`,
+                paddingBottom: '8px'
+              }}>
+                기본 정보
+              </Typography>
+              
+              <Paper elevation={0} sx={{ 
+                p: 3, 
+                backgroundColor: isDarkMode ? '#44475A' : '#F5F5F5',
+                borderRadius: '4px',
+                mb: 2
+              }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ 
+                      color: isDarkMode ? '#6272A4' : '#757575',
+                      display: 'block',
+                      mb: 1,
+                      fontWeight: 'bold'
+                    }}>
+                      상태
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ 
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: statusColor,
+                        fontWeight: 'bold'
+                      }}>
+                        {statusText} (종료 코드: {selectedLog.exit_code})
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="caption" sx={{ 
+                      color: isDarkMode ? '#6272A4' : '#757575',
+                      display: 'block',
+                      mb: 1,
+                      fontWeight: 'bold'
+                    }}>
+                      타임스탬프
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: isDarkMode ? '#F8F8F2' : '#282A36'
+                    }}>
+                      {new Date(selectedLog.timestamp).toLocaleString()}
+                    </Typography>
+                  </Box>
+                  
+                  {isRunLog && (
+                    <Box>
+                      <Typography variant="caption" sx={{ 
+                        color: isDarkMode ? '#6272A4' : '#757575',
+                        display: 'block',
+                        mb: 1,
+                        fontWeight: 'bold'
+                      }}>
+                        프로세스 유형
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: isDarkMode ? '#F8F8F2' : '#282A36'
+                      }}>
+                        {selectedLog.process_type}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {!isRunLog && (
+                    <Box>
+                      <Typography variant="caption" sx={{ 
+                        color: isDarkMode ? '#6272A4' : '#757575',
+                        display: 'block',
+                        mb: 1,
+                        fontWeight: 'bold'
+                      }}>
+                        파일 크기
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: isDarkMode ? '#F8F8F2' : '#282A36'
+                      }}>
+                        {formatBytes(selectedLog.file_size)}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Box>
+            
+            {/* 오른쪽 컬럼 */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ 
+                color: isDarkMode ? '#F8F8F2' : '#282A36',
+                mb: 2,
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                borderBottom: `2px solid ${isDarkMode ? '#BD93F9' : '#6272A4'}`,
+                paddingBottom: '8px'
+              }}>
+                경로 정보
+              </Typography>
+              
+              <Paper elevation={0} sx={{ 
+                p: 3, 
+                backgroundColor: isDarkMode ? '#44475A' : '#F5F5F5',
+                borderRadius: '4px',
+                mb: 2
+              }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ 
+                      color: isDarkMode ? '#6272A4' : '#757575',
+                      display: 'block',
+                      mb: 1,
+                      fontWeight: 'bold'
+                    }}>
+                      작업 디렉토리
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: "'JetBrains Mono', monospace",
+                      wordBreak: 'break-all',
+                      color: isDarkMode ? '#F8F8F2' : '#282A36'
+                    }}>
+                      {selectedLog.cwd}
+                    </Typography>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="caption" sx={{ 
+                      color: isDarkMode ? '#6272A4' : '#757575',
+                      display: 'block',
+                      mb: 1,
+                      fontWeight: 'bold'
+                    }}>
+                      대상 파일
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      fontFamily: "'JetBrains Mono', monospace",
+                      wordBreak: 'break-all',
+                      color: isDarkMode ? '#F8F8F2' : '#282A36'
+                    }}>
+                      {selectedLog.target_path}
+                    </Typography>
+                  </Box>
+                  
+                  {!isRunLog && (
+                    <Box>
+                      <Typography variant="caption" sx={{ 
+                        color: isDarkMode ? '#6272A4' : '#757575',
+                        display: 'block',
+                        mb: 1,
+                        fontWeight: 'bold'
+                      }}>
+                        바이너리 경로
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        fontFamily: "'JetBrains Mono', monospace",
+                        wordBreak: 'break-all',
+                        color: isDarkMode ? '#F8F8F2' : '#282A36'
+                      }}>
+                        {selectedLog.binary_path}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Box>
+          </Box>
+          
+          {/* 명령어 정보 (전체 너비) */}
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="subtitle2" sx={{ 
+              color: isDarkMode ? '#F8F8F2' : '#282A36',
+              mb: 2,
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              borderBottom: `2px solid ${isDarkMode ? '#BD93F9' : '#6272A4'}`,
+              paddingBottom: '8px'
+            }}>
+              명령어
+            </Typography>
+            
+            <Paper elevation={0} sx={{ 
+              p: 3, 
+              backgroundColor: isDarkMode ? '#44475A' : '#F5F5F5',
+              borderRadius: '4px',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '0.9rem',
+              overflowX: 'auto',
+              color: isDarkMode ? '#F8F8F2' : '#282A36'
+            }}>
+              {selectedLog.cmdline}
+            </Paper>
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  // 차트에 annotation 추가 함수
+  const addAnnotationsToChart = (chart, isTotal = true) => {
+    if (!chart || !chart.options) return;
+    
+    // 기존 annotation 초기화
+    chart.options.plugins.annotation = {
+      annotations: {},
+      interaction: {
+        mode: 'point',  // nearest에서 point로 변경
+        axis: 'xy',
+        intersect: false
+      }
+    };
+    
+    // 막대 그래프(코드 변화량 차트)에는 annotation을 표시하지 않음
+    if (!isTotal) {
+      return;
+    }
+    
+    // 실행 로그 annotation 추가
+    runLogs.forEach((log, index) => {
+      const logId = `run-${index}`;
+      const isSuccess = log.exit_code === 0;
+      
+      // 실행 로그 주변에 박스 추가 (모든 로그에 대해)
+      const boxId = `run-box-${index}`;
+      const oneSecond = 1000; // 1초 (밀리초 단위)
+      
+      // 라벨만 따로 추가 (항상 표시)
+      const labelId = `run-label-${index}`;
+      chart.options.plugins.annotation.annotations[labelId] = {
+        type: 'line',
+        xMin: log.timestamp,
+        xMax: log.timestamp,
+        borderColor: 'transparent',
+        borderWidth: 0,
+        drawTime: 'afterDatasetsDraw',
+        label: {
+          display: true,
+          content: `실행 ${isSuccess ? '성공' : '실패'}`,
+          position: 'end',
+          yAdjust: 0, // 위쪽으로 더 이동
+          xAdjust: 0,
+          backgroundColor: isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)'),
+          color: isDarkMode ? '#282A36' : '#FFFFFF',
+          font: {
+            size: 10,
+            weight: 'bold'
+          },
+          padding: 4
+        }
+      };
+      
+      // 박스 추가
+      chart.options.plugins.annotation.annotations[boxId] = {
+        type: 'box',
+        backgroundColor: isSuccess ? 
+          (isDarkMode ? 'rgba(80, 250, 123, 0.05)' : 'rgba(76, 175, 80, 0.05)') : 
+          (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)'),
+        borderColor: isSuccess ? 
+          (isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)') : 
+          (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'),
+        borderWidth: 1,
+        xMin: log.timestamp - oneSecond,
+        xMax: log.timestamp + oneSecond,
+        yScaleID: 'y',
+        drawTime: 'beforeDatasetsDraw',
+        label: {
+          display: false
+        },
+        enter: function({element}) {
+          // 박스 크기 확대
+          element.options.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.15)' : 'rgba(76, 175, 80, 0.15)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.15)' : 'rgba(244, 67, 54, 0.15)');
+          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(76, 175, 80, 0.5)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(244, 67, 54, 0.5)');
+          element.options.borderWidth = 2;
+          
+          // 라벨 강조
+          const label = chart.options.plugins.annotation.annotations[labelId].label;
+          label.font.size = 12;
+          label.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.9)' : 'rgba(76, 175, 80, 0.9)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.9)' : 'rgba(244, 67, 54, 0.9)');
+          
+          return true;
+        },
+        leave: function({element}) {
+          // 원래 크기로 복원
+          element.options.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.05)' : 'rgba(76, 175, 80, 0.05)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)');
+          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)');
+          element.options.borderWidth = 1;
+          
+          // 라벨 복원
+          const label = chart.options.plugins.annotation.annotations[labelId].label;
+          label.font.size = 10;
+          label.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)');
+          
+          return true;
+        },
+        click: function() {
+          // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
+          handleLogClick(log, 'run');
+        }
+      };
+    });
+    
+    // 빌드 로그 annotation 추가
+    buildLogs.forEach((log, index) => {
+      const logId = `build-${index}`;
+      const isSuccess = log.exit_code === 0;
+      
+      // 빌드 로그 주변에 박스 추가 (모든 로그에 대해)
+      const boxId = `build-box-${index}`;
+      const oneSecond = 1000; // 1초 (밀리초 단위)
+      
+      // 라벨만 따로 추가 (항상 표시)
+      const labelId = `build-label-${index}`;
+      chart.options.plugins.annotation.annotations[labelId] = {
+        type: 'line',
+        xMin: log.timestamp,
+        xMax: log.timestamp,
+        borderColor: 'transparent',
+        borderWidth: 0,
+        drawTime: 'afterDatasetsDraw',
+        label: {
+          display: true,
+          content: `빌드 ${isSuccess ? '성공' : '실패'}`,
+          position: 'end',
+          yAdjust: 0, // 위쪽으로 더 이동
+          xAdjust: 0,
+          backgroundColor: isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)'),
+          color: isDarkMode ? '#282A36' : '#FFFFFF',
+          font: {
+            size: 10,
+            weight: 'bold'
+          },
+          padding: 4
+        }
+      };
+      
+      // 박스 추가
+      chart.options.plugins.annotation.annotations[boxId] = {
+        type: 'box',
+        backgroundColor: isSuccess ? 
+          (isDarkMode ? 'rgba(139, 233, 253, 0.05)' : 'rgba(33, 150, 243, 0.05)') : 
+          (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)'),
+        borderColor: isSuccess ? 
+          (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(33, 150, 243, 0.2)') : 
+          (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'),
+        borderWidth: 1,
+        xMin: log.timestamp - oneSecond,
+        xMax: log.timestamp + oneSecond,
+        yScaleID: 'y',
+        drawTime: 'beforeDatasetsDraw',
+        label: {
+          display: false
+        },
+        enter: function({element}) {
+          // 박스 크기 확대
+          element.options.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.15)' : 'rgba(33, 150, 243, 0.15)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.15)' : 'rgba(255, 152, 0, 0.15)');
+          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.5)' : 'rgba(33, 150, 243, 0.5)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.5)' : 'rgba(255, 152, 0, 0.5)');
+          element.options.borderWidth = 2;
+          
+          // 라벨 강조
+          const label = chart.options.plugins.annotation.annotations[labelId].label;
+          label.font.size = 12;
+          label.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.9)' : 'rgba(33, 150, 243, 0.9)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.9)' : 'rgba(255, 152, 0, 0.9)');
+          
+          return true;
+        },
+        leave: function({element}) {
+          // 원래 크기로 복원
+          element.options.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.05)' : 'rgba(33, 150, 243, 0.05)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)');
+          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(33, 150, 243, 0.2)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)');
+          element.options.borderWidth = 1;
+          
+          // 라벨 복원
+          const label = chart.options.plugins.annotation.annotations[labelId].label;
+          label.font.size = 10;
+          label.backgroundColor = isSuccess ? 
+            (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)');
+          
+          return true;
+        },
+        click: function() {
+          // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
+          handleLogClick(log, 'build');
+        }
+      };
+    });
+    
+    // 차트 업데이트
+    chart.update('none');
   };
 
   // 데이터 로드 및 차트 초기화
@@ -1122,47 +1740,6 @@ const AssignmentMonitoring = () => {
 
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title="새로고침">
-              <IconButton 
-                onClick={() => handleDataRefresh(false)} 
-                disabled={isRefreshing}
-                color="primary"
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={autoRefresh ? "자동 새로고침 중지" : "자동 새로고침 시작"}>
-              <IconButton 
-                onClick={() => setAutoRefresh(!autoRefresh)} 
-                color={autoRefresh ? (isDarkMode ? "info" : "secondary") : "default"}
-              >
-                <RestartAltIcon />
-              </IconButton>
-            </Tooltip>
-            {isRefreshing && <CircularProgress size={24} />}
-            {autoRefresh && <CircularProgress 
-              size={16} 
-              sx={{ 
-                color: isDarkMode ? 'info.main' : 'secondary.main',
-                opacity: 0.8
-              }} 
-            />}
-            {lastUpdated && (
-              <Typography variant="caption" sx={{ ml: 1 }}>
-                마지막 업데이트: {lastUpdated.toLocaleTimeString()}
-                {autoRefresh && (
-                  <span style={{ 
-                    color: isDarkMode ? '#8be9fd' : '#7b1fa2',
-                    fontWeight: 'normal'
-                  }}>
-                    {" (1분마다 자동 업데이트 중)"}
-                  </span>
-                )}
-              </Typography>
-            )}
-          </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>분</InputLabel>
               <Select
@@ -1170,6 +1747,15 @@ const AssignmentMonitoring = () => {
                 label="분"
                 onChange={handleMinuteChange}
                 onClick={() => setTimeUnit('minute')}
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(68, 71, 90, 0.5)' : 'rgba(248, 248, 242, 0.9)',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: isDarkMode ? '#6272A4' : '#BD93F9'
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: isDarkMode ? '#8BE9FD' : '#6272A4'
+                  }
+                }}
               >
                 <MenuItem value="1">1분</MenuItem>
                 <MenuItem value="3">3분</MenuItem>
@@ -1185,22 +1771,220 @@ const AssignmentMonitoring = () => {
               exclusive
               onChange={handleTimeUnitChange}
               size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  color: isDarkMode ? '#F8F8F2' : '#282A36',
+                  borderColor: isDarkMode ? '#6272A4' : '#BD93F9',
+                  '&.Mui-selected': {
+                    backgroundColor: isDarkMode ? 'rgba(189, 147, 249, 0.2)' : 'rgba(98, 114, 164, 0.2)',
+                    color: isDarkMode ? '#BD93F9' : '#6272A4',
+                    fontWeight: 'bold'
+                  },
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(189, 147, 249, 0.1)' : 'rgba(98, 114, 164, 0.1)'
+                  }
+                }
+              }}
             >
               <ToggleButton value="hour">시간</ToggleButton>
               <ToggleButton value="day">일</ToggleButton>
               <ToggleButton value="week">주</ToggleButton>
               <ToggleButton value="month">월</ToggleButton>
             </ToggleButtonGroup>
+            
+            <Tooltip title="새로고침">
+              <IconButton 
+                onClick={() => handleDataRefresh(false)} 
+                disabled={isRefreshing}
+                color="primary"
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(189, 147, 249, 0.1)' : 'rgba(98, 114, 164, 0.1)',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(189, 147, 249, 0.2)' : 'rgba(98, 114, 164, 0.2)'
+                  }
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={autoRefresh ? "자동 새로고침 중지" : "자동 새로고침 시작"}>
+              <IconButton 
+                onClick={() => setAutoRefresh(!autoRefresh)} 
+                color={autoRefresh ? (isDarkMode ? "info" : "secondary") : "default"}
+                sx={{
+                  backgroundColor: autoRefresh ? 
+                    (isDarkMode ? 'rgba(139, 233, 253, 0.1)' : 'rgba(255, 121, 198, 0.1)') : 
+                    'transparent',
+                  '&:hover': {
+                    backgroundColor: autoRefresh ? 
+                      (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(255, 121, 198, 0.2)') : 
+                      (isDarkMode ? 'rgba(248, 248, 242, 0.1)' : 'rgba(40, 42, 54, 0.1)')
+                  }
+                }}
+              >
+                <RestartAltIcon />
+              </IconButton>
+            </Tooltip>
+            
+            {isRefreshing && <CircularProgress size={24} />}
+            {autoRefresh && <CircularProgress 
+              size={16} 
+              sx={{ 
+                color: isDarkMode ? 'info.main' : 'secondary.main',
+                opacity: 0.8
+              }} 
+            />}
+            {lastUpdated && (
+              <Typography variant="caption" sx={{ 
+                ml: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5
+              }}>
+                <span role="img" aria-label="시간" style={{ fontSize: '1rem' }}>🕒</span>
+                마지막 업데이트: {lastUpdated.toLocaleTimeString()}
+                {autoRefresh && (
+                  <span style={{ 
+                    color: isDarkMode ? '#8be9fd' : '#7b1fa2',
+                    fontWeight: 'normal'
+                  }}>
+                    {" (1분마다 자동 업데이트 중)"}
+                  </span>
+                )}
+              </Typography>
+            )}
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* 차트 줌 컨트롤 추가 */}
+            <Tooltip title="차트 확대">
+              <IconButton 
+                onClick={() => {
+                  if (totalChartInstance.current) {
+                    totalChartInstance.current.zoom(1.2);
+                    changeChartInstance.current?.zoom(1.2);
+                  }
+                }}
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)'
+                  }
+                }}
+              >
+                <ZoomInIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="차트 축소">
+              <IconButton 
+                onClick={() => {
+                  if (totalChartInstance.current) {
+                    totalChartInstance.current.zoom(0.8);
+                    changeChartInstance.current?.zoom(0.8);
+                  }
+                }}
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'
+                  }
+                }}
+              >
+                <ZoomOutIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="차트 초기화">
+              <IconButton 
+                onClick={() => {
+                  if (totalChartInstance.current) {
+                    totalChartInstance.current.resetZoom();
+                    changeChartInstance.current?.resetZoom();
+                  }
+                }}
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'
+                  }
+                }}
+              >
+                <RestartAltIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
 
-        <Box sx={{ height: '400px', mb: 2 }}>
+        <Paper elevation={0} sx={{ 
+          height: '400px', 
+          mb: 2, 
+          p: 1,
+          border: `1px solid ${isDarkMode ? '#44475A' : '#E0E0E0'}`,
+          borderRadius: '8px',
+          position: 'relative'
+        }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              left: 16, 
+              color: isDarkMode ? '#BD93F9' : '#6272A4',
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              fontWeight: 'bold',
+              zIndex: 1
+            }}
+          >
+            총 코드량 (바이트)
+          </Typography>
           <canvas ref={totalBytesChartRef} />
-        </Box>
+        </Paper>
 
-        <Box sx={{ height: '200px' }}>
+        <Paper elevation={0} sx={{ 
+          height: '200px', 
+          p: 1,
+          border: `1px solid ${isDarkMode ? '#44475A' : '#E0E0E0'}`,
+          borderRadius: '8px',
+          position: 'relative'
+        }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              left: 16, 
+              color: isDarkMode ? '#FF79C6' : '#9C27B0',
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              fontWeight: 'bold',
+              zIndex: 1
+            }}
+          >
+            코드 변화량 (바이트)
+          </Typography>
           <canvas ref={changeChartRef} />
-        </Box>
+        </Paper>
+        
+        {/* 로그 정보 다이얼로그 */}
+        {renderLogDialog()}
+        
+        {/* 로그 로딩 표시 */}
+        {logsLoading && (
+          <Box sx={{ 
+            position: 'fixed', 
+            bottom: 20, 
+            right: 20, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            backgroundColor: isDarkMode ? 'rgba(40, 42, 54, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+            zIndex: 1000
+          }}>
+            <CircularProgress size={20} />
+            <Typography variant="caption">로그 데이터 로딩 중...</Typography>
+          </Box>
+        )}
       </Paper>
     </Container>
   );
