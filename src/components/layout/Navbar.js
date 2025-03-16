@@ -10,7 +10,13 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  Divider
+  Divider,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
@@ -35,6 +41,7 @@ const Navbar = () => {
   const [isProfileSet, setIsProfileSet] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -135,6 +142,19 @@ const Navbar = () => {
       backgroundColor: (theme) => theme.palette.action.hover,
       color: (theme) => theme.palette.primary.main
     }
+  };
+
+  const handleMobileMenuToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const handleMobileNavigation = (path) => {
+    navigate(path.replace('/*', ''));
+    handleMobileMenuClose();
   };
 
   return (
@@ -429,7 +449,7 @@ const Navbar = () => {
                         ml: 1,
                       }}
                     >
-                      프로필 설정
+                      Profile
                     </Typography>
                   </MenuItem>
                   <MenuItem 
@@ -566,6 +586,7 @@ const Navbar = () => {
             <IconButton
               size="large"
               aria-label="menu"
+              onClick={handleMobileMenuToggle}
               sx={{ color: 'primary.main' }}
             >
               <MenuIcon />
@@ -573,6 +594,208 @@ const Navbar = () => {
           </Box>
         </Toolbar>
       </Container>
+      
+      {/* 모바일 메뉴 드로어 */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={handleMobileMenuClose}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: '80%',
+            maxWidth: '300px',
+            boxSizing: 'border-box',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+          },
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {user ? (
+            <>
+              <Box sx={{ 
+                p: 2, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2,
+                borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                mb: 2,
+                pb: 2
+              }}>
+                <Avatar 
+                  src={getAvatarUrl(user.email)}
+                  sx={{ 
+                    width: 40, 
+                    height: 40,
+                    background: 'transparent',
+                    border: (theme) => 
+                      theme.palette.mode === 'dark' 
+                        ? '2px solid #6272A4' 
+                        : '2px solid rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  {user.email[0].toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 0.8,
+                    mb: 0.3
+                  }}>
+                    <Typography 
+                      sx={{ 
+                        fontWeight: 600,
+                        color: 'text.primary',
+                        fontSize: '0.95rem',
+                        letterSpacing: '-0.01em'
+                      }}
+                    >
+                      {profileData?.name || user.email.split('@')[0]}
+                    </Typography>
+                    <Typography 
+                      component="span"
+                      sx={{ 
+                        px: 0.8,
+                        py: 0.2,
+                        borderRadius: '12px',
+                        backgroundColor: (theme) => 
+                          theme.palette.mode === 'dark' 
+                            ? 'rgba(189, 147, 249, 0.1)' 
+                            : 'rgba(33, 150, 243, 0.08)',
+                        color: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? '#FF79C6'
+                            : '#1976D2',
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em'
+                      }}
+                    >
+                      {user.role === 'STUDENT' ? '학생' :
+                       user.role === 'PROFESSOR' ? '교수' :
+                       user.role === 'ASSISTANT' ? '조교' :
+                       user.role === 'ADMIN' ? '관리자' : ''}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    sx={{ 
+                      color: 'text.secondary',
+                      fontSize: '0.75rem',
+                      letterSpacing: '-0.01em'
+                    }}
+                  >
+                    {user.email}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <List sx={{ flexGrow: 1 }}>
+                {navItems.map((route) => (
+                  <ListItem key={route.path} disablePadding>
+                    <ListItemButton
+                      onClick={() => handleMobileNavigation(route.path)}
+                      selected={isCurrentPath(route.path)}
+                      sx={{
+                        borderRadius: '8px',
+                        mb: 0.5,
+                        '&.Mui-selected': {
+                          backgroundColor: (theme) => 
+                            theme.palette.mode === 'dark' 
+                              ? 'rgba(189, 147, 249, 0.1)' 
+                              : 'rgba(33, 150, 243, 0.08)',
+                          '&:hover': {
+                            backgroundColor: (theme) => 
+                              theme.palette.mode === 'dark' 
+                                ? 'rgba(189, 147, 249, 0.2)' 
+                                : 'rgba(33, 150, 243, 0.12)',
+                          }
+                        }
+                      }}
+                    >
+                      <ListItemText 
+                        primary={route.label} 
+                        primaryTypographyProps={{
+                          fontWeight: isCurrentPath(route.path) ? 600 : 400,
+                          color: isCurrentPath(route.path) 
+                            ? 'primary.main' 
+                            : 'text.primary'
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+
+              <Divider sx={{ my: 1 }} />
+
+              <List>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleProfileSettings}>
+                    <ListItemIcon>
+                      <PersonIcon sx={{ color: 'primary.main' }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Profile" 
+                      primaryTypographyProps={{
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={toggleDarkMode}>
+                    <ListItemIcon>
+                      {isDarkMode ? (
+                        <DarkModeIcon sx={{ color: 'primary.main' }} />
+                      ) : (
+                        <LightModeIcon sx={{ color: 'warning.main' }} />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={isDarkMode ? "Dark Mode" : "Light Mode"} 
+                      primaryTypographyProps={{
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={logout}>
+                    <ListItemIcon>
+                      <LogoutIcon sx={{ color: 'error.main' }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Logout" 
+                      primaryTypographyProps={{
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  login();
+                  handleMobileMenuClose();
+                }}
+                sx={{
+                  px: 4,
+                  py: 1,
+                  borderRadius: '8px',
+                  fontWeight: 'bold'
+                }}
+              >
+                로그인
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Drawer>
     </AppBar>
   );
 };
