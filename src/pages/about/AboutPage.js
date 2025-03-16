@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Container, 
   Typography, 
@@ -10,35 +10,19 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  IconButton,
-  Divider,
   Avatar,
   Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-  Modal,
-  Button
+  Paper
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import CodeIcon from '@mui/icons-material/Code';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SecurityIcon from '@mui/icons-material/Security';
 import CloudIcon from '@mui/icons-material/Cloud';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import HandshakeIcon from '@mui/icons-material/Handshake';
-import SchoolIcon from '@mui/icons-material/School';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import ArticleIcon from '@mui/icons-material/Article';
-import HelpIcon from '@mui/icons-material/Help';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import jbnuLogo from '../../assets/jbnulogopng.png';
 import swunivLogo from '../../assets/swunivlogopng.png';

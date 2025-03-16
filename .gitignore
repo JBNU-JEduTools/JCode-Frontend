@@ -89,3 +89,13 @@ dist
 
 # Nginx
 default.conf
+
+# Kubernetes
+k8s/
+*.yaml
+*.yml
+!package.yaml
+!tsconfig.json
+!.eslintrc.yml
+!.prettierrc.yml
+!.stylelintrc.yml

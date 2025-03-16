@@ -24,7 +24,7 @@ import {
   IconButton
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import api, { auth } from '../../api/axios';
+import api from '../../api/axios';
 import CodeIcon from '@mui/icons-material/Code';
 import { selectStyles } from '../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
@@ -34,10 +34,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ReactDOM from 'react-dom';
-
-const IDE_URL = process.env.REACT_APP_IDE_URL;
-
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -58,7 +54,8 @@ const WebIDECourses = () => {
     confirmText: '',
     doubleCheck: false
   });
-  const navigate = useNavigate();
+  // 사용자 역할 확인 (교수, 조교, 관리자)
+  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ASSISTANT' || user.role === 'ADMIN');
 
   // 고유한 연도와 학기 목록 추출
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
@@ -99,17 +96,33 @@ const WebIDECourses = () => {
     fetchCourses();
   }, []);
 
-  const handleWebIDEOpen = async (courseId) => {
+  const handleWebIDEOpen = async (courseId, isSnapshot = false) => {
     try {
+      if (isSnapshot) {
+        try {
+          await api.post(`/api/courses/${courseId}/jcodes`, {
+            userEmail: user.email,
+            snapshot: true
+          });
+        } catch (error) {
+          // JCode가 이미 존재하는 경우(403 에러) 무시하고 계속 진행
+          if (error.response?.status !== 403) {
+            throw error; // 403이 아닌 다른 에러는 다시 throw
+          }
+        }
+      }
+
       // API 요청으로 리다이렉트 URL 가져오기
       const response = await api.post('/api/redirect', {
         userEmail: user.email,
-        courseId: courseId
+        courseId: courseId,
+        snapshot: isSnapshot
       }, { withCredentials: true });
       
       // 응답에서 최종 URL 추출
       const finalUrl = response.request?.responseURL || response.data?.url;
-      
+      console.log(finalUrl);
+
       if (!finalUrl) {
         throw new Error("리다이렉트 URL을 찾을 수 없습니다");
       }
@@ -607,7 +620,7 @@ const WebIDECourses = () => {
                         fullWidth
                         variant="contained"
                         startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                        onClick={() => handleWebIDEOpen(course.courseId)}
+                        onClick={() => handleWebIDEOpen(course.courseId, false)}
                         size="small"
                         sx={{
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
@@ -616,11 +629,45 @@ const WebIDECourses = () => {
                           px: 1.5,
                           minHeight: '28px',
                           borderRadius: '20px',
-                          textTransform: 'none'
+                          textTransform: 'none',
+                          flex: isAuthorized ? 1 : 'auto'
                         }}
                       >
                         JCode 실행
                       </Button>
+                      
+                      {isAuthorized && (
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                          onClick={() => handleWebIDEOpen(course.courseId, true)}
+                          size="small"
+                          sx={{
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            fontSize: '0.75rem',
+                            py: 0.5,
+                            px: 1.5,
+                            minHeight: '28px',
+                            borderRadius: '20px',
+                            textTransform: 'none',
+                            ml: 1,
+                            flex: 1,
+                            borderColor: (theme) =>
+                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                            color: (theme) =>
+                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
+                            '&:hover': {
+                              borderColor: (theme) =>
+                                theme.palette.mode === 'dark' ? '#FF92D0' : 'primary.dark',
+                              backgroundColor: (theme) =>
+                                theme.palette.mode === 'dark' ? 'rgba(255, 121, 198, 0.1)' : 'rgba(63, 81, 181, 0.1)'
+                            }
+                          }}
+                        >
+                          스냅샷 확인
+                        </Button>
+                      )}
                     </CardActions>
                   </Card>
                 </Grid>

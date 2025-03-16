@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, 
   Paper, 
   Typography, 
-  List, 
-  ListItem, 
-  ListItemText,
   CircularProgress,
   Box,
   Button,
@@ -18,15 +15,8 @@ import {
   TableHead,
   TableRow,
   TextField,
-  InputAdornment,
   Fade,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  AccordionActions,
   Grid,
-  Card,
-  CardContent,
   Select,
   MenuItem,
   Chip,
@@ -117,7 +107,7 @@ const ClassDetail = () => {
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       if (user?.role === 'ADMIN') {
         const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
@@ -151,14 +141,11 @@ const ClassDetail = () => {
       setError('데이터를 불러오는데 실패했습니다.');
       setLoading(false);
     }
-  };
+  }, [courseId, user]);
 
   useEffect(() => {
-    const fetchDataFunc = async () => {
-      await fetchData();
-    };
-    fetchDataFunc();
-  }, [courseId, user]);
+    fetchData();
+  }, [fetchData]);
 
   const getFilteredAndSortedStudents = () => {
     // 검색 조건에 맞는 사용자들만 필터링
@@ -201,6 +188,10 @@ const ClassDetail = () => {
         case 'studentNum':
           aValue = String(a.studentNum || '');
           bValue = String(b.studentNum || '');
+          break;
+        default:
+          aValue = a.email || '';
+          bValue = b.email || '';
           break;
       }
       
