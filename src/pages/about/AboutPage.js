@@ -99,6 +99,10 @@ const AboutPage = () => {
       role: 'Professor',
     },
     {
+      name: '김규호',
+      role: 'Student',
+    },
+    {
       name: '김은혜',
       role: 'Student',
     },
@@ -112,10 +116,6 @@ const AboutPage = () => {
     },
     {
       name: '허완',
-      role: 'Student',
-    },
-    {
-      name: '김규호',
       role: 'Student',
     }
   ];
