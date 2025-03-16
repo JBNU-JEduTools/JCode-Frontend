@@ -23,6 +23,10 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
     studentNum: '',
     name: ''
   });
+  const [errors, setErrors] = useState({
+    studentNum: '',
+    name: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +44,13 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
       ...prev,
       [name]: value
     }));
+    
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -48,7 +59,18 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
     const studentNumStr = String(formData.studentNum);
     const nameStr = String(formData.name);
     
-    if (!studentNumStr.trim() || !nameStr.trim()) {
+    const newErrors = {};
+    
+    if (!studentNumStr.trim()) {
+      newErrors.studentNum = '학번을 입력해주세요';
+    }
+    
+    if (!nameStr.trim()) {
+      newErrors.name = '이름을 입력해주세요';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       toast.error('모든 필드를 입력해주세요.', toastConfig);
       return;
     }
@@ -121,15 +143,15 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
             fullWidth
             label="학번"
             name="studentNum"
-            variant="outlined"
             value={formData.studentNum}
             onChange={handleChange}
-            sx={{ mb: 2 }}
-            placeholder="예: 201912345"
-            type="number"
-            inputProps={{ 
-              pattern: "[0-9]*",
-              inputMode: "numeric"
+            margin="normal"
+            required
+            error={!!errors.studentNum}
+            helperText={isEditMode ? "학번을 수정하려면 관리자에게 문의하세요." : errors.studentNum}
+            disabled={isEditMode}
+            InputProps={{
+              readOnly: isEditMode,
             }}
           />
           
@@ -142,6 +164,9 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
             onChange={handleChange}
             sx={{ mb: 3 }}
             placeholder="예: 홍길동"
+            required
+            error={!!errors.name}
+            helperText={errors.name}
           />
           
           <Button
