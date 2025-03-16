@@ -20,6 +20,15 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const decodedToken = jwtDecode(token);
+        
+        const currentTime = Date.now() / 1000;
+        if (decodedToken.exp && decodedToken.exp < currentTime) {
+          setUser(null);
+          sessionStorage.removeItem('jwt');
+          window.location.href = '/login';
+          return;
+        }
+        
         setUser({
           email: decodedToken.sub,
           role: decodedToken.role
@@ -27,10 +36,12 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         setUser(null);
         sessionStorage.removeItem('jwt');
+        window.location.href = '/login';
       }
     } catch (error) {
       setUser(null);
       sessionStorage.removeItem('jwt');
+      window.location.href = '/login';
     } finally {
       setLoading(false);
     }
