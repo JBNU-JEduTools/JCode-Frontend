@@ -416,6 +416,33 @@ const WebIDECourses = () => {
             </Stack>
           </Box>
           
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 1.5, 
+              mb: 2,
+              bgcolor: 'warning.light', 
+              color: 'warning.contrastText',
+              borderRadius: 1.5,
+              border: (theme) =>
+                `1px solid ${theme.palette.warning.main}`,
+            }}
+          >
+            <Typography 
+              variant="body2"
+              sx={{ 
+                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '0.85rem'
+              }}
+            >
+              <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
+              강의 참가 후 JCode 최초 실행 시 JCode가 생성되고 있으므로 오류가 발생할 수 있습니다. 잠시 후 다시 시도해주세요
+            </Typography>
+          </Paper>
+          
           {filteredCourses.length === 0 ? (
             <Grid container spacing={3}>
               <Grid item xs={12}>
@@ -601,18 +628,6 @@ const WebIDECourses = () => {
                         sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                       >
                         {course.courseClss}분반
-                      </Typography>
-                      <Typography 
-                        variant="caption"
-                        sx={{ 
-                          color: '#FF8000',
-                          display: 'block',
-                          mt: 0,
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                          fontSize: '0.7rem'
-                        }}
-                      >
-                        ⚠️ 강의 첫 참가 시 JCode 생성 중이므로 오류 발생 가능<br/>(잠시 후 재시도)
                       </Typography>
                     </CardContent>
                     <CardActions>

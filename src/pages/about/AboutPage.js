@@ -33,6 +33,7 @@ import { keyframes } from '@mui/system';
 import CIcon from '../../assets/icons/cprogramming.svg';
 import PythonIcon from '../../assets/icons/python.svg';
 import CppIcon from '../../assets/icons/c++.svg';
+import RouterIcon from '@mui/icons-material/Router';
 
 const AboutPage = () => {
   const theme = useTheme();
@@ -58,19 +59,19 @@ const AboutPage = () => {
       description: "브라우저에서 바로 사용하는\n강력한 개발 환경"
     },
     {
-      icon: <CloudIcon sx={{ fontSize: 40 }} />,
-      title: "Kubernetes",
-      description: "안정적이고 확장 가능한\n쿠버네티스 기반 서비스"
-    },
-    {
       icon: <SecurityIcon sx={{ fontSize: 40 }} />,
       title: "Watcher",
-      description: "실시간 활동 분석 및\n보안 감시 시스템"
+      description: "실시간 활동 분석 및\n실시간 감시 시스템"
     },
     {
-      icon: <GroupsIcon sx={{ fontSize: 40 }} />,
-      title: "JEduTools",
-      description: "재학생들이 직접 개발하는\nSW교육을 위한 학습 플랫폼"
+      icon: <CloudIcon sx={{ fontSize: 40 }} />,
+      title: "Kubernetes",
+      description: "안정적이고 확장 가능한\nKubernetes 기반 서비스"
+    },
+    {
+      icon: <RouterIcon sx={{ fontSize: 40 }} />,
+      title: "Proxy",
+      description: "프록시 기반 라우팅으로\n안전하고 격리된 개발 환경"
     }
   ];
 
@@ -134,7 +135,7 @@ const AboutPage = () => {
     {
       date: '2024년 12월',
       title: 'JCode 통합 사이트 개발',
-      description: '오픈소스, 기존의 watcher 서비스 통합 사이트 개발'
+      description: 'JCode, Watcher 리뉴얼'
     },
     {
       date: '2025년 2월',
@@ -144,30 +145,30 @@ const AboutPage = () => {
     {
       date: '2025년 3월',
       title: 'JCode 통합 사이트 출시',
-      description: 'JCode + Watcher 통합 웹사이트 출시'
+      description: '데이터 시각화, 통계 기능 추가'
     }
   ];
 
   const guides = [
     {
-      title: '시작하기',
-      description: '계정 생성부터 프로젝트 생성까지',
-      link: '/docs/getting-started'
+      title: '[학생] JCode 사용법',
+      description: 'Web IDE 사용법',
+      link: 'https://jhelper.jbnu.ac.kr/JCode/studentManual/jcodeStudentManual'
     },
     {
-      title: '개발 환경 설정',
-      description: '언어별 개발 환경 설정 가이드',
-      link: '/docs/environment-setup'
-    },
-    {
-      title: 'Watcher 사용법',
+      title: '[학생] Watcher 사용법',
       description: '통계 확인 및 일일 활동 분석',
-      link: '/docs/collaboration'
+      link: 'https://jhelper.jbnu.ac.kr/JCode/studentManual/watcherStudentManual'
     },
     {
-      title: '수업 참가 방법',
-      description: '수업을 위한 랜덤 코드 생성',
-      link: '/docs/troubleshooting'
+      title: '[교수] JCode 사용법',
+      description: '수업 생성 및 관리',
+      link: 'https://jhelper.jbnu.ac.kr/JCode/professorManual/jcodeProfessorManual'
+    },
+    {
+      title: '[교수] Watcher 사용법',
+      description: '과제 생성, 학생 전체 통계',
+      link: 'https://jhelper.jbnu.ac.kr/JCode/professorManual/watcherProfessorManual'
     }
   ];
 
@@ -257,6 +258,77 @@ const AboutPage = () => {
             </motion.div>
           </Box>
 
+          {/* 미션 및 비전 섹션 */}
+          <Box sx={{ mb: 12 }}>
+            <SectionTitle>Goal</SectionTitle>
+            <Grid container spacing={4}>
+              {visionMission.map((item, index) => (
+                <Grid item xs={12} md={6} key={index}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card
+                      elevation={0}
+                      sx={{
+                        height: 250,
+                        background: theme.palette.mode === 'dark' 
+                          ? theme.palette.background.paper
+                          : theme.palette.background.default,
+                        borderRadius: theme.shape.borderRadius,
+                        transition: 'all 0.3s ease',
+                        border: `1px solid ${theme.palette.divider}`,
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: theme.shadows[4],
+                          borderColor: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        height: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: 2
+                      }}>
+                        <Box>
+                          <Box sx={{ 
+                            color: theme.palette.mode === 'dark' 
+                              ? '#FF79C6'
+                              : theme.palette.primary.main,
+                            mb: 1
+                          }}>
+                            {item.icon}
+                          </Box>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: theme.typography.fontWeightBold,
+                            color: theme.palette.text.primary,
+                            fontFamily: theme.typography.fontFamily,
+                            mb: 1
+                          }}>
+                            {item.title}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.text.secondary,
+                          fontFamily: theme.typography.fontFamily,
+                          fontSize: '0.95rem',
+                          lineHeight: 1.6,
+                          whiteSpace: 'pre-line'
+                        }}>
+                          {item.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+
           {/* 주요 기능 섹션 */}
           <Box sx={{ mb: 12 }}>
             <SectionTitle>Features</SectionTitle>
@@ -332,6 +404,8 @@ const AboutPage = () => {
                     <Link
                       href={guide.link}
                       underline="none"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       sx={{ display: 'block' }}
                     >
                       <Card
@@ -353,12 +427,17 @@ const AboutPage = () => {
                       >
                         <CardContent sx={{ p: 3 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <ArticleIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                            <ArticleIcon sx={{ mr: 1, color: theme.palette.primary.main, fontSize: '1.2rem' }} />
+                            <Typography variant="subtitle1" sx={{ 
+                              fontWeight: 'bold',
+                              fontSize: '0.95rem'
+                            }}>
                               {guide.title}
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{
+                            fontSize: '0.85rem'
+                          }}>
                             {guide.description}
                           </Typography>
                         </CardContent>
@@ -439,77 +518,6 @@ const AboutPage = () => {
                 * 지속적인 업데이트를 통해 더 많은 프로그래밍 언어를 지원할 예정입니다.
               </Typography>
             </Box>
-          </Box>
-
-          {/* 미션 및 비전 섹션 */}
-          <Box sx={{ mb: 12 }}>
-            <SectionTitle>Goal</SectionTitle>
-            <Grid container spacing={4}>
-              {visionMission.map((item, index) => (
-                <Grid item xs={12} md={6} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: 250,
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
-                        borderRadius: theme.shape.borderRadius,
-                        transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
-                        '&:hover': {
-                          transform: 'translateY(-8px)',
-                          boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ 
-                        textAlign: 'center', 
-                        p: 3, 
-                        height: '100%', 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        gap: 2
-                      }}>
-                        <Box>
-                          <Box sx={{ 
-                            color: theme.palette.mode === 'dark' 
-                              ? '#FF79C6'
-                              : theme.palette.primary.main,
-                            mb: 1
-                          }}>
-                            {item.icon}
-                          </Box>
-                          <Typography variant="h6" sx={{ 
-                            fontWeight: theme.typography.fontWeightBold,
-                            color: theme.palette.text.primary,
-                            fontFamily: theme.typography.fontFamily,
-                            mb: 1
-                          }}>
-                            {item.title}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ 
-                          color: theme.palette.text.secondary,
-                          fontFamily: theme.typography.fontFamily,
-                          fontSize: '0.95rem',
-                          lineHeight: 1.6,
-                          whiteSpace: 'pre-line'
-                        }}>
-                          {item.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
           </Box>
 
           {/* 팀 소개 섹션 */}
