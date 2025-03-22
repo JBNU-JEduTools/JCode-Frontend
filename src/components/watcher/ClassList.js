@@ -326,6 +326,35 @@ const ClassList = () => {
             </Stack>
           </Box>
 
+          {user?.role === 'PROFESSOR' && (
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 1.5, 
+                mb: 2,
+                bgcolor: 'warning.light', 
+                color: 'warning.contrastText',
+                borderRadius: 1.5,
+                border: (theme) =>
+                  `1px solid ${theme.palette.warning.main}`,
+              }}
+            >
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: '0.85rem'
+                }}
+              >
+                <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
+                현재 버전에서의 수업 생성은 jedutools@gmail.com으로 문의바랍니다.
+              </Typography>
+            </Paper>
+          )}
+
           <List>
             {filteredClasses.map((classItem, index) => (
               <ListItem 
@@ -446,7 +475,7 @@ const ClassList = () => {
             </Typography>
           )}
 
-          {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
+          {user?.role === 'ADMIN' && (
             <ListItem 
               disablePadding 
               divider
