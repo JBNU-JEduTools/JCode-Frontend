@@ -215,10 +215,37 @@ const ClassDetail = () => {
 
   const handleAddAssignment = async () => {
     try {
+      // 사용자 입력 시간을 Date 객체로 변환
+      const kickoffDateInput = new Date(newAssignment.kickoffDate);
+      const deadlineDateInput = new Date(newAssignment.deadlineDate);
+      
+      // 사용자가 입력한 시간을 그대로 ISO 문자열로 만들기
+      // 예: '2023-08-15T18:00' → '2023-08-15T18:00:00.000Z'
+      // 이렇게 하면 브라우저가 자동으로 UTC로 변환하는 것을 방지
+      const kickoffDateISO = new Date(
+        Date.UTC(
+          kickoffDateInput.getFullYear(),
+          kickoffDateInput.getMonth(),
+          kickoffDateInput.getDate(),
+          kickoffDateInput.getHours(),
+          kickoffDateInput.getMinutes()
+        )
+      ).toISOString();
+      
+      const deadlineDateISO = new Date(
+        Date.UTC(
+          deadlineDateInput.getFullYear(),
+          deadlineDateInput.getMonth(),
+          deadlineDateInput.getDate(),
+          deadlineDateInput.getHours(),
+          deadlineDateInput.getMinutes()
+        )
+      ).toISOString();
+      
       await api.post(`/api/courses/${course.courseId}/assignments`, {
         ...newAssignment,
-        kickoffDate: new Date(newAssignment.kickoffDate).toISOString(),
-        deadlineDate: new Date(newAssignment.deadlineDate).toISOString()
+        kickoffDate: kickoffDateISO,
+        deadlineDate: deadlineDateISO
       });
 
       const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
@@ -238,11 +265,36 @@ const ClassDetail = () => {
 
   const handleEditAssignment = async () => {
     try {
+      // 사용자 입력 시간을 Date 객체로 변환
+      const kickoffDateInput = new Date(editingAssignment.kickoffDate);
+      const deadlineDateInput = new Date(editingAssignment.deadlineDate);
+      
+      // 사용자가 입력한 시간을 그대로 ISO 문자열로 만들기
+      const kickoffDateISO = new Date(
+        Date.UTC(
+          kickoffDateInput.getFullYear(),
+          kickoffDateInput.getMonth(),
+          kickoffDateInput.getDate(),
+          kickoffDateInput.getHours(),
+          kickoffDateInput.getMinutes()
+        )
+      ).toISOString();
+      
+      const deadlineDateISO = new Date(
+        Date.UTC(
+          deadlineDateInput.getFullYear(),
+          deadlineDateInput.getMonth(),
+          deadlineDateInput.getDate(),
+          deadlineDateInput.getHours(),
+          deadlineDateInput.getMinutes()
+        )
+      ).toISOString();
+      
       await api.put(`/api/courses/${courseId}/assignments/${editingAssignment.assignmentId}`, {
         assignmentName: editingAssignment.assignmentName,
         assignmentDescription: editingAssignment.assignmentDescription,
-        kickoffDate: new Date(editingAssignment.kickoffDate).toISOString(),
-        deadlineDate: new Date(editingAssignment.deadlineDate).toISOString()
+        kickoffDate: kickoffDateISO,
+        deadlineDate: deadlineDateISO
       });
 
       const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
@@ -856,11 +908,27 @@ const ClassDetail = () => {
                                 <IconButton
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    
+                                    // 날짜 형식 변환 (yyyy-MM-ddTHH:mm 형식으로)
+                                    const formatToLocalDateTimeString = (dateString) => {
+                                      const date = new Date(dateString);
+                                      
+                                      // 로컬 시간대의 연, 월, 일, 시, 분 추출
+                                      const year = date.getFullYear();
+                                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                                      const day = String(date.getDate()).padStart(2, '0');
+                                      const hours = String(date.getHours()).padStart(2, '0');
+                                      const minutes = String(date.getMinutes()).padStart(2, '0');
+                                      
+                                      // HTML datetime-local 입력에 필요한 형식 (YYYY-MM-DDThh:mm)
+                                      return `${year}-${month}-${day}T${hours}:${minutes}`;
+                                    };
+                                    
                                     setEditingAssignment({
                                       ...assignment,
                                       originalAssignmentName: assignment.assignmentName,
-                                      kickoffDate: new Date(assignment.kickoffDate).toISOString().slice(0, 16),
-                                      deadlineDate: new Date(assignment.deadlineDate).toISOString().slice(0, 16)
+                                      kickoffDate: formatToLocalDateTimeString(assignment.kickoffDate),
+                                      deadlineDate: formatToLocalDateTimeString(assignment.deadlineDate)
                                     });
                                     setOpenEditDialog(true);
                                   }}
@@ -988,6 +1056,9 @@ const ClassDetail = () => {
                       ...newAssignment, 
                       assignmentName: e.target.value 
                     })}
+                    error={isAssignmentCodeExists(newAssignment.assignmentName)}
+                    helperText={isAssignmentCodeExists(newAssignment.assignmentName) ? 
+                      "이미 존재하는 과제코드입니다" : ""}
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1024,6 +1095,9 @@ const ClassDetail = () => {
                       ...newAssignment, 
                       assignmentDescription: e.target.value 
                     })}
+                    error={!newAssignment.assignmentDescription && newAssignment.assignmentName}
+                    helperText={!newAssignment.assignmentDescription && newAssignment.assignmentName ? 
+                      "과제명을 입력해주세요" : ""}
                     multiline
                     rows={6}
                     placeholder="과제명을 입력하세요"
@@ -1049,6 +1123,9 @@ const ClassDetail = () => {
                         padding: '12px'
                       }
                     }}
+                    error={!newAssignment.kickoffDate && newAssignment.assignmentName}
+                    helperText={!newAssignment.kickoffDate && newAssignment.assignmentName ? 
+                      "시작 일시를 선택해주세요" : ""}
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1076,6 +1153,18 @@ const ClassDetail = () => {
                         padding: '12px'
                       }
                     }}
+                    error={
+                      (!newAssignment.deadlineDate && newAssignment.assignmentName) || 
+                      (newAssignment.kickoffDate && newAssignment.deadlineDate && 
+                      new Date(newAssignment.kickoffDate) >= new Date(newAssignment.deadlineDate))
+                    }
+                    helperText={
+                      !newAssignment.deadlineDate && newAssignment.assignmentName ? 
+                        "마감 일시를 선택해주세요" : 
+                        (newAssignment.kickoffDate && newAssignment.deadlineDate && 
+                        new Date(newAssignment.kickoffDate) >= new Date(newAssignment.deadlineDate) ? 
+                        "마감일시는 시작일시보다 나중이어야 합니다" : "")
+                    }
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1106,7 +1195,14 @@ const ClassDetail = () => {
                 onClick={handleAddAssignment} 
                 variant="contained"
                 size="small"
-                disabled={!newAssignment.assignmentName || isAssignmentCodeExists(newAssignment.assignmentName)}
+                disabled={
+                  !newAssignment.assignmentName || 
+                  !newAssignment.assignmentDescription || 
+                  !newAssignment.kickoffDate || 
+                  !newAssignment.deadlineDate ||
+                  new Date(newAssignment.kickoffDate) >= new Date(newAssignment.deadlineDate) ||
+                  isAssignmentCodeExists(newAssignment.assignmentName)
+                }
                 sx={{ 
                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                   fontSize: '0.75rem',
@@ -1170,6 +1266,11 @@ const ClassDetail = () => {
                       ...editingAssignment, 
                       assignmentName: e.target.value 
                     })}
+                    error={isAssignmentCodeExists(editingAssignment?.assignmentName) && 
+                           editingAssignment?.assignmentName !== editingAssignment?.originalAssignmentName}
+                    helperText={isAssignmentCodeExists(editingAssignment?.assignmentName) && 
+                               editingAssignment?.assignmentName !== editingAssignment?.originalAssignmentName ? 
+                      "이미 존재하는 과제코드입니다" : ""}
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1178,7 +1279,7 @@ const ClassDetail = () => {
                   >
                     {[...Array(10)].map((_, index) => {
                       const code = `hw${index + 1}`;
-                      const exists = isAssignmentCodeExists(code) && code !== editingAssignment?.assignmentName;
+                      const exists = isAssignmentCodeExists(code) && code !== editingAssignment?.originalAssignmentName;
                       return (
                         <MenuItem 
                           key={index} 
@@ -1206,6 +1307,9 @@ const ClassDetail = () => {
                       ...editingAssignment, 
                       assignmentDescription: e.target.value 
                     })}
+                    error={!editingAssignment?.assignmentDescription}
+                    helperText={!editingAssignment?.assignmentDescription ? 
+                      "과제명을 입력해주세요" : ""}
                     multiline
                     rows={6}
                     placeholder="과제에 대한 설명을 입력하세요"
@@ -1231,6 +1335,9 @@ const ClassDetail = () => {
                         padding: '12px'
                       }
                     }}
+                    error={!editingAssignment?.kickoffDate}
+                    helperText={!editingAssignment?.kickoffDate ? 
+                      "시작 일시를 선택해주세요" : ""}
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1258,6 +1365,18 @@ const ClassDetail = () => {
                         padding: '12px'
                       }
                     }}
+                    error={
+                      (!editingAssignment?.deadlineDate) || 
+                      (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate && 
+                      new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate))
+                    }
+                    helperText={
+                      !editingAssignment?.deadlineDate ? 
+                        "마감 일시를 선택해주세요" : 
+                        (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate && 
+                        new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate) ? 
+                        "마감일시는 시작일시보다 나중이어야 합니다" : "")
+                    }
                     sx={{ 
                       '& .MuiInputBase-root': {
                         height: '56px'
@@ -1291,7 +1410,15 @@ const ClassDetail = () => {
                 onClick={handleEditAssignment} 
                 variant="contained"
                 size="small"
-                disabled={!editingAssignment?.assignmentName || (isAssignmentCodeExists(editingAssignment?.assignmentName) && editingAssignment?.assignmentName !== editingAssignment?.originalAssignmentName)}
+                disabled={
+                  !editingAssignment?.assignmentName || 
+                  !editingAssignment?.assignmentDescription || 
+                  !editingAssignment?.kickoffDate || 
+                  !editingAssignment?.deadlineDate ||
+                  new Date(editingAssignment?.kickoffDate) >= new Date(editingAssignment?.deadlineDate) ||
+                  (isAssignmentCodeExists(editingAssignment?.assignmentName) && 
+                   editingAssignment?.assignmentName !== editingAssignment?.originalAssignmentName)
+                }
                 sx={{ 
                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                   fontSize: '0.75rem',
