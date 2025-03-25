@@ -1421,19 +1421,21 @@ const AssignmentMonitoring = () => {
         setCourse(coursesResponse.data);
 
         // 학생 정보 조회 - 사용자 역할에 따라 다르게 처리
-        if (user?.role === 'STUDENT') {
-          // 학생인 경우 자신의 정보만 가져옴
-          const studentResponse = await api.get('/api/users/me');
-          setStudent(studentResponse.data);
-        } else {
-          // 교수/조교인 경우 해당 학생의 정보를 가져옴
-          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
-          const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
-          
-          if (!currentStudent) {
-            throw new Error('학생 정보를 찾을 수 없습니다.');
+        // 사용자 정보가 있는 경우에만 처리
+        if (user) {
+          if (user.role === 'STUDENT') {
+            // 학생인 경우 자신의 정보를 student 상태에 설정
+            setStudent(user);
+          } else {
+            // 교수/조교인 경우 해당 학생의 정보를 가져옴
+            const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
+            const currentStudent = studentsResponse.data.find(s => s.userId === parseInt(userId));
+            
+            if (!currentStudent) {
+              throw new Error('학생 정보를 찾을 수 없습니다.');
+            }
+            setStudent(currentStudent);
           }
-          setStudent(currentStudent);
         }
 
         // interval 값 계산
@@ -1522,8 +1524,11 @@ const AssignmentMonitoring = () => {
       }
     };
 
-    fetchData();
-  }, [courseId, assignmentId, userId, timeUnit, minuteValue, user?.role]);
+    // user 정보가 있을 때만 fetchData 실행
+    if (user) {
+      fetchData();
+    }
+  }, [courseId, assignmentId, userId, timeUnit, minuteValue, user]); // user를 의존성 배열에 추가
 
   // user 정보를 가져오는 useEffect 추가 (다른 useEffect들 위에 배치)
   useEffect(() => {

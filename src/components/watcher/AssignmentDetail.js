@@ -198,6 +198,8 @@ const AssignmentDetail = () => {
 
   // handleTabChange 수정
   const handleTabChange = (event, newValue) => {
+    // 탭 변경시 user 객체 로그 출력
+    
     if (user?.role === 'STUDENT' && newValue === 1) {
       // 학생이 나의 통계 탭을 클릭했을 때
       const studentId = currentUser?.userId || user?.userId;
@@ -216,6 +218,7 @@ const AssignmentDetail = () => {
     const fetchData = async () => {
       try {
         if (user?.role === 'ADMIN') {
+          // 관리자인 경우
           const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
           setCourse(coursesResponse.data);
           
@@ -227,9 +230,11 @@ const AssignmentDetail = () => {
           }
           setAssignment(currentAssignment);
 
+          // 여기서 학생 목록을 가져옵니다
           const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
           setSubmissions(studentsResponse.data || []);
-        } else if (user?.role === 'PROFESSOR') {
+        } else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
+          // 교수와 조교인 경우
           const coursesResponse = await api.get('/api/users/me/courses/details');
           const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
           
@@ -246,9 +251,11 @@ const AssignmentDetail = () => {
           }
           setAssignment(currentAssignment);
 
+          // 여기서 학생 목록을 가져옵니다
           const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
           setSubmissions(studentsResponse.data || []);
         } else {
+          // 학생인 경우
           const coursesResponse = await api.get('/api/users/me/courses/details');
           const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
           
@@ -283,17 +290,12 @@ const AssignmentDetail = () => {
     try {
       if (!rangeStartDate || !rangeEndDate) return;
       
-      console.log('시작 날짜:', rangeStartDate);
-      console.log('종료 날짜:', rangeEndDate);
-      
       const response = await api.get(`/api/watcher/assignments/${assignmentId}/courses/${courseId}/between`, {
         params: {
           st: rangeStartDate.toISOString(),
           end: rangeEndDate.toISOString()
         }
       });
-      
-      console.log('차트 데이터:', response);
       setChartData(response.data.results || []);
       setChartError(''); // 차트 오류 상태 초기화
     } catch (error) {
@@ -322,8 +324,7 @@ const AssignmentDetail = () => {
     // 필요한 데이터가 모두 로드되었고, 차트 데이터가 아직 없을 때만 API 호출
     if (assignment && rangeStartDate && rangeEndDate && chartData.length === 0) {
       // 교수/관리자인 경우 submissions 배열이 로드된 후에만 호출
-      if ((user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || 
-           user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && 
+      if ((user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && 
           submissions.length === 0) {
         return; // submissions가 로드되지 않았으면 아직 호출하지 않음
       }
@@ -331,7 +332,7 @@ const AssignmentDetail = () => {
       // 학생인 경우 또는 submissions가 로드된 경우 API 호출
       fetchChartData();
     }
-  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length, user?.role, user?.courseRole]);
+  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length, user?.role]);
 
   // 정렬 토글 함수
   const toggleSort = (field) => {
@@ -342,24 +343,24 @@ const AssignmentDetail = () => {
   };
 
   // 필터링 및 정렬 함수 수정
-  const getFilteredAndSortedSubmissions = () => {
+  const getFilteredAndSortedSubmissions = () => {    
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = submissions.filter(submission => {
-      // role이 'PROFESSOR' 또는 'ASSISTANT'가 아닌 경우만 포함
-      if (submission.role === 'PROFESSOR' || submission.courseRole === 'PROFESSOR' || 
-          submission.role === 'ASSISTANT' || submission.courseRole === 'ASSISTANT') {
+      // role만 확인
+      if (submission.role === 'PROFESSOR' || submission.role === 'ASSISTANT' || submission.role === 'ADMIN') {
         return false;
       }
       
       // 검색어 필터링
       const searchLower = searchQuery.toLowerCase();
       return (
-        submission.email?.toLowerCase().includes(searchLower) ||
-        submission.name?.toLowerCase().includes(searchLower) ||
-        String(submission.studentNum || '').toLowerCase().includes(searchLower)
+        (submission.email && submission.email.toLowerCase().includes(searchLower)) ||
+        (submission.name && submission.name.toLowerCase().includes(searchLower)) ||
+        (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchLower))
       );
     });
-
+    
+    // 나머지 정렬 코드는 동일
     return filtered.sort((a, b) => {
       let aValue, bValue;
       switch(sort.field) {
@@ -503,8 +504,7 @@ const AssignmentDetail = () => {
       // 교수/관리자인 경우 기존 코드 유지
       // 학생만 필터링 (교수/조교/관리자 제외)
       const filteredSubmissions = submissions.filter(submission => 
-        submission.role !== 'PROFESSOR' && submission.courseRole !== 'PROFESSOR' &&
-        submission.role !== 'ASSISTANT' && submission.courseRole !== 'ASSISTANT'
+        submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT'
       );
       
       // 학생 정보와 차트 데이터 매핑
@@ -1035,7 +1035,7 @@ const AssignmentDetail = () => {
                     label="나의 통계" 
                   />
                 )}
-                {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && (
+                {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
                   <Tab 
                     icon={<PeopleIcon />} 
                     iconPosition="start" 
@@ -1313,7 +1313,7 @@ const AssignmentDetail = () => {
               </Box>
             </TabPanel>
             
-            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.courseRole === 'PROFESSOR' || user?.courseRole === 'ASSISTANT') && (
+            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
               <TabPanel value={tabValue} index={1}>
                 <Box sx={{ mb: 3 }}>
                   <TextField
