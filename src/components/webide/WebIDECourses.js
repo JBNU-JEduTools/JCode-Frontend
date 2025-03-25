@@ -121,7 +121,6 @@ const WebIDECourses = () => {
       
       // 응답에서 최종 URL 추출
       const finalUrl = response.request?.responseURL || response.data?.url;
-      console.log(finalUrl);
 
       if (!finalUrl) {
         throw new Error("리다이렉트 URL을 찾을 수 없습니다");
@@ -157,7 +156,6 @@ const WebIDECourses = () => {
       const joinResponse = await api.post('/api/users/me/courses', {
         courseKey: joinDialog.courseKey
       });
-      console.log(joinResponse.data);
       // 수업 참가 성공 후 JCode 생성 API 호출
       const courseId = joinResponse.data.courseId;
       try {
