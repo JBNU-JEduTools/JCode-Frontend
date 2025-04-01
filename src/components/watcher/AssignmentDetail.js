@@ -290,19 +290,27 @@ const AssignmentDetail = () => {
     try {
       if (!rangeStartDate || !rangeEndDate) return;
       
+      // 사용자가 선택한 로컬 시간을 그대로 유지하는 형식으로 변환
+      const formatLocalTime = (date) => {
+        return date.getFullYear() + 
+          '-' + String(date.getMonth() + 1).padStart(2, '0') + 
+          '-' + String(date.getDate()).padStart(2, '0') + 
+          'T' + String(date.getHours()).padStart(2, '0') + 
+          ':' + String(date.getMinutes()).padStart(2, '0') + 
+          ':' + String(date.getSeconds()).padStart(2, '0');
+      };
+      
       const response = await api.get(`/api/watcher/assignments/${assignmentId}/courses/${courseId}/between`, {
         params: {
-          st: rangeStartDate.toISOString(),
-          end: rangeEndDate.toISOString()
+          st: formatLocalTime(rangeStartDate),  // 로컬 시간 형식으로 전송
+          end: formatLocalTime(rangeEndDate)    // 로컬 시간 형식으로 전송
         }
       });
       setChartData(response.data.results || []);
       setChartError(''); // 차트 오류 상태 초기화
     } catch (error) {
       console.error('차트 데이터 로딩 오류:', error);
-      // 전체 페이지 오류가 아닌 차트 전용 오류 상태 설정
       setChartError('차트 데이터를 불러오는데 실패했습니다.');
-      // 빈 배열로 설정하여 차트가 그려지지 않도록 함
       setChartData([]);
     }
   };
@@ -724,7 +732,7 @@ const AssignmentDetail = () => {
         callbacks: {
           label: (context) => {
             if (context.dataset.label === '평균') {
-              return `평균: ${Math.round(context.raw)}B`;
+              return `평균: ${formatBytes(context.raw)}`;
             }
             
             // 학생인 경우와 교수/관리자인 경우 분리
@@ -857,14 +865,14 @@ const AssignmentDetail = () => {
     }
   };
 
-  // 바이트 형식화 함수 추가
-  const formatBytes = (bytes) => {
+  // 바이트 형식화 함수 수정 - 소수점 2자리까지 표시
+  const formatBytes = (bytes, decimals = 2) => {
     if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
-      return `${(bytes / 1048576).toFixed(1)}MB`;
+      return `${(bytes / 1048576).toFixed(decimals)}MB`;
     } else if (Math.abs(bytes) >= 1024) { // 1KB
-      return `${(bytes / 1024).toFixed(1)}KB`;
+      return `${(bytes / 1024).toFixed(decimals)}KB`;
     }
-    return `${bytes}B`;
+    return `${Math.round(bytes)}B`; // 바이트는 정수로 표시
   };
 
   // 정렬 버튼 기능 개선
