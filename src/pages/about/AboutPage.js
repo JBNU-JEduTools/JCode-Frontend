@@ -153,22 +153,22 @@ const AboutPage = () => {
     {
       title: '[학생] JCode 사용법',
       description: 'Web IDE 사용법',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/studentManual/jcodeStudentManual'
+      link: 'https://jhelper.jbnu.ac.kr/JCode/1studentManual/1jcodeStudentManual'
     },
     {
       title: '[학생] Watcher 사용법',
       description: '통계 확인 및 일일 활동 분석',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/studentManual/watcherStudentManual'
+      link: 'https://jhelper.jbnu.ac.kr/JCode/1studentManual/2watcherStudentManual'
     },
     {
       title: '[교수] JCode 사용법',
       description: '수업 생성 및 관리',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/professorManual/jcodeProfessorManual'
+      link: 'https://jhelper.jbnu.ac.kr/JCode/2professorManual/1jcodeProfessorManual'
     },
     {
       title: '[교수] Watcher 사용법',
       description: '과제 생성, 학생 전체 통계',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/professorManual/watcherProfessorManual'
+      link: 'https://jhelper.jbnu.ac.kr/JCode/2professorManual/2watcherProfessorManual'
     }
   ];
 
