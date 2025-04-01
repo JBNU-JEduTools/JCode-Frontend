@@ -63,6 +63,8 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
     
     if (!studentNumStr.trim()) {
       newErrors.studentNum = '학번을 입력해주세요';
+    } else if (parseInt(studentNumStr.trim(), 10) <= 0) {
+      newErrors.studentNum = '학번은 양수만 입력 가능합니다';
     }
     
     if (!nameStr.trim()) {
@@ -71,7 +73,7 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.error('모든 필드를 입력해주세요.', toastConfig);
+      toast.error('입력 정보를 확인해주세요.', toastConfig);
       return;
     }
 
@@ -146,12 +148,15 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
             value={formData.studentNum}
             onChange={handleChange}
             margin="normal"
+            type="number"
+            min="1"
             required
             error={!!errors.studentNum}
             helperText={isEditMode ? "학번을 수정하려면 관리자에게 문의하세요." : errors.studentNum}
             disabled={isEditMode}
             InputProps={{
               readOnly: isEditMode,
+              inputProps: { min: 1 }
             }}
           />
           
