@@ -77,6 +77,8 @@ import SortIcon from '@mui/icons-material/Sort';
 import NumbersIcon from '@mui/icons-material/Numbers';
 import { toast } from 'react-toastify';
 import ErrorIcon from '@mui/icons-material/Error';
+import CloseIcon from '@mui/icons-material/Close';
+import InfoIcon from '@mui/icons-material/Info';
 
 ChartJS.register(
   CategoryScale,
@@ -179,6 +181,10 @@ const AssignmentDetail = () => {
   const [chartData, setChartData] = useState([]);
   const [chartError, setChartError] = useState('');
   
+  // 학생 선택 관련 상태 추가
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+
   // 학생인 경우에만 사용자 정보를 가져오는 useEffect
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -467,7 +473,17 @@ const AssignmentDetail = () => {
     // 학생인 경우와 교수/관리자인 경우 분리
     if (user?.role === 'STUDENT') {
       // 학생인 경우 직접 chartData 사용
-      const labels = chartData.map(item => {
+      // 학생 데이터에서 관리자/조교/교수 역할을 필터링
+      const filteredChartData = chartData.filter(item => {
+        // 관리자/조교/교수 역할을 확인할 수 있는 정보가 있는 경우 제외
+        const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
+        if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'ASSISTANT' || userInfo.role === 'PROFESSOR')) {
+          return false;
+        }
+        return true;
+      });
+      
+      const labels = filteredChartData.map(item => {
         // 자신의 학번인 경우 "나"로 표시, 아닌 경우 학번만 표시
         const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
         return isCurrentUser ? `나 (${item.student_num})` : `학생${item.student_num}`;
@@ -479,13 +495,13 @@ const AssignmentDetail = () => {
           {
             type: 'bar',
             label: '코드 변화량',
-            data: chartData.map(item => item.size_change || 0),
-            backgroundColor: chartData.map(item => {
+            data: filteredChartData.map(item => item.size_change || 0),
+            backgroundColor: filteredChartData.map(item => {
               // 자신의 학번인 경우 강조 색상 사용
               const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
               return isCurrentUser ? 'rgba(255, 152, 0, 0.8)' : 'rgba(66, 165, 245, 0.8)';
             }),
-            borderColor: chartData.map(item => {
+            borderColor: filteredChartData.map(item => {
               const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
               return isCurrentUser ? 'rgba(230, 81, 0, 1)' : 'rgb(30, 136, 229)';
             }),
@@ -494,9 +510,9 @@ const AssignmentDetail = () => {
           {
             type: 'line',
             label: '평균',
-            data: Array(chartData.length).fill(
-              chartData.reduce((sum, item) => sum + (item.size_change || 0), 0) / 
-              (chartData.length || 1)
+            data: Array(filteredChartData.length).fill(
+              filteredChartData.reduce((sum, item) => sum + (item.size_change || 0), 0) / 
+              (filteredChartData.length || 1)
             ),
             borderColor: 'rgba(255, 99, 132, 0.8)',
             borderWidth: 2,
@@ -512,7 +528,7 @@ const AssignmentDetail = () => {
       // 교수/관리자인 경우 기존 코드 유지
       // 학생만 필터링 (교수/조교/관리자 제외)
       const filteredSubmissions = submissions.filter(submission => 
-        submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT'
+        submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN'
       );
       
       // 학생 정보와 차트 데이터 매핑
@@ -575,7 +591,9 @@ const AssignmentDetail = () => {
             borderColor: mappedData.map(submission => 
               getBorderColor(submission)
             ),
-            borderWidth: 1
+            borderWidth: 1,
+            // 마우스 호버 시 커서 변경을 위한 속성 추가
+            hoverCursor: 'pointer'
           },
           {
             type: 'line',
@@ -644,6 +662,61 @@ const AssignmentDetail = () => {
     interaction: {
       mode: 'index',
       intersect: false,
+    },
+    // 교수, 관리자, 조교인 경우에만 클릭 이벤트 활성화
+    onClick: (event, elements, chart) => {
+      // 학생이 아닌 경우에만 클릭 이벤트 처리
+      if (user?.role === 'STUDENT') return;
+      
+      if (elements && elements.length > 0) {
+        const dataIndex = elements[0].index;
+        
+        // 전체 통계 탭에서 사용하는 맵핑된 데이터 목록 가져오기
+        const filteredSubmissions = submissions.filter(submission => 
+          submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN'
+        );
+        
+        // 디버깅을 위한 콘솔 로그 추가
+        console.log('Clicked index:', dataIndex);
+        console.log('Chart data:', chart.data);
+        console.log('Filtered submissions:', filteredSubmissions);
+        
+        // 맵핑된 데이터에서 클릭한 인덱스에 해당하는 학생 정보 찾기
+        // 차트에 표시된 라벨을 기준으로 해당 학생 찾기 (더 정확한 매핑)
+        if (chart.data.labels && chart.data.labels.length > dataIndex) {
+          const clickedLabel = chart.data.labels[dataIndex];
+          console.log('Clicked label:', clickedLabel);
+          
+          // 라벨에서 학번 추출 (괄호 안의 내용)
+          const studentNumMatch = clickedLabel.match(/\(([^)]+)\)/);
+          const studentNum = studentNumMatch ? studentNumMatch[1] : null;
+          console.log('Extracted student number:', studentNum);
+          
+          if (studentNum) {
+            // 학번으로 학생 정보 찾기
+            const selectedSubmission = filteredSubmissions.find(s => 
+              String(s.studentNum) === String(studentNum)
+            );
+            
+            if (selectedSubmission) {
+              console.log('Found student:', selectedSubmission);
+              // 다이얼로그 상태를 업데이트하여 표시
+              setSelectedStudent(selectedSubmission);
+              setOpenDialog(true);
+              return;
+            }
+          }
+        }
+        
+        // 기존 방식으로 시도 (인덱스 기반)
+        if (filteredSubmissions[dataIndex]) {
+          console.log('Fallback to index-based method, student:', filteredSubmissions[dataIndex]);
+          setSelectedStudent(filteredSubmissions[dataIndex]);
+          setOpenDialog(true);
+        } else {
+          console.error('Cannot find student data for clicked index', dataIndex);
+        }
+      }
     },
     plugins: {
       legend: {
@@ -936,6 +1009,52 @@ const AssignmentDetail = () => {
     }
   };
 
+  // 다이얼로그 닫기 핸들러 추가
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedStudent(null);
+  };
+
+  // JCode 이동 핸들러
+  const handleJCodeRedirect = async (student) => {
+    try {
+      // API 요청으로 리다이렉트 URL 가져오기
+      const response = await api.post('/api/redirect', {
+        userEmail: student.email,
+        courseId: courseId
+      }, { withCredentials: true });
+      
+      // 응답에서 최종 URL 추출
+      const finalUrl = response.request?.responseURL || response.data?.url;
+      
+      if (!finalUrl) {
+        throw new Error("리다이렉트 URL을 찾을 수 없습니다");
+      }
+      
+      // 새 탭에서 URL 열기
+      window.open(finalUrl, '_blank');
+      
+    } catch (err) {
+      toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
+        icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
+        style: {
+          background: isDarkMode ? '#d32f2f' : '#f44336',
+          color: '#fff',
+          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+          borderRadius: '8px',
+          fontSize: '0.95rem',
+          padding: '12px 20px',
+          maxWidth: '500px',
+          width: 'auto',
+          textOverflow: 'ellipsis',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center'
+        }
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -1169,22 +1288,53 @@ const AssignmentDetail = () => {
                             </Button>
                           </Box>
                         ) : (
-                          <Bar options={{
-                            ...chartOptions,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              ...chartOptions.plugins,
-                              zoom: {
-                                ...chartOptions.plugins.zoom,
-                                pan: {
-                                  ...chartOptions.plugins.zoom.pan,
-                                  onPan: ({ chart }) => {
-                                    calculateYAxisRange(chart);
+                          <>
+                            {/* 교수/관리자인 경우에만 안내 메시지 표시 */}
+                            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
+                              <Typography 
+                                variant="caption" 
+                                color="textSecondary"
+                                sx={{ 
+                                  position: 'absolute', 
+                                  top: 50, // 범례 아래로 위치 조정
+                                  left: '50%', 
+                                  transform: 'translateX(-50%)', 
+                                  zIndex: 1,
+                                  backgroundColor: (theme) => 
+                                    theme.palette.mode === 'dark' ? 'rgba(40, 42, 54, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                                  px: 2,
+                                  py: 0.8,
+                                  borderRadius: 4,
+                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                  border: (theme) =>
+                                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                  <InfoIcon sx={{ fontSize: '1rem' }} />
+                                  차트를 클릭하여 학생의 JCode 또는 Watcher로 이동할 수 있습니다
+                                </Box>
+                              </Typography>
+                            )}
+                            
+                            <Bar options={{
+                              ...chartOptions,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                ...chartOptions.plugins,
+                                zoom: {
+                                  ...chartOptions.plugins.zoom,
+                                  pan: {
+                                    ...chartOptions.plugins.zoom.pan,
+                                    onPan: ({ chart }) => {
+                                      calculateYAxisRange(chart);
+                                    }
                                   }
                                 }
                               }
-                            }
-                          }} data={getChartData()} />
+                            }} data={getChartData()} />
+                          </>
                         )}
                       </Box>
                       <Box sx={{ px: 3, py: 2, mt: 2 }}>
@@ -1287,7 +1437,7 @@ const AssignmentDetail = () => {
                                   maxDateTime={rangeEndDate}
                                 />
                                 <DateTimePicker
-                                  label="끝 검색 시간"
+                                  label="종료 검색 시간"
                                   value={rangeEndDate}
                                   onChange={handleEndDateChange}
                                   renderInput={(params) => 
@@ -1614,22 +1764,53 @@ const AssignmentDetail = () => {
                   </Button>
                 </Box>
               ) : (
-                <Bar options={{
-                  ...chartOptions,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    ...chartOptions.plugins,
-                    zoom: {
-                      ...chartOptions.plugins.zoom,
-                      pan: {
-                        ...chartOptions.plugins.zoom.pan,
-                        onPan: ({ chart }) => {
-                          calculateYAxisRange(chart);
+                <>
+                  {/* 교수/관리자인 경우에만 안내 메시지 표시 */}
+                  {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
+                    <Typography 
+                      variant="caption" 
+                      color="textSecondary"
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 50, // 범례 아래로 위치 조정
+                        left: '50%', 
+                        transform: 'translateX(-50%)', 
+                        zIndex: 1,
+                        backgroundColor: (theme) => 
+                          theme.palette.mode === 'dark' ? 'rgba(40, 42, 54, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                        px: 2,
+                        py: 0.8,
+                        borderRadius: 4,
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        border: (theme) =>
+                          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <InfoIcon sx={{ fontSize: '1rem' }} />
+                        차트를 클릭하여 학생의 JCode 또는 Watcher로 이동할 수 있습니다
+                      </Box>
+                    </Typography>
+                  )}
+                  
+                  <Bar options={{
+                    ...chartOptions,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      ...chartOptions.plugins,
+                      zoom: {
+                        ...chartOptions.plugins.zoom,
+                        pan: {
+                          ...chartOptions.plugins.zoom.pan,
+                          onPan: ({ chart }) => {
+                            calculateYAxisRange(chart);
+                          }
                         }
                       }
                     }
-                  }
-                }} data={getChartData()} />
+                  }} data={getChartData()} />
+                </>
               )}
             </Box>
             <Box sx={{ px: 3, py: 2, mt: 2 }}>
@@ -1761,6 +1942,183 @@ const AssignmentDetail = () => {
               </Stack>
             </Box>
           </Box>
+        </Dialog>
+
+        {/* 학생 선택 다이얼로그 추가 */}
+        <Dialog
+          open={openDialog}
+          maxWidth="xs"
+          fullWidth
+          onClose={handleCloseDialog}
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              background: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+              backgroundImage: (theme) => theme.palette.mode === 'dark' 
+                ? 'linear-gradient(rgba(66, 66, 77, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 66, 77, 0.2) 1px, transparent 1px)'
+                : 'linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              overflow: 'hidden'
+            }
+          }}
+        >
+          <DialogTitle 
+            sx={{ 
+              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+              borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+              p: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5
+            }}
+          >
+            <Box sx={{ 
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              backgroundColor: (theme) => theme.palette.primary.main,
+              color: '#FFFFFF',
+              mr: 1
+            }}>
+              <PeopleIcon fontSize="small" />
+            </Box>
+            학생 활동 보기
+            <IconButton 
+              sx={{ 
+                position: 'absolute', 
+                right: 8, 
+                top: 8,
+                color: (theme) => theme.palette.text.secondary
+              }} 
+              onClick={handleCloseDialog}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            {selectedStudent && (
+              <Box sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                p: 3,
+                pt: 4
+              }}>
+                <Box sx={{ 
+                  width: '80px',
+                  height: '80px',
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#44475A' : '#F5F5F5',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 2,
+                  color: (theme) => theme.palette.primary.main,
+                  fontSize: '2rem',
+                  fontWeight: 'bold',
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                }}>
+                  {selectedStudent.name ? selectedStudent.name.charAt(0) : '?'}
+                </Box>
+                
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 0.5, 
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {selectedStudent.name}
+                </Typography>
+                
+                <Typography 
+                  variant="body2" 
+                  color="textSecondary" 
+                  sx={{ 
+                    mb: 3,
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                  }}
+                >
+                  학번: {selectedStudent.studentNum || '정보 없음'}
+                </Typography>
+                
+                <Box sx={{ 
+                  width: '100%', 
+                  p: 1, 
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(68, 71, 90, 0.3)' : 'rgba(0, 0, 0, 0.03)',
+                  borderRadius: '8px',
+                  mb: 3
+                }}>
+                  <Typography 
+                    variant="body2" 
+                    color="textSecondary" 
+                    sx={{ 
+                      textAlign: 'center',
+                      p: 1,
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                    }}
+                  >
+                    {selectedStudent.email || '이메일 정보 없음'}
+                  </Typography>
+                </Box>
+                
+                <Stack direction="row" spacing={2} justifyContent="center" sx={{ width: '100%' }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                    onClick={() => handleJCodeRedirect(selectedStudent)}
+                    sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      fontSize: '0.75rem',
+                      py: 0.75,
+                      px: 2,
+                      minHeight: '32px',
+                      borderRadius: '16px',
+                      textTransform: 'none',
+                      flex: 1,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                      }
+                    }}
+                  >
+                    JCode
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
+                    onClick={() => {
+                      navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${selectedStudent.userId}`);
+                      handleCloseDialog();
+                    }}
+                    sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      fontSize: '0.75rem',
+                      py: 0.75,
+                      px: 2,
+                      minHeight: '32px',
+                      borderRadius: '16px',
+                      textTransform: 'none',
+                      flex: 1,
+                      borderWidth: '1.5px',
+                      '&:hover': {
+                        borderWidth: '1.5px'
+                      }
+                    }}
+                  >
+                    Watcher
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+          </DialogContent>
         </Dialog>
       </Container>
     </Fade>
