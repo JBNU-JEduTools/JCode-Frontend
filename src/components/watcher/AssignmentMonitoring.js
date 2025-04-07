@@ -143,11 +143,6 @@ const AssignmentMonitoring = () => {
   // y축 ticks callback 함수 수정
   const formatBytes = (bytes) => {
     if (!Number.isInteger(bytes)) return '';
-    if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
-      return `${(bytes / 1048576).toFixed(1)}MB`;
-    } else if (Math.abs(bytes) >= 1024) { // 1KB
-      return `${(bytes / 1024).toFixed(1)}KB`;
-    }
     return `${bytes}B`;
   };
 
@@ -423,7 +418,7 @@ const AssignmentMonitoring = () => {
         },
         y: {
           position: 'right',
-          beginAtZero: isTotal,
+          beginAtZero: isTotal ? false : true,
           display: true,
           ticks: {
             padding: 8,
@@ -462,8 +457,18 @@ const AssignmentMonitoring = () => {
             if (visibleData.length > 0) {
               if (isTotal) {
                 const max = Math.max(...visibleData);
-                const roundedMax = Math.ceil((max * 1.1) / 500) * 500;
-                scale.min = 0;
+                const min = Math.min(...visibleData);
+                // 최소값과 최대값 사이 간격의 10%를 여백으로 사용
+                const range = max - min;
+                const padding = range * 0.1;
+                // 최소 500바이트의 여백 또는 10%의 여백 중 큰 값을 사용
+                const minPadding = Math.max(500, padding);
+                
+                // 최소값이 0에 가깝지 않은 경우에만 최소값에서 약간의 여백을 뺌
+                const calculatedMin = min > 1000 ? Math.max(0, min - minPadding) : 0;
+                const roundedMax = Math.ceil((max + minPadding) / 500) * 500;
+                
+                scale.min = calculatedMin;
                 scale.max = roundedMax;
               } else {
                 const maxPositive = Math.max(...visibleData, 0);
@@ -1654,7 +1659,7 @@ const AssignmentMonitoring = () => {
     }
   };
 
-  // y축 범위를 계산하는 함수 추가
+  // y축 범위를 계산하는 함수 수정
   const calculateYAxisRange = (chart, isTotal) => {
     const xMin = chart.scales.x.min;
     const xMax = chart.scales.x.max;
@@ -1667,9 +1672,18 @@ const AssignmentMonitoring = () => {
       if (isTotal) {
         // 총 코드량 차트
         const max = Math.max(...visibleData);
-        // 500의 배수로 올림
-        const roundedMax = Math.ceil((max * 1.1) / 500) * 500;
-        chart.options.scales.y.min = 0;
+        const min = Math.min(...visibleData);
+        // 최소값과 최대값 사이 간격의 10%를 여백으로 사용
+        const range = max - min;
+        const padding = range * 0.1;
+        // 최소 500바이트의 여백 또는 10%의 여백 중 큰 값을 사용
+        const minPadding = Math.max(500, padding);
+        
+        // 최소값이 0에 가깝지 않은 경우에만 최소값에서 약간의 여백을 뺌
+        const calculatedMin = min > 1000 ? Math.max(0, min - minPadding) : 0;
+        const roundedMax = Math.ceil((max + minPadding) / 500) * 500;
+        
+        chart.options.scales.y.min = calculatedMin;
         chart.options.scales.y.max = roundedMax;
       } else {
         // 변화량 차트
