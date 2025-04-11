@@ -1059,7 +1059,7 @@ const AssignmentMonitoring = () => {
                     </Box>
                   )}
                   
-                  {!isRunLog && (
+                  {/* {!isRunLog && (
                     <Box>
                       <Typography variant="caption" sx={{ 
                         color: isDarkMode ? '#6272A4' : '#757575',
@@ -1076,7 +1076,7 @@ const AssignmentMonitoring = () => {
                         {formatBytes(selectedLog.file_size)}
                       </Typography>
                     </Box>
-                  )}
+                  )} */}
                 </Box>
               </Paper>
             </Box>
