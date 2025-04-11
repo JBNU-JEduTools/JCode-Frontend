@@ -29,6 +29,7 @@ import swunivLogo from '../../assets/swunivlogopng.png';
 import jedutoolsLogo from '../../assets/jedutoolslogopng.png';
 import litmusLogo from '../../assets/Litmuslogosvg.svg';
 import jcloudLogo from '../../assets/jcloudlogosvg.svg';
+import jflowLogo from '../../assets/jflow-logo1.png';
 import { keyframes } from '@mui/system';
 import CIcon from '../../assets/icons/cprogramming.svg';
 import PythonIcon from '../../assets/icons/python.svg';
@@ -41,7 +42,7 @@ const AboutPage = () => {
 
   const scroll = keyframes`
     0% { transform: translateX(0); }
-    100% { transform: translateX(calc(-300px * 5)); }
+    100% { transform: translateX(calc(-300px * 6)); }
   `;
 
   const partners = [
@@ -50,6 +51,7 @@ const AboutPage = () => {
     { name: <img src={swunivLogo} alt="SW중심대학" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://swuniv.jbnu.ac.kr' },
     { name: <img src={jbnuLogo} alt="JBNU" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://www.jbnu.ac.kr' },
     { name: <img src={jedutoolsLogo} alt="JEduTools Portal" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jedutools.jbnu.ac.kr' },
+    { name: <img src={jflowLogo} alt="JFlow" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jflow.jbnu.ac.kr' },
   ];
 
   const features = [

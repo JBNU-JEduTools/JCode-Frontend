@@ -175,34 +175,45 @@ const Navbar = () => {
               alignItems: 'center' 
             }}
           >
-            <Typography
-              variant="h5"
-              noWrap
-              component="div"
-              sx={{ 
-                mr: 2, 
-                fontWeight: 1000,
-                fontSize: '2rem',
-                letterSpacing: '-.05rem',
-                background: (theme) => 
-                  theme.palette.mode === 'dark'
-                    ? 'linear-gradient(45deg, #FF79C6 40%, #BD93F9 90%)'
-                    : `linear-gradient(45deg, ${theme.palette.primary.dark} 40%, ${theme.palette.primary.main} 90%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                WebkitTextStroke: (theme) => 
-                  theme.palette.mode === 'dark'
-                    ? '0.5px rgba(255, 121, 198, 0.3)'
-                    : `0.5px ${theme.palette.primary.dark}`,
-                textShadow: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? '2px 2px 4px rgba(189, 147, 249, 0.4)'
-                    : `2px 2px 4px ${theme.palette.primary.dark}35`,
-                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-              }}
-            >
-              JCode
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box
+                component="img"
+                src={isDarkMode ? "/jcodeLogoDark-v1.png" : "/jcodeLogoLight-v1.png"}
+                alt="JCode Logo"
+                sx={{
+                  height: 50,
+                  mr: 1.5
+                }}
+              />
+              <Typography
+                variant="h5"
+                noWrap
+                component="div"
+                sx={{ 
+                  mr: 2, 
+                  fontWeight: 1000,
+                  fontSize: '2rem',
+                  letterSpacing: '-.05rem',
+                  background: (theme) => 
+                    theme.palette.mode === 'dark'
+                      ? 'linear-gradient(45deg, #FF79C6 40%, #BD93F9 90%)'
+                      : `linear-gradient(45deg, ${theme.palette.primary.dark} 40%, ${theme.palette.primary.main} 90%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  WebkitTextStroke: (theme) => 
+                    theme.palette.mode === 'dark'
+                      ? '0.5px rgba(255, 121, 198, 0.3)'
+                      : `0.5px ${theme.palette.primary.dark}`,
+                  textShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '2px 2px 4px rgba(189, 147, 249, 0.4)'
+                      : `2px 2px 4px ${theme.palette.primary.dark}35`,
+                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
+                }}
+              >
+                JCode
+              </Typography>
+            </Box>
           </Box>
 
           {user && (
