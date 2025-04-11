@@ -676,21 +676,15 @@ const AssignmentDetail = () => {
           submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN'
         );
         
-        // 디버깅을 위한 콘솔 로그 추가
-        console.log('Clicked index:', dataIndex);
-        console.log('Chart data:', chart.data);
-        console.log('Filtered submissions:', filteredSubmissions);
         
         // 맵핑된 데이터에서 클릭한 인덱스에 해당하는 학생 정보 찾기
         // 차트에 표시된 라벨을 기준으로 해당 학생 찾기 (더 정확한 매핑)
         if (chart.data.labels && chart.data.labels.length > dataIndex) {
           const clickedLabel = chart.data.labels[dataIndex];
-          console.log('Clicked label:', clickedLabel);
           
           // 라벨에서 학번 추출 (괄호 안의 내용)
           const studentNumMatch = clickedLabel.match(/\(([^)]+)\)/);
           const studentNum = studentNumMatch ? studentNumMatch[1] : null;
-          console.log('Extracted student number:', studentNum);
           
           if (studentNum) {
             // 학번으로 학생 정보 찾기
@@ -699,7 +693,6 @@ const AssignmentDetail = () => {
             );
             
             if (selectedSubmission) {
-              console.log('Found student:', selectedSubmission);
               // 다이얼로그 상태를 업데이트하여 표시
               setSelectedStudent(selectedSubmission);
               setOpenDialog(true);
@@ -710,7 +703,6 @@ const AssignmentDetail = () => {
         
         // 기존 방식으로 시도 (인덱스 기반)
         if (filteredSubmissions[dataIndex]) {
-          console.log('Fallback to index-based method, student:', filteredSubmissions[dataIndex]);
           setSelectedStudent(filteredSubmissions[dataIndex]);
           setOpenDialog(true);
         } else {
