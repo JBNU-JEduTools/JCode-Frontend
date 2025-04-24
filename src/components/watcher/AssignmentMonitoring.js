@@ -111,6 +111,12 @@ const AssignmentMonitoring = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
+  
+  // 로그 주석(annotation) 표시 여부 관련 상태 추가
+  const [showRunLogs, setShowRunLogs] = useState(true); 
+  const [showBuildLogs, setShowBuildLogs] = useState(true);
+  const [showSuccessLogs, setShowSuccessLogs] = useState(true);
+  const [showFailLogs, setShowFailLogs] = useState(true);
 
   // timeUnits를 직접 컴포넌트 내에서 정의
   const timeUnits = {
@@ -134,7 +140,8 @@ const AssignmentMonitoring = () => {
 
   // 데이터 다운샘플링 함수
   const downsampleData = (data, targetPoints = 500) => {
-    if (!data || data.length <= targetPoints) return data;
+    // 데이터가 없거나 배열이 아니거나 이미 타겟보다 적으면 그대로 반환
+    if (!data || !Array.isArray(data) || data.length <= targetPoints) return data || [];
     
     const skip = Math.ceil(data.length / targetPoints);
     return data.filter((_, index) => index % skip === 0);
@@ -741,13 +748,25 @@ const AssignmentMonitoring = () => {
   };
 
   const fetchMonitoringData = async (intervalValue, courseId, assignmentId, userId) => {
-    const params = new URLSearchParams({
-      course: courseId,
-      assignment: assignmentId,
-      user: userId
-    });
-    
-    return await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+    try {
+      // API 호출
+      const params = new URLSearchParams({
+        course: courseId,
+        assignment: assignmentId,
+        user: userId
+      });
+
+      const response = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+      
+      // API 응답 데이터를 차트에 맞는 형식으로 변환
+      const chartData = processChartData(response.data.trends, assignment);
+      
+      // 처리된 데이터 반환 (배열인지 확인)
+      return Array.isArray(chartData) ? chartData : [];
+    } catch (error) {
+      console.error('모니터링 데이터 조회 실패:', error);
+      return []; // 오류 발생 시 빈 배열 반환
+    }
   };
 
   // 로그 데이터를 가져오는 useEffect 추가
@@ -1191,7 +1210,7 @@ const AssignmentMonitoring = () => {
     );
   };
 
-  // 차트에 annotation 추가 함수
+  // 차트에 annotation 추가 함수 수정
   const addAnnotationsToChart = (chart, isTotal = true) => {
     if (!chart || !chart.options) return;
     
@@ -1210,201 +1229,215 @@ const AssignmentMonitoring = () => {
       return;
     }
     
-    // 실행 로그 annotation 추가
-    runLogs.forEach((log, index) => {
-      const logId = `run-${index}`;
-      const isSuccess = log.exit_code === 0;
-      
-      // 실행 로그 주변에 박스 추가 (모든 로그에 대해)
-      const boxId = `run-box-${index}`;
-      const oneSecond = 1000; // 1초 (밀리초 단위)
-      
-      // 라벨만 따로 추가 (항상 표시)
-      const labelId = `run-label-${index}`;
-      chart.options.plugins.annotation.annotations[labelId] = {
-        type: 'line',
-        xMin: log.timestamp,
-        xMax: log.timestamp,
-        borderColor: 'transparent',
-        borderWidth: 0,
-        drawTime: 'afterDatasetsDraw',
-        label: {
-          display: true,
-          content: `실행 ${isSuccess ? '성공' : '실패'}`,
-          position: 'end',
-          yAdjust: 0, // 위쪽으로 더 이동
-          xAdjust: 0,
-          backgroundColor: isSuccess ? 
-            (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)'),
-          color: isDarkMode ? '#282A36' : '#FFFFFF',
-          font: {
-            size: 10,
-            weight: 'bold'
-          },
-          padding: 4
+    // 실행 로그 annotation 추가 (showRunLogs가 true일 때만)
+    if(showRunLogs) {
+      runLogs.forEach((log, index) => {
+        const isSuccess = log.exit_code === 0;
+        
+        // 성공/실패 필터링 적용
+        if ((isSuccess && !showSuccessLogs) || (!isSuccess && !showFailLogs)) {
+          return;
         }
-      };
-      
-      // 박스 추가
-      chart.options.plugins.annotation.annotations[boxId] = {
-        type: 'box',
-        backgroundColor: isSuccess ? 
-          (isDarkMode ? 'rgba(80, 250, 123, 0.05)' : 'rgba(76, 175, 80, 0.05)') : 
-          (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)'),
-        borderColor: isSuccess ? 
-          (isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)') : 
-          (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'),
-        borderWidth: 1,
-        xMin: log.timestamp - oneSecond,
-        xMax: log.timestamp + oneSecond,
-        yScaleID: 'y',
-        drawTime: 'beforeDatasetsDraw',
-        label: {
-          display: false
-        },
-        enter: function({element}) {
-          // 박스 크기 확대
-          element.options.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(80, 250, 123, 0.15)' : 'rgba(76, 175, 80, 0.15)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.15)' : 'rgba(244, 67, 54, 0.15)');
-          element.options.borderColor = isSuccess ? 
-            (isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(76, 175, 80, 0.5)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(244, 67, 54, 0.5)');
-          element.options.borderWidth = 2;
-          
-          // 라벨 강조
-          const label = chart.options.plugins.annotation.annotations[labelId].label;
-          label.font.size = 12;
-          label.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(80, 250, 123, 0.9)' : 'rgba(76, 175, 80, 0.9)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.9)' : 'rgba(244, 67, 54, 0.9)');
-          
-          return true;
-        },
-        leave: function({element}) {
-          // 원래 크기로 복원
-          element.options.backgroundColor = isSuccess ? 
+        
+        const logId = `run-${index}`;
+        // 실행 로그 주변에 박스 추가 (모든 로그에 대해)
+        const boxId = `run-box-${index}`;
+        const oneSecond = 1000; // 1초 (밀리초 단위)
+        
+        // 라벨만 따로 추가 (항상 표시)
+        const labelId = `run-label-${index}`;
+        chart.options.plugins.annotation.annotations[labelId] = {
+          type: 'line',
+          xMin: log.timestamp,
+          xMax: log.timestamp,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          drawTime: 'afterDatasetsDraw',
+          label: {
+            display: true,
+            content: `실행 ${isSuccess ? '성공' : '실패'}`,
+            position: 'end',
+            yAdjust: 0, 
+            xAdjust: 0,
+            backgroundColor: isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)'),
+            color: isDarkMode ? '#282A36' : '#FFFFFF',
+            font: {
+              size: 10,
+              weight: 'bold'
+            },
+            padding: 4
+          }
+        };
+        
+        // 박스 추가
+        chart.options.plugins.annotation.annotations[boxId] = {
+          type: 'box',
+          backgroundColor: isSuccess ? 
             (isDarkMode ? 'rgba(80, 250, 123, 0.05)' : 'rgba(76, 175, 80, 0.05)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)');
-          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)'),
+          borderColor: isSuccess ? 
             (isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)');
-          element.options.borderWidth = 1;
-          
-          // 라벨 복원
-          const label = chart.options.plugins.annotation.annotations[labelId].label;
-          label.font.size = 10;
-          label.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
-            (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)');
-          
-          return true;
-        },
-        click: function() {
-          // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
-          handleLogClick(log, 'run');
-        }
-      };
-    });
-    
-    // 빌드 로그 annotation 추가
-    buildLogs.forEach((log, index) => {
-      const logId = `build-${index}`;
-      const isSuccess = log.exit_code === 0;
-      
-      // 빌드 로그 주변에 박스 추가 (모든 로그에 대해)
-      const boxId = `build-box-${index}`;
-      const oneSecond = 1000; // 1초 (밀리초 단위)
-      
-      // 라벨만 따로 추가 (항상 표시)
-      const labelId = `build-label-${index}`;
-      chart.options.plugins.annotation.annotations[labelId] = {
-        type: 'line',
-        xMin: log.timestamp,
-        xMax: log.timestamp,
-        borderColor: 'transparent',
-        borderWidth: 0,
-        drawTime: 'afterDatasetsDraw',
-        label: {
-          display: true,
-          content: `빌드 ${isSuccess ? '성공' : '실패'}`,
-          position: 'end',
-          yAdjust: 0, // 위쪽으로 더 이동
-          xAdjust: 0,
-          backgroundColor: isSuccess ? 
-            (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)'),
-          color: isDarkMode ? '#282A36' : '#FFFFFF',
-          font: {
-            size: 10,
-            weight: 'bold'
+            (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'),
+          borderWidth: 1,
+          xMin: log.timestamp - oneSecond,
+          xMax: log.timestamp + oneSecond,
+          yScaleID: 'y',
+          drawTime: 'beforeDatasetsDraw',
+          label: {
+            display: false
           },
-          padding: 4
+          enter: function({element}) {
+            // 박스 크기 확대
+            element.options.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.15)' : 'rgba(76, 175, 80, 0.15)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.15)' : 'rgba(244, 67, 54, 0.15)');
+            element.options.borderColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.5)' : 'rgba(76, 175, 80, 0.5)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.5)' : 'rgba(244, 67, 54, 0.5)');
+            element.options.borderWidth = 2;
+            
+            // 라벨 강조
+            const label = chart.options.plugins.annotation.annotations[labelId].label;
+            label.font.size = 12;
+            label.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.9)' : 'rgba(76, 175, 80, 0.9)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.9)' : 'rgba(244, 67, 54, 0.9)');
+            
+            return true;
+          },
+          leave: function({element}) {
+            // 원래 크기로 복원
+            element.options.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.05)' : 'rgba(76, 175, 80, 0.05)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.05)' : 'rgba(244, 67, 54, 0.05)');
+            element.options.borderColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)');
+            element.options.borderWidth = 1;
+            
+            // 라벨 복원
+            const label = chart.options.plugins.annotation.annotations[labelId].label;
+            label.font.size = 10;
+            label.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : 'rgba(76, 175, 80, 0.7)') : 
+              (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : 'rgba(244, 67, 54, 0.7)');
+            
+            return true;
+          },
+          click: function() {
+            // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
+            handleLogClick(log, 'run');
+          }
+        };
+      });
+    }
+    
+    // 빌드 로그 annotation 추가 (showBuildLogs가 true일 때만)
+    if(showBuildLogs) {
+      buildLogs.forEach((log, index) => {
+        const isSuccess = log.exit_code === 0;
+        
+        // 성공/실패 필터링 적용
+        if ((isSuccess && !showSuccessLogs) || (!isSuccess && !showFailLogs)) {
+          return;
         }
-      };
-      
-      // 박스 추가
-      chart.options.plugins.annotation.annotations[boxId] = {
-        type: 'box',
-        backgroundColor: isSuccess ? 
-          (isDarkMode ? 'rgba(139, 233, 253, 0.05)' : 'rgba(33, 150, 243, 0.05)') : 
-          (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)'),
-        borderColor: isSuccess ? 
-          (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(33, 150, 243, 0.2)') : 
-          (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'),
-        borderWidth: 1,
-        xMin: log.timestamp - oneSecond,
-        xMax: log.timestamp + oneSecond,
-        yScaleID: 'y',
-        drawTime: 'beforeDatasetsDraw',
-        label: {
-          display: false
-        },
-        enter: function({element}) {
-          // 박스 크기 확대
-          element.options.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(139, 233, 253, 0.15)' : 'rgba(33, 150, 243, 0.15)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.15)' : 'rgba(255, 152, 0, 0.15)');
-          element.options.borderColor = isSuccess ? 
-            (isDarkMode ? 'rgba(139, 233, 253, 0.5)' : 'rgba(33, 150, 243, 0.5)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.5)' : 'rgba(255, 152, 0, 0.5)');
-          element.options.borderWidth = 2;
-          
-          // 라벨 강조
-          const label = chart.options.plugins.annotation.annotations[labelId].label;
-          label.font.size = 12;
-          label.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(139, 233, 253, 0.9)' : 'rgba(33, 150, 243, 0.9)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.9)' : 'rgba(255, 152, 0, 0.9)');
-          
-          return true;
-        },
-        leave: function({element}) {
-          // 원래 크기로 복원
-          element.options.backgroundColor = isSuccess ? 
+        
+        const logId = `build-${index}`;
+        // 빌드 로그 주변에 박스 추가 (모든 로그에 대해)
+        const boxId = `build-box-${index}`;
+        const oneSecond = 1000; // 1초 (밀리초 단위)
+        
+        // 라벨만 따로 추가 (항상 표시)
+        const labelId = `build-label-${index}`;
+        chart.options.plugins.annotation.annotations[labelId] = {
+          type: 'line',
+          xMin: log.timestamp,
+          xMax: log.timestamp,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          drawTime: 'afterDatasetsDraw',
+          label: {
+            display: true,
+            content: `빌드 ${isSuccess ? '성공' : '실패'}`,
+            position: 'end',
+            yAdjust: 0,
+            xAdjust: 0,
+            backgroundColor: isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)'),
+            color: isDarkMode ? '#282A36' : '#FFFFFF',
+            font: {
+              size: 10,
+              weight: 'bold'
+            },
+            padding: 4
+          }
+        };
+        
+        // 박스 추가
+        chart.options.plugins.annotation.annotations[boxId] = {
+          type: 'box',
+          backgroundColor: isSuccess ? 
             (isDarkMode ? 'rgba(139, 233, 253, 0.05)' : 'rgba(33, 150, 243, 0.05)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)');
-          element.options.borderColor = isSuccess ? 
+            (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)'),
+          borderColor: isSuccess ? 
             (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(33, 150, 243, 0.2)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)');
-          element.options.borderWidth = 1;
-          
-          // 라벨 복원
-          const label = chart.options.plugins.annotation.annotations[labelId].label;
-          label.font.size = 10;
-          label.backgroundColor = isSuccess ? 
-            (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
-            (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)');
-          
-          return true;
-        },
-        click: function() {
-          // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
-          handleLogClick(log, 'build');
-        }
-      };
-    });
+            (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'),
+          borderWidth: 1,
+          xMin: log.timestamp - oneSecond,
+          xMax: log.timestamp + oneSecond,
+          yScaleID: 'y',
+          drawTime: 'beforeDatasetsDraw',
+          label: {
+            display: false
+          },
+          enter: function({element}) {
+            // 박스 크기 확대
+            element.options.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.15)' : 'rgba(33, 150, 243, 0.15)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.15)' : 'rgba(255, 152, 0, 0.15)');
+            element.options.borderColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.5)' : 'rgba(33, 150, 243, 0.5)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.5)' : 'rgba(255, 152, 0, 0.5)');
+            element.options.borderWidth = 2;
+            
+            // 라벨 강조
+            const label = chart.options.plugins.annotation.annotations[labelId].label;
+            label.font.size = 12;
+            label.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.9)' : 'rgba(33, 150, 243, 0.9)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.9)' : 'rgba(255, 152, 0, 0.9)');
+            
+            return true;
+          },
+          leave: function({element}) {
+            // 원래 크기로 복원
+            element.options.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.05)' : 'rgba(33, 150, 243, 0.05)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.05)' : 'rgba(255, 152, 0, 0.05)');
+            element.options.borderColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.2)' : 'rgba(33, 150, 243, 0.2)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)');
+            element.options.borderWidth = 1;
+            
+            // 라벨 복원
+            const label = chart.options.plugins.annotation.annotations[labelId].label;
+            label.font.size = 10;
+            label.backgroundColor = isSuccess ? 
+              (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : 'rgba(33, 150, 243, 0.7)') : 
+              (isDarkMode ? 'rgba(255, 184, 108, 0.7)' : 'rgba(255, 152, 0, 0.7)');
+            
+            return true;
+          },
+          click: function() {
+            // 박스 클릭 시 해당 로그 정보를 보여주는 다이얼로그 표시
+            handleLogClick(log, 'build');
+          }
+        };
+      });
+    }
     
     // 차트 업데이트
     chart.update('none');
@@ -1444,18 +1477,7 @@ const AssignmentMonitoring = () => {
         }
 
         // interval 값 계산
-        let intervalValue = 1;
-        if (timeUnit === 'minute') {
-          intervalValue = parseInt(minuteValue);
-        } else if (timeUnit === 'hour') {
-          intervalValue = 60;
-        } else if (timeUnit === 'day') {
-          intervalValue = 1440;
-        } else if (timeUnit === 'week') {
-          intervalValue = 10080;
-        } else if (timeUnit === 'month') {
-          intervalValue = 43200;
-        }
+        const intervalValue = calculateIntervalValue(timeUnit, minuteValue);
 
         // 모니터링 데이터 조회
         const params = new URLSearchParams({
@@ -1466,63 +1488,15 @@ const AssignmentMonitoring = () => {
 
         const monitoringResponse = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
         
-        // API 응답 데이터를 차트에 맞는 형식으로 변환
-        const chartData = monitoringResponse.data.trends.map(item => ({
-          timestamp: parseTimestamp(item.timestamp),
-          totalBytes: item.total_size,
-          change: item.size_change
-        }));
-
-        // 과제 시작 시간에 초기 데이터 포인트 추가
-        if (currentAssignment && currentAssignment.startDateTime && chartData.length > 0) {
-          const startTime = new Date(currentAssignment.startDateTime).getTime();
-          const firstDataPoint = chartData[0];
-          
-          // 첫 데이터 포인트가 시작 시간 이후인 경우에만 추가
-          if (firstDataPoint.timestamp > startTime) {
-            chartData.unshift({
-              timestamp: startTime,
-              totalBytes: 0,
-              change: 0
-            });
-          }
-        }
-        
-        // 현재 시간까지 데이터 확장 (마지막 데이터 이후부터 현재까지)
-        if (chartData.length > 0) {
-          const lastDataPoint = chartData[chartData.length - 1];
-          const currentTime = new Date().getTime();
-          
-          // 마지막 데이터 포인트가 현재 시간보다 이전인 경우에만 추가
-          if (lastDataPoint.timestamp < currentTime) {
-            // 시간 간격 계산 (분 단위)
-            let timeInterval = 5 * 60 * 1000; // 기본 5분
-            if (timeUnit === 'minute') {
-              timeInterval = parseInt(minuteValue) * 60 * 1000;
-            } else if (timeUnit === 'hour') {
-              timeInterval = 60 * 60 * 1000;
-            } else if (timeUnit === 'day') {
-              timeInterval = 24 * 60 * 60 * 1000;
-            }
-            
-            // 마지막 데이터 포인트부터 현재 시간까지 빈 데이터 포인트 추가
-            let nextTimestamp = lastDataPoint.timestamp + timeInterval;
-            while (nextTimestamp <= currentTime) {
-              chartData.push({
-                timestamp: nextTimestamp,
-                totalBytes: lastDataPoint.totalBytes, // 마지막 값 유지
-                change: 0 // 변화 없음
-              });
-              nextTimestamp += timeInterval;
-            }
-          }
-        }
+        // processChartData 함수를 사용하여 데이터 처리
+        const chartData = processChartData(monitoringResponse.data.trends, currentAssignment);
         
         setData(chartData);
         setLastUpdated(new Date());
         setLoading(false);
         setIsRefreshing(false);
       } catch (error) {
+        console.error('데이터 로드 실패:', error);
         setError('데이터를 불러오는데 실패했습니다.');
         setLoading(false);
         setIsRefreshing(false);
@@ -1616,20 +1590,53 @@ const AssignmentMonitoring = () => {
     try {
       setTimeUnit(newValue);
       
-      // 차트 인스턴스 초기화
-      if (totalChartInstance.current) {
-        totalChartInstance.current.destroy();
-        totalChartInstance.current = null;
-      }
-      if (changeChartInstance.current) {
-        changeChartInstance.current.destroy();
-        changeChartInstance.current = null;
-      }
+      // 부분적인 로딩 상태로 설정
+      setIsRefreshing(true);
       
-      // API 호출을 위해 로딩 상태로 변경
-      setLoading(true);
-    } finally {
+      // 비동기적으로 데이터 가져오기
+      const fetchTimeUnitData = async () => {
+        try {
+          // interval 값 계산
+          const intervalValue = calculateIntervalValue(newValue, minuteValue);
+          
+          // 데이터 가져오기
+          const newData = await fetchMonitoringData(
+            intervalValue,
+            courseId,
+            assignmentId,
+            userId
+          );
+          
+          // 차트 인스턴스 초기화
+          if (totalChartInstance.current) {
+            totalChartInstance.current.destroy();
+            totalChartInstance.current = null;
+          }
+          if (changeChartInstance.current) {
+            changeChartInstance.current.destroy();
+            changeChartInstance.current = null;
+          }
+          
+          // 데이터 업데이트 및 차트 다시 그리기
+          setData(newData);
+          setLastUpdated(new Date());
+          
+          // 로딩 상태 해제
+          setIsRefreshing(false);
+        } catch (error) {
+          console.error('데이터 업데이트 실패:', error);
+          setError('데이터를 업데이트하는데 실패했습니다.');
+          setIsRefreshing(false);
+        } finally {
+          isUpdating.current = false;
+        }
+      };
+      
+      fetchTimeUnitData();
+    } catch (error) {
+      console.error('시간 단위 변경 실패:', error);
       isUpdating.current = false;
+      setIsRefreshing(false);
     }
   };
 
@@ -1642,20 +1649,53 @@ const AssignmentMonitoring = () => {
       setMinuteValue(newMinuteValue);
       setTimeUnit('minute');
       
-      // 차트 인스턴스 초기화
-      if (totalChartInstance.current) {
-        totalChartInstance.current.destroy();
-        totalChartInstance.current = null;
-      }
-      if (changeChartInstance.current) {
-        changeChartInstance.current.destroy();
-        changeChartInstance.current = null;
-      }
+      // 부분적인 로딩 상태로 설정
+      setIsRefreshing(true);
       
-      // API 호출을 위해 로딩 상태로 변경
-      setLoading(true);
-    } finally {
+      // 비동기적으로 데이터 가져오기
+      const fetchMinuteData = async () => {
+        try {
+          // interval 값 계산
+          const intervalValue = calculateIntervalValue('minute', newMinuteValue);
+          
+          // 데이터 가져오기
+          const newData = await fetchMonitoringData(
+            intervalValue,
+            courseId,
+            assignmentId,
+            userId
+          );
+          
+          // 차트 인스턴스 초기화
+          if (totalChartInstance.current) {
+            totalChartInstance.current.destroy();
+            totalChartInstance.current = null;
+          }
+          if (changeChartInstance.current) {
+            changeChartInstance.current.destroy();
+            changeChartInstance.current = null;
+          }
+          
+          // 데이터 업데이트 및 차트 다시 그리기
+          setData(newData);
+          setLastUpdated(new Date());
+          
+          // 로딩 상태 해제
+          setIsRefreshing(false);
+        } catch (error) {
+          console.error('데이터 업데이트 실패:', error);
+          setError('데이터를 업데이트하는데 실패했습니다.');
+          setIsRefreshing(false);
+        } finally {
+          isUpdating.current = false;
+        }
+      };
+      
+      fetchMinuteData();
+    } catch (error) {
+      console.error('분 단위 변경 실패:', error);
       isUpdating.current = false;
+      setIsRefreshing(false);
     }
   };
 
@@ -1698,6 +1738,67 @@ const AssignmentMonitoring = () => {
       }
     }
   };
+
+  // 로그 주석 토글 핸들러 추가
+  const handleToggleLogAnnotations = () => {
+    setShowRunLogs(!showRunLogs);
+    setShowBuildLogs(!showBuildLogs);
+    
+    // 즉시 차트 업데이트
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+    if (changeChartInstance.current) {
+      addAnnotationsToChart(changeChartInstance.current, false);
+    }
+  };
+
+  // 실행 로그 토글 핸들러
+  const handleToggleRunLogs = () => {
+    setShowRunLogs(!showRunLogs);
+    
+    // 차트 업데이트
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+  };
+
+  // 빌드 로그 토글 핸들러
+  const handleToggleBuildLogs = () => {
+    setShowBuildLogs(!showBuildLogs);
+    
+    // 차트 업데이트
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+  };
+
+  // 성공/실패 로그 토글 핸들러 추가
+  const handleToggleSuccessLogs = () => {
+    setShowSuccessLogs(!showSuccessLogs);
+    
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+  };
+
+  const handleToggleFailLogs = () => {
+    setShowFailLogs(!showFailLogs);
+    
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+  };
+
+  // 변경된 상태가 차트에 반영되도록 수정
+  useEffect(() => {
+    if (totalChartInstance.current) {
+      addAnnotationsToChart(totalChartInstance.current, true);
+    }
+    if (changeChartInstance.current) {
+      addAnnotationsToChart(changeChartInstance.current, false);
+    }
+  }, [showRunLogs, showBuildLogs, showSuccessLogs, showFailLogs]);
 
   if (loading) {
     return (
@@ -1875,61 +1976,235 @@ const AssignmentMonitoring = () => {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* 로그 필터 컨테이너 */}
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2,
+              bgcolor: isDarkMode ? 'rgba(68, 71, 90, 0.2)' : 'rgba(240, 240, 240, 0.5)',
+              borderRadius: '8px',
+              p: 1,
+              border: `1px solid ${isDarkMode ? 'rgba(98, 114, 164, 0.2)' : 'rgba(189, 147, 249, 0.2)'}`,
+              boxShadow: isDarkMode ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+              {/* 로그 유형 필터 */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="caption" sx={{ 
+                  color: isDarkMode ? '#BD93F9' : '#6272A4',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontSize: '0.7rem'
+                }}>
+                  로그 유형
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Tooltip title={showRunLogs ? "실행 로그 숨기기" : "실행 로그 표시하기"}>
+                    <Button
+                      variant={showRunLogs ? "contained" : "outlined"}
+                      size="small"
+                      onClick={handleToggleRunLogs}
+                      sx={{
+                        borderRadius: '8px',
+                        minWidth: '80px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        height: '28px',
+                        backgroundColor: showRunLogs ? 
+                          (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : '#4CAF50') : 
+                          'transparent',
+                        color: showRunLogs ? 
+                          (isDarkMode ? '#282A36' : '#fff') : 
+                          (isDarkMode ? '#F8F8F2' : '#4CAF50'),
+                        border: `1px solid ${isDarkMode ? 'rgba(80, 250, 123, 0.5)' : '#4CAF50'}`,
+                        '&:hover': {
+                          backgroundColor: showRunLogs ? 
+                            (isDarkMode ? 'rgba(80, 250, 123, 0.9)' : '#388E3C') : 
+                            (isDarkMode ? 'rgba(80, 250, 123, 0.1)' : 'rgba(76, 175, 80, 0.1)')
+                        }
+                      }}
+                    >
+                      실행
+                    </Button>
+                  </Tooltip>
+                  
+                  <Tooltip title={showBuildLogs ? "빌드 로그 숨기기" : "빌드 로그 표시하기"}>
+                    <Button
+                      variant={showBuildLogs ? "contained" : "outlined"}
+                      size="small"
+                      onClick={handleToggleBuildLogs}
+                      sx={{
+                        borderRadius: '8px',
+                        minWidth: '80px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        height: '28px',
+                        backgroundColor: showBuildLogs ? 
+                          (isDarkMode ? 'rgba(139, 233, 253, 0.7)' : '#2196F3') : 
+                          'transparent',
+                        color: showBuildLogs ? 
+                          (isDarkMode ? '#282A36' : '#fff') : 
+                          (isDarkMode ? '#F8F8F2' : '#2196F3'),
+                        border: `1px solid ${isDarkMode ? 'rgba(139, 233, 253, 0.5)' : '#2196F3'}`,
+                        '&:hover': {
+                          backgroundColor: showBuildLogs ? 
+                            (isDarkMode ? 'rgba(139, 233, 253, 0.9)' : '#1976D2') : 
+                            (isDarkMode ? 'rgba(139, 233, 253, 0.1)' : 'rgba(33, 150, 243, 0.1)')
+                        }
+                      }}
+                    >
+                      빌드
+                    </Button>
+                  </Tooltip>
+                </Box>
+              </Box>
+              
+              {/* 로그 상태 필터 */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="caption" sx={{ 
+                  color: isDarkMode ? '#BD93F9' : '#6272A4',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontSize: '0.7rem'
+                }}>
+                  로그 상태
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Tooltip title={showSuccessLogs ? "성공 로그 숨기기" : "성공 로그 표시하기"}>
+                    <Button
+                      variant={showSuccessLogs ? "contained" : "outlined"}
+                      size="small"
+                      onClick={handleToggleSuccessLogs}
+                      sx={{
+                        borderRadius: '8px',
+                        minWidth: '80px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        height: '28px',
+                        backgroundColor: showSuccessLogs ? 
+                          (isDarkMode ? 'rgba(80, 250, 123, 0.7)' : '#4CAF50') : 
+                          'transparent',
+                        color: showSuccessLogs ? 
+                          (isDarkMode ? '#282A36' : '#fff') : 
+                          (isDarkMode ? '#F8F8F2' : '#4CAF50'),
+                        border: `1px solid ${isDarkMode ? 'rgba(80, 250, 123, 0.5)' : '#4CAF50'}`,
+                        '&:hover': {
+                          backgroundColor: showSuccessLogs ? 
+                            (isDarkMode ? 'rgba(80, 250, 123, 0.9)' : '#388E3C') : 
+                            (isDarkMode ? 'rgba(80, 250, 123, 0.1)' : 'rgba(76, 175, 80, 0.1)')
+                        }
+                      }}
+                    >
+                      성공
+                    </Button>
+                  </Tooltip>
+                  
+                  <Tooltip title={showFailLogs ? "실패 로그 숨기기" : "실패 로그 표시하기"}>
+                    <Button
+                      variant={showFailLogs ? "contained" : "outlined"}
+                      size="small"
+                      onClick={handleToggleFailLogs}
+                      sx={{
+                        borderRadius: '8px',
+                        minWidth: '80px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        height: '28px',
+                        backgroundColor: showFailLogs ? 
+                          (isDarkMode ? 'rgba(255, 85, 85, 0.7)' : '#F44336') : 
+                          'transparent',
+                        color: showFailLogs ? 
+                          (isDarkMode ? '#282A36' : '#fff') : 
+                          (isDarkMode ? '#F8F8F2' : '#F44336'),
+                        border: `1px solid ${isDarkMode ? 'rgba(255, 85, 85, 0.5)' : '#F44336'}`,
+                        '&:hover': {
+                          backgroundColor: showFailLogs ? 
+                            (isDarkMode ? 'rgba(255, 85, 85, 0.9)' : '#D32F2F') : 
+                            (isDarkMode ? 'rgba(255, 85, 85, 0.1)' : 'rgba(244, 67, 54, 0.1)')
+                        }
+                      }}
+                    >
+                      실패
+                    </Button>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Box>
+            
             {/* 차트 줌 컨트롤 추가 */}
-            <Tooltip title="차트 확대">
-              <IconButton 
-                onClick={() => {
-                  if (totalChartInstance.current) {
-                    totalChartInstance.current.zoom(1.2);
-                    changeChartInstance.current?.zoom(1.2);
-                  }
-                }}
-                sx={{
-                  backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.1)' : 'rgba(76, 175, 80, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)'
-                  }
-                }}
-              >
-                <ZoomInIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="차트 축소">
-              <IconButton 
-                onClick={() => {
-                  if (totalChartInstance.current) {
-                    totalChartInstance.current.zoom(0.8);
-                    changeChartInstance.current?.zoom(0.8);
-                  }
-                }}
-                sx={{
-                  backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'
-                  }
-                }}
-              >
-                <ZoomOutIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="차트 초기화">
-              <IconButton 
-                onClick={() => {
-                  if (totalChartInstance.current) {
-                    totalChartInstance.current.resetZoom();
-                    changeChartInstance.current?.resetZoom();
-                  }
-                }}
-                sx={{
-                  backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.1)' : 'rgba(255, 152, 0, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'
-                  }
-                }}
-              >
-                <RestartAltIcon />
-              </IconButton>
-            </Tooltip>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1, 
+              alignItems: 'center',
+              bgcolor: isDarkMode ? 'rgba(68, 71, 90, 0.2)' : 'rgba(240, 240, 240, 0.5)',
+              borderRadius: '8px',
+              p: 1,
+              border: `1px solid ${isDarkMode ? 'rgba(98, 114, 164, 0.2)' : 'rgba(189, 147, 249, 0.2)'}`,
+              boxShadow: isDarkMode ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: isDarkMode ? '#BD93F9' : '#6272A4',
+                fontWeight: 'bold',
+                fontSize: '0.7rem'
+              }}>
+                줌
+              </Typography>
+              <Tooltip title="차트 확대">
+                <IconButton 
+                  onClick={() => {
+                    if (totalChartInstance.current) {
+                      totalChartInstance.current.zoom(1.2);
+                      changeChartInstance.current?.zoom(1.2);
+                    }
+                  }}
+                  size="small"
+                  sx={{
+                    backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                    '&:hover': {
+                      backgroundColor: isDarkMode ? 'rgba(80, 250, 123, 0.2)' : 'rgba(76, 175, 80, 0.2)'
+                    }
+                  }}
+                >
+                  <ZoomInIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="차트 축소">
+                <IconButton 
+                  onClick={() => {
+                    if (totalChartInstance.current) {
+                      totalChartInstance.current.zoom(0.8);
+                      changeChartInstance.current?.zoom(0.8);
+                    }
+                  }}
+                  size="small"
+                  sx={{
+                    backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+                    '&:hover': {
+                      backgroundColor: isDarkMode ? 'rgba(255, 85, 85, 0.2)' : 'rgba(244, 67, 54, 0.2)'
+                    }
+                  }}
+                >
+                  <ZoomOutIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="차트 초기화">
+                <IconButton 
+                  onClick={() => {
+                    if (totalChartInstance.current) {
+                      totalChartInstance.current.resetZoom();
+                      changeChartInstance.current?.resetZoom();
+                    }
+                  }}
+                  size="small"
+                  sx={{
+                    backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+                    '&:hover': {
+                      backgroundColor: isDarkMode ? 'rgba(255, 184, 108, 0.2)' : 'rgba(255, 152, 0, 0.2)'
+                    }
+                  }}
+                >
+                  <RestartAltIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
         </Box>
 
