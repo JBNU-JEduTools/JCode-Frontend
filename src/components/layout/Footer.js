@@ -58,6 +58,15 @@ const Footer = () => {
             >
               © {currentYear} JEduTools. All rights reserved.
             </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                fontSize: '0.7rem',
+              }}
+            >
+              v1.0.1
+            </Typography>
           </Box>
 
           <Box
