@@ -253,10 +253,20 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#50FA7B' : '#4CAF50'
       }
     },
-    text: runLogs.filter(log => log.exit_code === 0).map(log => 
-      `실행 시간: ${new Date(log.timestamp).toLocaleString()}<br>명령어: ${log.cmdline || log.command || '알 수 없음'}`
-    ),
-    hoverinfo: 'text'
+    text: runLogs.filter(log => log.exit_code === 0).map(log => {
+      const stdoutPreview = log.stdout ? log.stdout.substring(0, 150) + (log.stdout.length > 150 ? '...' : '') : '없음';
+      return `<b>실행 성공</b><br>` +
+        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
+        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
+        (log.cwd ? `작업 디렉토리: ${log.cwd}<br>` : '');
+    }),
+    hoverinfo: 'text',
+    hoverlabel: {
+      bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+      bordercolor: isDarkMode ? '#50FA7B' : '#4CAF50',
+      font: {color: isDarkMode ? '#F8F8F2' : '#282A36'},
+      align: 'left'
+    }
   };
   
   // 실행 실패 로그 트레이스
@@ -278,10 +288,20 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#FF5555' : '#F44336'
       }
     },
-    text: runLogs.filter(log => log.exit_code !== 0).map(log => 
-      `실행 시간: ${new Date(log.timestamp).toLocaleString()}<br>명령어: ${log.cmdline || log.command || '알 수 없음'}`
-    ),
-    hoverinfo: 'text'
+    text: runLogs.filter(log => log.exit_code !== 0).map(log => {
+      const stderrPreview = log.stderr ? log.stderr.substring(0, 150) + (log.stderr.length > 150 ? '...' : '') : '없음';
+      return `<b>실행 실패</b><br>` +
+        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
+        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
+        (log.cwd ? `작업 디렉토리: ${log.cwd}<br>` : '');
+    }),
+    hoverinfo: 'text',
+    hoverlabel: {
+      bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+      bordercolor: isDarkMode ? '#FF5555' : '#F44336',
+      font: {color: isDarkMode ? '#F8F8F2' : '#282A36'},
+      align: 'left'
+    }
   };
   
   // 빌드 성공 로그 트레이스
@@ -303,10 +323,20 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#8BE9FD' : '#2196F3'
       }
     },
-    text: buildLogs.filter(log => log.exit_code === 0).map(log => 
-      `빌드 시간: ${new Date(log.timestamp).toLocaleString()}<br>명령어: ${log.cmdline || log.command || '알 수 없음'}`
-    ),
-    hoverinfo: 'text'
+    text: buildLogs.filter(log => log.exit_code === 0).map(log => {
+      const stdoutPreview = log.stdout ? log.stdout.substring(0, 150) + (log.stdout.length > 150 ? '...' : '') : '없음';
+      return `<b>빌드 성공</b><br>` +
+        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
+        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
+        (log.target_path ? `대상 파일: ${log.target_path}<br>` : '');
+    }),
+    hoverinfo: 'text',
+    hoverlabel: {
+      bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+      bordercolor: isDarkMode ? '#8BE9FD' : '#2196F3',
+      font: {color: isDarkMode ? '#F8F8F2' : '#282A36'},
+      align: 'left'
+    }
   };
   
   // 빌드 실패 로그 트레이스
@@ -328,10 +358,20 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#FFB86C' : '#FF9800'
       }
     },
-    text: buildLogs.filter(log => log.exit_code !== 0).map(log => 
-      `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>빌드 시간: ${new Date(log.timestamp).toLocaleString()}<br>에러 코드: ${log.exit_code}`
-    ),
-    hoverinfo: 'text'
+    text: buildLogs.filter(log => log.exit_code !== 0).map(log => {
+      const stderrPreview = log.stderr ? log.stderr.substring(0, 150) + (log.stderr.length > 150 ? '...' : '') : '없음';
+      return `<b>빌드 실패</b><br>` +
+        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
+        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
+        (log.target_path ? `대상 파일: ${log.target_path}<br>` : '');
+    }),
+    hoverinfo: 'text',
+    hoverlabel: {
+      bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+      bordercolor: isDarkMode ? '#FFB86C' : '#FF9800',
+      font: {color: isDarkMode ? '#F8F8F2' : '#282A36'},
+      align: 'left'
+    }
   };
 
   // 사용 가능한 모든 트레이스 객체 반환
@@ -379,34 +419,57 @@ export const getDateFromValue = (value) => {
 };
 
 // 로그 찾기 유틸리티 함수
-export const findNearestLog = (logs, logType, clickedX, maxTimeDiff = 3600000) => {
+export const findNearestLog = (logs, logType, clickedX, clickedY = null, maxTimeDiff = 3600000) => {
   const clickedDate = getDateFromValue(clickedX);
   let bestMatch = null;
   let minTimeDiff = Infinity;
+  
+  // 클릭한 Y 값을 기준으로 해당 로그 카테고리 값 가져오기
+  // 클릭한 Y 값이 없으면 로그 타입으로부터 Y 값 유추
+  const expectedYValue = clickedY !== null ? clickedY : LOG_CATEGORIES[logType];
 
+  //console.log('로그 찾기 - 클릭 위치:', { x: clickedDate, y: clickedY, 기대Y값: expectedYValue, 로그타입: logType });
+  
   for (const log of logs) {
+    // 로그 타입과 종료 코드 일치 여부 확인
     if ((logType === '실행 성공' && log.exit_code === 0) || 
         (logType === '실행 실패' && log.exit_code !== 0) ||
         (logType === '빌드 성공' && log.exit_code === 0) ||
         (logType === '빌드 실패' && log.exit_code !== 0)) {
+      
       const logDate = getDateFromValue(log.timestamp);
       const timeDiff = Math.abs(logDate.getTime() - clickedDate.getTime());
       
-      if (timeDiff < minTimeDiff) {
-        minTimeDiff = timeDiff;
+      // Y 값까지 정확히 일치하는 경우 가중치 부여
+      // Y 값이 일치하면 시간 차이를 절반으로 줄여서 우선순위 증가
+      const effectiveTimeDiff = (clickedY !== null && 
+                                Math.abs(expectedYValue - LOG_CATEGORIES[logType]) < 0.5) ? 
+                                timeDiff * 0.5 : timeDiff;
+      
+      if (effectiveTimeDiff < minTimeDiff) {
+        minTimeDiff = effectiveTimeDiff;
         bestMatch = log;
       }
     }
   }
 
-  // 시간 차이가 최대 허용값보다 작은 경우에만 로그 반환
+  // 로그를 찾았고 시간 차이가 허용 범위 내인 경우
   if (bestMatch && minTimeDiff < maxTimeDiff) {
+    // console.log('로그 찾기 결과:', { 
+    //   로그: bestMatch, 
+    //   시간차이: minTimeDiff, 
+    //   타입: logType,
+    //   시간: bestMatch.timestamp
+    // });
+    
     return {
       log: bestMatch,
       timeDiff: minTimeDiff,
-      isRunLog: logType.includes('실행')
+      isRunLog: logType.includes('실행'),
+      yValue: LOG_CATEGORIES[logType]
     };
   }
 
+  //console.log('로그 찾기 실패: 일치하는 로그 없음');
   return null;
 }; 
