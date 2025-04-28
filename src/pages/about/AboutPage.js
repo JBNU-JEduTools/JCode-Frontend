@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -12,7 +12,15 @@ import {
   CardContent,
   Avatar,
   Chip,
-  Paper
+  Paper,
+  Divider,
+  Collapse,
+  Button,
+  IconButton,
+  Badge,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import CodeIcon from '@mui/icons-material/Code';
@@ -24,6 +32,16 @@ import HandshakeIcon from '@mui/icons-material/Handshake';
 import ArticleIcon from '@mui/icons-material/Article';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EmailIcon from '@mui/icons-material/Email';
+import UpdateIcon from '@mui/icons-material/Update';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import EnhancementIcon from '@mui/icons-material/AutoFixHigh';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import FiberNewIcon from '@mui/icons-material/FiberNew';
 import jbnuLogo from '../../assets/jbnulogopng.png';
 import swunivLogo from '../../assets/swunivlogopng.png';
 import jedutoolsLogo from '../../assets/jedutoolslogopng.png';
@@ -39,6 +57,14 @@ import RouterIcon from '@mui/icons-material/Router';
 const AboutPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // 패치노트 접기/펼치기 상태 관리
+  const [expandedPatch, setExpandedPatch] = useState(0);
+  const [expandAll, setExpandAll] = useState(false);
+  // 모든 패치노트 표시 상태
+  const [showAllPatches, setShowAllPatches] = useState(false);
+  // 공지사항 더보기 상태 관리
+  const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
   const scroll = keyframes`
     0% { transform: translateX(0); }
@@ -174,6 +200,59 @@ const AboutPage = () => {
     }
   ];
 
+    // badge가 LATEST인 경우 최신 버전 설정
+    // type이 new인 경우 새로운 기능 추가
+    // type이 enhancement인 경우 개선 사항 추가
+    // type이 bug인 경우 버그 수정 추가
+  const patchNotes = [
+    {
+      version: "1.1.0",
+      date: "2025년 4월 27일",
+      badge: "LATEST",
+      notes: [
+        { type: "new", text: "학생 전체 및 개인 차트 라이브러리 변경" },
+        { type: "new", text: "학생 전체 차트 기간 설정 기능 추가" },
+        { type: "enhancement", text: "개인 차트 성능 최적화" }
+      ]
+    }
+  ];
+
+  // 공지사항 데이터
+  const announcements = [
+    {
+      id: 1,
+      title: "v1.1.0 업데이트 안내",
+      date: "2025-04-27",
+      isNew: true,
+      content: "차트 라이브러리를 변경하여 성능이 업그레이드되었습니다.\n버그 발견 시 바로 제보 부탁드립니다. (jedutools@gmail.com)"
+    }
+  ];
+
+  // 패치노트 토글 함수
+  const handleTogglePatch = (index) => {
+    if (expandedPatch === index) {
+      setExpandedPatch(-1);
+    } else {
+      setExpandedPatch(index);
+    }
+  };
+
+  // 모든 패치노트 토글 함수
+  const handleToggleAll = () => {
+    setExpandAll(!expandAll);
+    setExpandedPatch(-1);
+  };
+
+  // 모든 패치노트 표시 토글
+  const handleToggleAllPatches = () => {
+    setShowAllPatches(!showAllPatches);
+    // 모든 패치노트를 표시할 때 첫 번째 패치노트만 펼치기
+    if (!showAllPatches) {
+      setExpandedPatch(0);
+      setExpandAll(false);
+    }
+  };
+
   const SectionTitle = ({ children, smaller }) => (
     <Typography 
       variant="h4" 
@@ -258,6 +337,536 @@ const AboutPage = () => {
                 클라우드에서 최신 개발 환경을 손쉽게 이용할 수 있습니다.
               </Typography>
             </motion.div>
+          </Box>
+
+          {/* 공지사항 섹션 */}
+          <Box sx={{ mb: 12 }}>
+            <SectionTitle>Notice</SectionTitle>
+            <Box sx={{ maxWidth: '900px', margin: '0 auto' }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  overflow: 'hidden',
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: theme.shape.borderRadius,
+                  background: theme.palette.mode === 'dark' 
+                    ? theme.palette.background.paper
+                    : theme.palette.background.default,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: theme.shadows[2],
+                  }
+                }}
+              >
+                <Box 
+                  sx={{ 
+                    p: { xs: 2, sm: 2.5 },
+                    display: 'flex', 
+                    alignItems: 'center',
+                    bgcolor: theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.05)' 
+                      : 'rgba(0, 0, 0, 0.02)'
+                  }}
+                >
+                  <NotificationsIcon sx={{ 
+                    color: theme.palette.primary.main, 
+                    mr: 1.5,
+                    fontSize: '1.4rem'
+                  }} />
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem'
+                    }}
+                  >
+                    중요 공지사항
+                  </Typography>
+                </Box>
+                
+                <Divider />
+                
+                <List sx={{ p: 0 }}>
+                  {(showAllAnnouncements ? announcements : announcements.slice(0, 1)).map((announcement, index) => (
+                    <React.Fragment key={announcement.id}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <ListItem 
+                          alignItems="flex-start"
+                          sx={{ 
+                            p: 2.5,
+                            '&:hover': {
+                              bgcolor: theme.palette.mode === 'dark' 
+                                ? 'rgba(255, 255, 255, 0.03)' 
+                                : 'rgba(0, 0, 0, 0.01)'
+                            },
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-start' }}>
+                            <EventNoteIcon sx={{ 
+                              mt: 0.5,
+                              mr: 2, 
+                              color: theme.palette.text.secondary,
+                              fontSize: '1.2rem'
+                            }} />
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                  <Typography 
+                                    variant="subtitle1"
+                                    sx={{ 
+                                      fontWeight: 'medium',
+                                      mr: 1,
+                                      fontSize: '1rem'
+                                    }}
+                                  >
+                                    {announcement.title}
+                                  </Typography>
+                                  {announcement.isNew && (
+                                    <FiberNewIcon 
+                                      sx={{ 
+                                        color: theme.palette.error.main,
+                                        fontSize: '20px'
+                                      }} 
+                                    />
+                                  )}
+                                </Box>
+                              }
+                              secondary={
+                                <React.Fragment>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ 
+                                      display: 'block',
+                                      mb: 1,
+                                      fontSize: '0.85rem',
+                                      whiteSpace: 'pre-line'
+                                    }}
+                                  >
+                                    {announcement.content}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontSize: '0.75rem' }}
+                                  >
+                                    {announcement.date}
+                                  </Typography>
+                                </React.Fragment>
+                              }
+                            />
+                          </Box>
+                        </ListItem>
+                      </motion.div>
+                      {index < (showAllAnnouncements ? announcements.length - 1 : 0) && (
+                        <Divider />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </List>
+              </Paper>
+              
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Button
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
+                  sx={{
+                    borderRadius: '20px',
+                    px: 2,
+                    py: 0.5,
+                    fontSize: '0.85rem',
+                    fontWeight: 'medium',
+                    '&:hover': {
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.05)' 
+                        : 'rgba(0, 0, 0, 0.05)'
+                    }
+                  }}
+                >
+                  {showAllAnnouncements ? '최신 공지사항만 보기' : '모든 공지사항 보기 →'}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* 패치노트 섹션 */}
+          <Box sx={{ mb: 12 }}>
+            <SectionTitle>Release Notes</SectionTitle>
+            
+            {/* 패치노트 헤더 및 토글 버튼 */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              maxWidth: '900px', 
+              margin: '0 auto',
+              mb: 3 
+            }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ 
+                  fontStyle: 'italic',
+                  fontSize: '0.95rem'
+                }}
+              >
+                {showAllPatches ? '전체 업데이트 정보' : '최신 업데이트 정보'}
+              </Typography>
+              {showAllPatches && (
+                <Button 
+                  variant="text" 
+                  size="small"
+                  onClick={handleToggleAll}
+                  startIcon={expandAll ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                  sx={{ 
+                    color: theme.palette.primary.main,
+                    fontWeight: 'medium',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  {expandAll ? '모두 접기' : '모두 펼치기'}
+                </Button>
+              )}
+            </Box>
+            
+            {/* 패치노트 리스트 */}
+            <Box sx={{ maxWidth: '900px', margin: '0 auto' }}>
+              {/* 최신 패치노트만 보여주거나 모든 패치노트 표시 */}
+              {(showAllPatches ? patchNotes : patchNotes.slice(0, 1)).map((patch, index) => (
+                <Paper
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    mb: 3,
+                    overflow: 'hidden',
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderLeft: `4px solid ${
+                      patch.badge === 'LATEST' 
+                        ? '#00a94f'
+                        : theme.palette.primary.main
+                    }`,
+                    borderRadius: theme.shape.borderRadius,
+                    background: theme.palette.mode === 'dark' 
+                      ? theme.palette.background.paper
+                      : theme.palette.background.default,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      boxShadow: theme.shadows[2],
+                      borderColor: patch.badge === 'LATEST' 
+                        ? '#00a94f'
+                        : theme.palette.primary.main
+                    }
+                  }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    {/* 패치노트 헤더 */}
+                    <Box 
+                      sx={{ 
+                        p: { xs: 2, sm: 2.5 },
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        bgcolor: theme.palette.mode === 'dark' 
+                          ? 'rgba(255, 255, 255, 0.05)' 
+                          : 'rgba(0, 0, 0, 0.02)'
+                      }}
+                      onClick={() => handleTogglePatch(showAllPatches ? index : 0)}
+                    >
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        minWidth: 0, // 이것이 플렉스 아이템이 축소되도록 허용
+                        flex: 1
+                      }}>
+                        <UpdateIcon sx={{ 
+                          color: patch.badge === 'LATEST' 
+                            ? '#00a94f'
+                            : theme.palette.primary.main, 
+                          mr: 1.5,
+                          fontSize: '1.4rem',
+                          flexShrink: 0 // 아이콘은 축소되지 않도록
+                        }} />
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            flexWrap: 'nowrap',
+                            mb: 0.5
+                          }}>
+                            {patch.badge && (
+                              <Chip
+                                label={patch.badge}
+                                size="small"
+                                sx={{
+                                  height: '20px',
+                                  bgcolor: '#00a94f',
+                                  color: '#fff',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 'bold',
+                                  mr: 1.2,
+                                  '& .MuiChip-label': {
+                                    px: 1,
+                                    py: 0
+                                  }
+                                }}
+                              />
+                            )}
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0
+                            }}>
+                              {`v${patch.version}`}
+                            </Typography>
+                          </Box>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {patch.date}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTogglePatch(showAllPatches ? index : 0);
+                        }}
+                        sx={{ 
+                          transition: 'transform 0.3s',
+                          transform: (showAllPatches ? (expandedPatch === index) : (expandedPatch === 0)) || expandAll ? 'rotate(180deg)' : 'rotate(0deg)',
+                          flexShrink: 0,
+                          ml: 1
+                        }}
+                      >
+                        <ExpandMoreIcon />
+                      </IconButton>
+                    </Box>
+                    
+                    {/* 패치노트 내용 */}
+                    <Collapse in={(showAllPatches ? (expandedPatch === index) : (expandedPatch === 0)) || expandAll}>
+                      <Box sx={{ p: 3, pt: 1.5 }}>
+                        <Divider sx={{ mb: 2 }} />
+                        
+                        {/* 요약 통계 */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          mb: 2.5,
+                          gap: 2,
+                          flexWrap: 'wrap'
+                        }}>
+                          <Chip 
+                            icon={<NewReleasesIcon fontSize="small" />} 
+                            label={`새로운 기능 ${patch.notes.filter(n => n.type === 'new').length}개`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ 
+                              borderColor: '#00a94f',
+                              color: '#00a94f',
+                              '& .MuiChip-icon': { 
+                                color: '#00a94f'
+                              }
+                            }}
+                          />
+                          <Chip 
+                            icon={<EnhancementIcon fontSize="small" />} 
+                            label={`개선 사항 ${patch.notes.filter(n => n.type === 'enhancement').length}개`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ 
+                              borderColor: theme.palette.info.main,
+                              color: theme.palette.info.main,
+                              '& .MuiChip-icon': { 
+                                color: theme.palette.info.main 
+                              }
+                            }}
+                          />
+                          <Chip 
+                            icon={<BugReportIcon fontSize="small" />} 
+                            label={`버그 수정 ${patch.notes.filter(n => n.type === 'bug').length}개`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ 
+                              borderColor: theme.palette.error.main,
+                              color: theme.palette.error.main,
+                              '& .MuiChip-icon': { 
+                                color: theme.palette.error.main 
+                              }
+                            }}
+                          />
+                        </Box>
+                        
+                        {/* 패치노트 상세 내용 */}
+                        <Box sx={{ pl: 1 }}>
+                          {/* 새로운 기능 */}
+                          {patch.notes.filter(n => n.type === 'new').length > 0 && (
+                            <Box sx={{ mb: 2.5 }}>
+                              <Typography 
+                                variant="subtitle2" 
+                                sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  color: '#00a94f',
+                                  mb: 1
+                                }}
+                              >
+                                <NewReleasesIcon sx={{ fontSize: '1rem', mr: 0.8 }} />
+                                새로운 기능
+                              </Typography>
+                              {patch.notes.filter(n => n.type === 'new').map((note, noteIndex) => (
+                                <Box key={noteIndex} sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  ml: 2.2,
+                                  mb: 1
+                                }}>
+                                  <Box 
+                                    component="span" 
+                                    sx={{ 
+                                      width: 5, 
+                                      height: 5, 
+                                      borderRadius: '50%', 
+                                      bgcolor: '#00a94f',
+                                      mr: 1.5
+                                    }}
+                                  />
+                                  <Typography variant="body2">
+                                    {note.text}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                          
+                          {/* 개선 사항 */}
+                          {patch.notes.filter(n => n.type === 'enhancement').length > 0 && (
+                            <Box sx={{ mb: 2.5 }}>
+                              <Typography 
+                                variant="subtitle2" 
+                                sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  color: theme.palette.info.main,
+                                  mb: 1
+                                }}
+                              >
+                                <EnhancementIcon sx={{ fontSize: '1rem', mr: 0.8 }} />
+                                개선 사항
+                              </Typography>
+                              {patch.notes.filter(n => n.type === 'enhancement').map((note, noteIndex) => (
+                                <Box key={noteIndex} sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  ml: 2.2,
+                                  mb: 1
+                                }}>
+                                  <Box 
+                                    component="span" 
+                                    sx={{ 
+                                      width: 5, 
+                                      height: 5, 
+                                      borderRadius: '50%', 
+                                      bgcolor: theme.palette.info.main,
+                                      mr: 1.5
+                                    }}
+                                  />
+                                  <Typography variant="body2">
+                                    {note.text}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                          
+                          {/* 버그 수정 */}
+                          {patch.notes.filter(n => n.type === 'bug').length > 0 && (
+                            <Box sx={{ mb: 1 }}>
+                              <Typography 
+                                variant="subtitle2" 
+                                sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  color: theme.palette.error.main,
+                                  mb: 1
+                                }}
+                              >
+                                <BugReportIcon sx={{ fontSize: '1rem', mr: 0.8 }} />
+                                버그 수정
+                              </Typography>
+                              {patch.notes.filter(n => n.type === 'bug').map((note, noteIndex) => (
+                                <Box key={noteIndex} sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  ml: 2.2,
+                                  mb: 1
+                                }}>
+                                  <Box 
+                                    component="span" 
+                                    sx={{ 
+                                      width: 5, 
+                                      height: 5, 
+                                      borderRadius: '50%', 
+                                      bgcolor: theme.palette.error.main,
+                                      mr: 1.5
+                                    }}
+                                  />
+                                  <Typography variant="body2">
+                                    {note.text}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+                    </Collapse>
+                  </motion.div>
+                </Paper>
+              ))}
+              
+              <Box sx={{ textAlign: 'center', mt: 4 }}>
+                <Button
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  onClick={handleToggleAllPatches}
+                  sx={{
+                    borderRadius: '20px',
+                    px: 2,
+                    py: 0.5,
+                    fontSize: '0.85rem',
+                    fontWeight: 'medium',
+                    '&:hover': {
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.05)' 
+                        : 'rgba(0, 0, 0, 0.05)'
+                    }
+                  }}
+                >
+                  {showAllPatches ? '최신 업데이트만 보기' : '모든 업데이트 내역 보기 →'}
+                </Button>
+              </Box>
+            </Box>
           </Box>
 
           {/* 미션 및 비전 섹션 */}
@@ -518,187 +1127,6 @@ const AboutPage = () => {
                 }}
               >
                 * 지속적인 업데이트를 통해 더 많은 프로그래밍 언어를 지원할 예정입니다.
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* 팀 소개 섹션 */}
-          <Box sx={{ mb: 12 }}>
-            <SectionTitle>Development Team</SectionTitle>
-            
-            {/* 교수님 카드 */}
-            <Box sx={{ mb: 5, display: 'flex', justifyContent: 'center' }}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card
-                  elevation={0}
-                  sx={{
-                    width: { xs: '100%', sm: '300px' },
-                    background: theme.palette.mode === 'dark' 
-                      ? theme.palette.background.paper
-                      : theme.palette.background.default,
-                    borderRadius: theme.shape.borderRadius,
-                    transition: 'all 0.3s ease',
-                    border: `1px solid ${theme.palette.divider}`,
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: theme.shadows[4],
-                      borderColor: theme.palette.primary.main
-                    }
-                  }}
-                >
-                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                    <Avatar
-                      sx={{
-                        width: 100,
-                        height: 100,
-                        margin: '0 auto',
-                        mb: 2,
-                        border: `2px solid ${theme.palette.primary.main}`
-                      }}
-                    />
-                    <Typography variant="h6" gutterBottom>
-                      박현찬
-                    </Typography>
-                    <Typography variant="subtitle2" color="primary" gutterBottom>
-                      Professor
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Box>
-            
-            {/* 학생 카드들 */}
-            <Grid container spacing={3} justifyContent="center">
-              {teamMembers.slice(1, 6).map((member, index) => (
-                <Grid item xs={12} sm={6} md={3} lg={2.4} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: '100%',
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
-                        borderRadius: theme.shape.borderRadius,
-                        transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
-                        '&:hover': {
-                          transform: 'translateY(-5px)',
-                          boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                        <Avatar
-                          src={member.avatar}
-                          sx={{
-                            width: 80,
-                            height: 80,
-                            margin: '0 auto',
-                            mb: 2,
-                            border: `2px solid ${theme.palette.primary.main}`
-                          }}
-                        />
-                        <Typography variant="h6" gutterBottom>
-                          {member.name}
-                        </Typography>
-                        <Typography variant="subtitle2" color="primary" gutterBottom>
-                          {member.role}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
-            
-            {/* 도움 주신 분들 섹션 */}
-            <Box sx={{ mt: 8, textAlign: 'center' }}>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  color: theme.palette.text.secondary,
-                  fontWeight: 'medium',
-                  mb: 3
-                }}
-              >
-                Contributors
-              </Typography>
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  justifyContent: 'center',
-                  gap: 1.5,
-                  maxWidth: '900px',
-                  margin: '0 auto',
-                  py: 2
-                }}
-              >
-                {['김담은', '노형준', '이진규', '박은송'].map((name, index) => (
-                  <Chip
-                    key={index}
-                    label={name}
-                    variant="outlined"
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
-                      m: 0.7,
-                      px: 1,
-                      py: 2.5,
-                      fontSize: '0.95rem',
-                      '&:hover': {
-                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                        borderColor: theme.palette.primary.main
-                      }
-                    }}
-                  />
-                ))}
-              </Box>
-            </Box>
-
-            <Box sx={{ textAlign: 'center', mt: 4 }}>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  color: theme.palette.text.secondary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1
-                }}
-              >
-                <EmailIcon sx={{ color: theme.palette.primary.main }} /><Link href="https://mail.google.com/mail/?view=cm&fs=1&to=jedutools@gmail.com" target="_blank" rel="noopener noreferrer" sx={{ 
-                  color: theme.palette.primary.main,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  '&:hover': {
-                    textDecoration: 'underline'
-                  }
-                }}>jedutools@gmail.com</Link>
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  color: theme.palette.text.secondary,
-                  mt: 1,
-                  mb: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1
-                }}
-              >
-                <LocationOnIcon /> 전북대학교 공과대학 7호관 619호 OSLAB
               </Typography>
             </Box>
           </Box>

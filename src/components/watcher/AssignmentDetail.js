@@ -1,135 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Paper, 
-  Typography, 
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  Typography,
   Box,
   CircularProgress,
+  TextField,
+  InputAdornment,
+  Button,
+  Tabs,
+  Tab,
+  Fade,
+  useTheme,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Chip,
-  Fade,
-  Breadcrumbs,
-  Link,
   Stack,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  TextField,
-  InputAdornment,
-  DialogActions,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  Card,
-  Tabs,
-  Tab,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Grid,
-  Slider,
-  useTheme
+  IconButton
 } from '@mui/material';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import api from '../../api/axios';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import MonitorIcon from '@mui/icons-material/Monitor';
-import CodeIcon from '@mui/icons-material/Code';
-import RemainingTime from './RemainingTime';
-import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import PeopleIcon from '@mui/icons-material/People';
 import SearchIcon from '@mui/icons-material/Search';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { useAuth } from '../../contexts/AuthContext';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { ko } from 'date-fns/locale';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  zoom
-} from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
-import { format } from 'date-fns';
-import zoomPlugin from 'chartjs-plugin-zoom';
-import crosshairPlugin from 'chartjs-plugin-crosshair';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import MonitorIcon from '@mui/icons-material/Monitor';
+import PeopleIcon from '@mui/icons-material/People';
 import SortIcon from '@mui/icons-material/Sort';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import NumbersIcon from '@mui/icons-material/Numbers';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import CodeIcon from '@mui/icons-material/Code';
 import { toast } from 'react-toastify';
 import ErrorIcon from '@mui/icons-material/Error';
-import CloseIcon from '@mui/icons-material/Close';
-import InfoIcon from '@mui/icons-material/Info';
+import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
+import { useAuth } from '../../contexts/AuthContext';
+import StudentChart from './charts/StudentChart';
+import DateRangeSelector from './charts/DateRangeSelector';
+import StudentSelector from './charts/StudentSelector';
+import ChartHeader from './charts/ChartHeader';
+import api from '../../api/axios';
+import { 
+  fetchAssignmentInfo, 
+  fetchCourseInfo, 
+  fetchStudents, 
+  fetchChartDataByTimeRange,
+  redirectToJCode,
+  fetchUserCoursesDetails,
+  fetchMonitoringData
+} from './charts/api';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  zoomPlugin,
-  crosshairPlugin
-);
-
-// noDataText 플러그인 추가
-const noDataTextPlugin = {
-  id: 'noDataText',
-  beforeDraw: (chart) => {
-    const { ctx, width, height } = chart;
-    
-    // 데이터가 없는 경우에만 메시지 표시
-    if (!chart.data.datasets[0].data.length || 
-        chart.data.datasets[0].data.every(d => d === 0)) {
-      
-      // 배경 반투명하게 채우기
-      ctx.save();
-      ctx.fillStyle = chart.options.plugins.noDataText.backgroundColor || 'rgba(255, 255, 255, 0.7)';
-      ctx.fillRect(0, 0, width, height);
-      
-      // 텍스트 설정
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = chart.options.plugins.noDataText.font || '16px "JetBrains Mono", "Noto Sans KR", sans-serif';
-      ctx.fillStyle = chart.options.plugins.noDataText.color || '#282A36';
-      
-      // 텍스트 그리기
-      ctx.fillText(
-        chart.options.plugins.noDataText.text || '아직 학생이 코드를 입력하지 않았습니다',
-        width / 2,
-        height / 2
-      );
-      
-      ctx.restore();
-    }
-  }
-};
-
-// Chart.js에 플러그인 등록
-ChartJS.register(noDataTextPlugin);
-
-// TabPanel 컴포넌트 추가
+// TabPanel 컴포넌트
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
 
@@ -155,198 +76,454 @@ function TabPanel(props) {
 const AssignmentDetail = () => {
   const { courseId, assignmentId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [currentUser, setCurrentUser] = useState(null);
+
+  // 상태 변수들
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [course, setCourse] = useState(null);
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [course, setCourse] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [chartData, setChartData] = useState([]);
+  const [chartError, setChartError] = useState('');
+
+  // 날짜 관련 상태
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [rangeStartDate, setRangeStartDate] = useState(null);
+  const [rangeEndDate, setRangeEndDate] = useState(null);
+  const [currentRange, setCurrentRange] = useState([0, 100]);
+
+  // 학생 선택 관련 상태
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [studentCount, setStudentCount] = useState(0);
+
+  // 정렬 상태 추가 
   const [sort, setSort] = useState({
     field: 'name',
     order: 'asc'
   });
-  const [timeUnit, setTimeUnit] = useState('perMinute');
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [currentRange, setCurrentRange] = useState([0, 100]);
-  const [rangeStartDate, setRangeStartDate] = useState(null);
-  const [rangeEndDate, setRangeEndDate] = useState(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [chartData, setChartData] = useState([]);
-  const [chartError, setChartError] = useState('');
-  
-  // 학생 선택 관련 상태 추가
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
 
-  // 학생인 경우에만 사용자 정보를 가져오는 useEffect
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        // user.role이 'STUDENT'인 경우에만 API 호출
-        if (user?.role === 'STUDENT') {
-          const response = await api.get('/api/users/me');
-          setCurrentUser(response.data);
-        }
-      } catch (error) {
-        console.error('사용자 정보 로딩 실패:', error);
-      }
-    };
-
-    fetchCurrentUser();
-  }, [user?.role]); // user.role이 변경될 때만 실행
-
-  // handleTabChange 수정
-  const handleTabChange = (event, newValue) => {
-    // 탭 변경시 user 객체 로그 출력
-    
-    if (user?.role === 'STUDENT' && newValue === 1) {
-      // 학생이 나의 통계 탭을 클릭했을 때
-      const studentId = currentUser?.userId || user?.userId;
-      if (!studentId) {
-        console.error('사용자 ID를 찾을 수 없습니다.');
-        return;
-      }
-      navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${studentId}`);
-      return;
-    }
-    
-    setTabValue(newValue);
-  };
-
+  // 데이터 로드
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        //console.log('데이터 로드 시작', { courseId, assignmentId, userRole: user?.role });
+        
+        // 과제 정보 가져오기
         if (user?.role === 'ADMIN') {
-          // 관리자인 경우
-          const coursesResponse = await api.get(`/api/courses/${courseId}/details`);
-          setCourse(coursesResponse.data);
-          
-          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
-          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
-          
-          if (!currentAssignment) {
-            throw new Error('과제를 찾을 수 없습니다.');
+          try {
+            const courseData = await fetchCourseInfo(courseId);
+            //console.log('Admin - 강의 정보 로드 성공:', courseData);
+            setCourse(courseData);
+          } catch (courseError) {
+            //console.error('Admin - 강의 정보 로드 실패:', courseError);
           }
-          setAssignment(currentAssignment);
+
+          try {
+            const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
+            //console.log('Admin - 과제 정보 로드 성공:', assignmentData);
+            
+            // assignmentData가 배열인지 확인
+            if (Array.isArray(assignmentData)) {
+              const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
+              if (!currentAssignment) {
+                //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
+                throw new Error('과제를 찾을 수 없습니다.');
+              }
+              setAssignment(currentAssignment);
+            } else {
+              // assignmentData가 배열이 아닌 경우 직접 사용
+              //console.log('과제 정보가 객체로 반환됨, 직접 사용');
+              setAssignment(assignmentData);
+            }
+          } catch (assignmentError) {
+            //console.error('Admin - 과제 정보 로드 실패:', assignmentError);
+          }
 
           // 여기서 학생 목록을 가져옵니다
-          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
-          setSubmissions(studentsResponse.data || []);
-        } else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
-          // 교수와 조교인 경우
-          const coursesResponse = await api.get('/api/users/me/courses/details');
-          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
-          
+          try {
+            //console.log('Admin - 학생 목록 로드 시작');
+            const studentsData = await fetchStudents(courseId);
+            //console.log('Admin - 학생 목록 로드 성공:', studentsData);
+            setSubmissions(studentsData || []);
+          } catch (studentsError) {
+            //console.error('Admin - 학생 목록 로드 실패:', studentsError);
+            setSubmissions([]);
+          }
+        }
+        else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
+          //console.log('교수/조교 - 사용자 강의 정보 로드 시작');
+          const courseData = await fetchUserCoursesDetails();
+          //console.log('교수/조교 - 사용자 강의 정보 로드 성공:', courseData);
+          const foundCourse = courseData.find(c => c.courseId === parseInt(courseId));
+
           if (!foundCourse) {
+            //console.error('강의를 찾을 수 없습니다:', { courseId, courseData });
             throw new Error('강의를 찾을 수 없습니다.');
           }
           setCourse(foundCourse);
 
-          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
-          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+          //console.log('교수/조교 - 과제 정보 로드 시작');
+          const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
+          //console.log('교수/조교 - 과제 정보 로드 성공:', assignmentData);
           
-          if (!currentAssignment) {
-            throw new Error('과제를 찾을 수 없습니다.');
+          // assignmentData가 배열인지 확인
+          if (Array.isArray(assignmentData)) {
+            const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
+            if (!currentAssignment) {
+              //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
+              throw new Error('과제를 찾을 수 없습니다.');
+            }
+            setAssignment(currentAssignment);
+          } else {
+            // assignmentData가 배열이 아닌 경우 직접 사용
+            //console.log('과제 정보가 객체로 반환됨, 직접 사용');
+            setAssignment(assignmentData);
           }
-          setAssignment(currentAssignment);
-
-          // 여기서 학생 목록을 가져옵니다
-          const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
-          setSubmissions(studentsResponse.data || []);
-        } else {
-          // 학생인 경우
-          const coursesResponse = await api.get('/api/users/me/courses/details');
-          const foundCourse = coursesResponse.data.find(c => c.courseId === parseInt(courseId));
           
+          // 여기서 학생 목록을 가져옵니다
+          //console.log('교수/조교 - 학생 목록 로드 시작');
+          const studentsData = await fetchStudents(courseId);
+          //console.log('교수/조교 - 학생 목록 로드 성공:', studentsData);
+          setSubmissions(studentsData || []);
+        } 
+        else 
+        {
+          //console.log('학생 - 사용자 강의 정보 로드 시작');
+          const courseData = await fetchUserCoursesDetails();
+         // console.log('학생 - 사용자 강의 정보 로드 성공:', courseData);
+          const foundCourse = courseData.find(c => c.courseId === parseInt(courseId));
+
           if (!foundCourse) {
+            //console.error('강의를 찾을 수 없습니다:', { courseId, courseData });
             throw new Error('강의를 찾을 수 없습니다.');
           }
           setCourse(foundCourse);
 
-          const assignmentResponse = await api.get(`/api/courses/${courseId}/assignments`);
-          const currentAssignment = assignmentResponse.data.find(a => a.assignmentId === parseInt(assignmentId));
+          //console.log('학생 - 과제 정보 로드 시작');
+          const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
+          //console.log('학생 - 과제 정보 로드 성공:', assignmentData);
           
-          if (!currentAssignment) {
-            throw new Error('과제를 찾을 수 없습니다.');
+          // assignmentData가 배열인지 확인
+          if (Array.isArray(assignmentData)) {
+            const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
+            if (!currentAssignment) {
+              //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
+              throw new Error('과제를 찾을 수 없습니다.');
+            }
+            setAssignment(currentAssignment);
+          } else {
+            // assignmentData가 배열이 아닌 경우 직접 사용
+            //console.log('과제 정보가 객체로 반환됨, 직접 사용');
+            setAssignment(assignmentData);
           }
-          setAssignment(currentAssignment);
 
           setSubmissions([]);
         }
+          
+        // 초기 날짜 범위 설정
+        //console.log('초기 날짜 범위 설정 시작');
+        try {
+          const assignmentDetails = await fetchAssignmentInfo(courseId, assignmentId);
+          //console.log('날짜 설정용 과제 정보 로드 성공:', assignmentDetails);
+          
+          if (assignmentDetails) {
+            let startDateTime, endDateTime;
+            
+            if (Array.isArray(assignmentDetails)) {
+              // 배열인 경우 해당 과제 찾기
+              const foundAssignment = assignmentDetails.find(a => a.assignmentId === parseInt(assignmentId));
+              if (foundAssignment) {
+                startDateTime = foundAssignment.startDateTime || foundAssignment.kickoffDate;
+                endDateTime = foundAssignment.endDateTime || foundAssignment.deadlineDate;
+              }
+            } else {
+              // 객체인 경우 직접 사용
+              startDateTime = assignmentDetails.startDateTime || assignmentDetails.kickoffDate;
+              endDateTime = assignmentDetails.endDateTime || assignmentDetails.deadlineDate;
+            }
+            
+            if (startDateTime && endDateTime) {
+              const kickoff = new Date(startDateTime);
+              const deadline = new Date(endDateTime);
+              //console.log('설정된 날짜 범위:', { kickoff, deadline });
+              setStartDate(kickoff);
+              setEndDate(deadline);
+              setRangeStartDate(kickoff);
+              setRangeEndDate(deadline);
+            } else {
+              //console.warn('과제의 시작일 또는 마감일이 설정되지 않았습니다');
+            }
+          }
+        } catch (error) {
+          //console.error('날짜 범위 설정 오류:', error);
+        }
         
         setLoading(false);
-      } catch (error) {
+        //console.log('데이터 로드 완료');
+      } catch (err) {
+        //console.error('데이터 로드 오류:', err);
         setError('데이터를 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [courseId, assignmentId, user]);
+  }, [courseId, assignmentId, user?.role]);
 
-  // 차트 데이터 조회 함수 수정
+  // 차트 데이터 가져오기
   const fetchChartData = async () => {
     try {
-      if (!rangeStartDate || !rangeEndDate) return;
+      if (!rangeStartDate || !rangeEndDate) {
+        //console.log('날짜 범위가 설정되지 않아 차트 데이터를 가져올 수 없습니다.');
+        return;
+      }
       
-      // 사용자가 선택한 로컬 시간을 그대로 유지하는 형식으로 변환
-      const formatLocalTime = (date) => {
-        return date.getFullYear() + 
-          '-' + String(date.getMonth() + 1).padStart(2, '0') + 
-          '-' + String(date.getDate()).padStart(2, '0') + 
-          'T' + String(date.getHours()).padStart(2, '0') + 
-          ':' + String(date.getMinutes()).padStart(2, '0') + 
-          ':' + String(date.getSeconds()).padStart(2, '0');
-      };
+      //console.log('차트 데이터 요청 시작:', {
+      //  courseId, 
+      //  assignmentId,
+      //  rangeStartDate: rangeStartDate.toString(),
+      //  rangeEndDate: rangeEndDate.toString()
+      //});
       
-      const response = await api.get(`/api/watcher/assignments/${assignmentId}/courses/${courseId}/between`, {
-        params: {
-          st: formatLocalTime(rangeStartDate),  // 로컬 시간 형식으로 전송
-          end: formatLocalTime(rangeEndDate)    // 로컬 시간 형식으로 전송
+      const response = await fetchChartDataByTimeRange(
+        courseId, 
+        assignmentId,
+        rangeStartDate,
+        rangeEndDate
+      );
+      
+      //console.log('차트 데이터 응답 결과:', response);
+
+      // 학생 정보가 있는 경우 이름 필드 매핑
+      if (response && response.length > 0 && submissions && submissions.length > 0) {
+        //console.log('학생 정보와 차트 데이터 매핑 시작');
+        //console.log('학생 목록 예시:', submissions[0]);
+        
+        // 학생 정보 매핑 - 학번 기준으로 매핑
+        const enhancedData = response.map(item => {
+          // 해당 학번의 학생 정보 찾기
+          const studentInfo = submissions.find(s => 
+            String(s.studentNum) === String(item.student_num)
+          );
+          
+          if (studentInfo) {
+            return {
+              ...item,
+              name: studentInfo.name || item.name, 
+              email: studentInfo.email || item.email,
+              user_id: studentInfo.userId || studentInfo.id || item.user_id,
+              role: studentInfo.role, // 역할 정보 추가
+              courseRole: studentInfo.courseRole // 과목 내 역할 정보 추가
+            };
+          }
+          return null; // 학생 정보가 없는 경우 null 반환
+        }).filter(item => item !== null); // null 값 제거
+        
+        // 교수/조교/관리자 필터링
+        let filteredData;
+        if (user?.role === 'STUDENT') {
+          // 학생인 경우 교수/조교/관리자 제외
+          filteredData = enhancedData.filter(item => {
+            const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
+            if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'ASSISTANT' || userInfo.role === 'PROFESSOR')) {
+              return false;
+            }
+            return true;
+          });
+        } else {
+          // 교수/관리자인 경우 학생만 표시
+          filteredData = enhancedData.filter(item => {
+            // 역할 정보 확인
+            if (item.role === 'PROFESSOR' || item.role === 'ASSISTANT' || item.role === 'ADMIN' ||
+                item.courseRole === 'PROFESSOR' || item.courseRole === 'ASSISTANT' || item.courseRole === 'ADMIN') {
+              return false;
+            }
+            return true;
+          });
         }
-      });
-      setChartData(response.data.results || []);
-      setChartError(''); // 차트 오류 상태 초기화
+        
+        //console.log('향상된 차트 데이터:', filteredData.length, '명');
+        setChartData(filteredData);
+      } else {
+        // 학생 정보가 없는 경우 원본 데이터 사용
+        //console.log('학생 정보 없음 또는 차트 데이터 없음 - 원본 데이터 사용');
+        setChartData(response);
+      }
+      
+      setChartError('');
     } catch (error) {
-      console.error('차트 데이터 로딩 오류:', error);
+      //console.error('차트 데이터 로딩 오류:', error);
       setChartError('차트 데이터를 불러오는데 실패했습니다.');
       setChartData([]);
     }
   };
 
+  // 초기 데이터 로드 후 차트 데이터 가져오기
   useEffect(() => {
-    if (assignment) {
-      const kickoff = new Date(assignment.startDateTime || assignment.kickoffDate);
-      const deadline = new Date(assignment.endDateTime || assignment.deadlineDate);
-      setStartDate(kickoff);
-      setEndDate(deadline);
-      setRangeStartDate(kickoff);
-      setRangeEndDate(deadline);
-      setCurrentRange([0, 100]);
-    }
-  }, [assignment]);
-
-  // 초기 데이터 로딩 시 한 번만 API 호출하는 useEffect 수정
-  useEffect(() => {
-    // 필요한 데이터가 모두 로드되었고, 차트 데이터가 아직 없을 때만 API 호출
-    if (assignment && rangeStartDate && rangeEndDate && chartData.length === 0) {
-      // 교수/관리자인 경우 submissions 배열이 로드된 후에만 호출
-      if ((user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && 
-          submissions.length === 0) {
-        return; // submissions가 로드되지 않았으면 아직 호출하지 않음
-      }
-      
-      // 학생인 경우 또는 submissions가 로드된 경우 API 호출
+    if (!loading && rangeStartDate && rangeEndDate && chartData.length === 0) {
+      //console.log('초기 차트 데이터 로드 시작');
       fetchChartData();
     }
-  }, [assignment, rangeStartDate, rangeEndDate, submissions.length, chartData.length, user?.role]);
+  }, [loading, rangeStartDate, rangeEndDate]);
+
+  // 탭 변경 핸들러
+  const handleTabChange = async (event, newValue) => {
+    if (user?.role === 'STUDENT' && newValue === 1) {
+      try {
+        const startTime = performance.now();
+        //console.log('[성능] 나의 통계 탭 선택 - 처리 시작');
+        
+        // 로그인한 사용자 정보 가져오기
+        const userInfoStartTime = performance.now();
+        //console.log('[성능] 사용자 정보 요청 시작');
+        const meResponse = await api.get('/api/users/me');
+        //console.log('[나의 통계] 사용자 정보 응답:', meResponse.data);
+        const userInfoEndTime = performance.now();
+        //console.log(`[성능] 사용자 정보 요청 완료: ${userInfoEndTime - userInfoStartTime}ms`);
+        
+        // 사용자 ID 가져오기
+        const userId = meResponse.data.userId;
+        //console.log('[나의 통계] 로그인 유저 ID:', userId);
+        
+        if (!userId) {
+          //console.error('[나의 통계] 사용자 ID를 찾을 수 없습니다.');
+          toast.error('사용자 정보를 불러올 수 없습니다.');
+          return;
+        }
+        
+        // 미리 모니터링 데이터 요청 시작 (메인 스레드를 차단하지 않도록 별도 처리)
+        setTimeout(() => {
+          try {
+            //console.log('[나의 통계] 사전 데이터 로딩 시작');
+            // const startTime = performance.now();
+            const intervalValue = 5; // 기본 간격값 (5분)
+            
+            // 사용자 모니터링 데이터 미리 가져오기
+            const cacheStartTime = performance.now();
+            fetchMonitoringData(intervalValue, courseId, assignmentId, userId)
+              .then(() => {
+                const cacheEndTime = performance.now();
+                //console.log(`[나의 통계] 모니터링 데이터 사전 로딩 완료: ${cacheEndTime - cacheStartTime}ms 소요`);
+              })
+              // .catch(err => console.error('[나의 통계] 모니터링 데이터 미리 로드 실패:', err));
+            
+            // 기본 과제 정보 미리 가져오기
+            const assignmentStartTime = performance.now();
+            fetchAssignmentInfo(courseId, assignmentId)
+              .then(() => {
+                const assignmentEndTime = performance.now();
+                //console.log(`[나의 통계] 과제 정보 사전 로딩 완료: ${assignmentEndTime - assignmentStartTime}ms 소요`);
+                //console.log(`[성능] 사전 로딩 전체 완료: ${performance.now() - startTime}ms 소요`);
+              })
+              // .catch(err => console.error('[나의 통계] 과제 정보 미리 로드 실패:', err));
+          } catch (err) {
+            //console.error('[나의 통계] 사전 데이터 로드 오류:', err);
+          }
+        }, 0);
+        
+        //console.log('[나의 통계] 페이지 이동 시작');
+        //const navigateStartTime = performance.now();
+        
+        // 학생의 통계 페이지로 이동
+        navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${userId}`);
+        
+        //const endTime = performance.now();
+        //console.log(`[성능] 나의 통계 탭 처리 완료: ${endTime - startTime}ms`);
+        //console.log('[성능 요약-탭 전환]', {
+        //  '전체 처리 시간': endTime - startTime,
+        //  '사용자 정보 요청 시간': userInfoEndTime - userInfoStartTime,
+        //  '페이지 이동 시간': endTime - navigateStartTime
+        //});
+      } catch (error) {
+        //console.error('[나의 통계] 사용자 정보 로드 오류:', error);
+        toast.error('사용자 정보를 불러오는데 실패했습니다.');
+      }
+      return;
+    }
+    
+    setTabValue(newValue);
+  };
+
+  // 슬라이더 변경 핸들러
+  const handleRangeChange = (event, newValue) => {
+    setCurrentRange(newValue);
+    if (startDate && endDate) {
+      const totalMillis = endDate.getTime() - startDate.getTime();
+      const startMillis = totalMillis * (newValue[0] / 100);
+      const endMillis = totalMillis * (newValue[1] / 100);
+      
+      const newRangeStartDate = new Date(startDate.getTime() + startMillis);
+      const newRangeEndDate = new Date(startDate.getTime() + endMillis);
+      
+      setRangeStartDate(newRangeStartDate);
+      setRangeEndDate(newRangeEndDate);
+    }
+  };
+
+  // 시작 날짜 변경 핸들러
+  const handleStartDateChange = (newDate) => {
+    if (newDate && endDate && newDate < endDate) {
+      setRangeStartDate(newDate);
+      updateSliderFromDates(newDate, rangeEndDate);
+    }
+  };
+
+  // 종료 날짜 변경 핸들러
+  const handleEndDateChange = (newDate) => {
+    if (newDate && startDate && newDate > rangeStartDate) {
+      setRangeEndDate(newDate);
+      updateSliderFromDates(rangeStartDate, newDate);
+    }
+  };
+
+  // 날짜에서 슬라이더 값 계산
+  const updateSliderFromDates = (start, end) => {
+    if (startDate && endDate && start && end) {
+      const totalMillis = endDate.getTime() - startDate.getTime();
+      const startPosition = ((start.getTime() - startDate.getTime()) / totalMillis) * 100;
+      const endPosition = ((end.getTime() - startDate.getTime()) / totalMillis) * 100;
+      setCurrentRange([startPosition, endPosition]);
+    }
+  };
+
+  // 정렬 핸들러
+  const handleSortByName = () => {
+    const sorted = [...chartData].sort((a, b) => {
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    setChartData(sorted);
+  };
+
+  const handleSortByChanges = () => {
+    const sorted = [...chartData].sort((a, b) => {
+      return (b.size_change || 0) - (a.size_change || 0);
+    });
+    setChartData(sorted);
+  };
+
+  const handleSortByStudentNum = () => {
+    const sorted = [...chartData].sort((a, b) => {
+      return String(a.student_num || '').localeCompare(String(b.student_num || ''));
+    });
+    setChartData(sorted);
+  };
+
+  // 다이얼로그 핸들러
+  const handleCloseDialog = () => {
+    //.log('다이얼로그 닫기');
+    setOpenDialog(false);
+    setSelectedStudent(null);
+  };
 
   // 정렬 토글 함수
   const toggleSort = (field) => {
@@ -356,12 +533,13 @@ const AssignmentDetail = () => {
     }));
   };
 
-  // 필터링 및 정렬 함수 수정
-  const getFilteredAndSortedSubmissions = () => {    
+  // 필터링 및 정렬 함수
+  const getFilteredAndSortedStudents = () => {
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = submissions.filter(submission => {
-      // role만 확인
-      if (submission.role === 'PROFESSOR' || submission.role === 'ASSISTANT' || submission.role === 'ADMIN') {
+      // role 확인
+      if (submission.role === 'PROFESSOR' || submission.role === 'ASSISTANT' || submission.role === 'ADMIN' || 
+          submission.courseRole === 'PROFESSOR' || submission.courseRole === 'ASSISTANT' || submission.courseRole === 'ADMIN') {
         return false;
       }
       
@@ -374,7 +552,7 @@ const AssignmentDetail = () => {
       );
     });
     
-    // 나머지 정렬 코드는 동일
+    // 정렬
     return filtered.sort((a, b) => {
       let aValue, bValue;
       switch(sort.field) {
@@ -404,629 +582,24 @@ const AssignmentDetail = () => {
     });
   };
 
-  // 슬라이더 값이 변경될 때 호출되는 함수 - API 호출 제거
-  const handleRangeChange = (event, newValue) => {
-    setCurrentRange(newValue);
-    if (startDate && endDate) {
-      const totalMillis = endDate.getTime() - startDate.getTime();
-      const startMillis = totalMillis * (newValue[0] / 100);
-      const endMillis = totalMillis * (newValue[1] / 100);
-      
-      // 새로운 시작 및 종료 날짜 설정 (상태만 업데이트)
-      const newRangeStartDate = new Date(startDate.getTime() + startMillis);
-      const newRangeEndDate = new Date(startDate.getTime() + endMillis);
-      
-      setRangeStartDate(newRangeStartDate);
-      setRangeEndDate(newRangeEndDate);
-    }
-  };
-
-  // 사용자 입력 날짜/시간 변경 핸들러 추가
-  const handleStartDateChange = (newDate) => {
-    if (newDate && endDate && newDate < endDate) {
-      setRangeStartDate(newDate);
-      // 슬라이더 값도 업데이트
-      updateSliderFromDates(newDate, rangeEndDate);
-    }
-  };
-
-  const handleEndDateChange = (newDate) => {
-    if (newDate && startDate && newDate > rangeStartDate) {
-      setRangeEndDate(newDate);
-      // 슬라이더 값도 업데이트
-      updateSliderFromDates(rangeStartDate, newDate);
-    }
-  };
-
-  // 날짜에서 슬라이더 값 계산하는 함수 추가
-  const updateSliderFromDates = (start, end) => {
-    if (startDate && endDate && start && end) {
-      const totalMillis = endDate.getTime() - startDate.getTime();
-      const startPosition = ((start.getTime() - startDate.getTime()) / totalMillis) * 100;
-      const endPosition = ((end.getTime() - startDate.getTime()) / totalMillis) * 100;
-      setCurrentRange([startPosition, endPosition]);
-    }
-  };
-
-  // 조회 버튼 클릭 시 API 호출하는 함수
-  const handleFetchData = () => {
-    if (startDate && endDate) {
-      fetchChartData();
-    }
-  };
-
-  // 현재 선택된 날짜/시간 문자열 반환
-  const getRangeDateTimeString = (date) => {
-    if (!date) return '';
-    return date.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-  };
-
-  // 차트 데이터 변환 함수 수정 - API 응답 데이터 사용
-  const getChartData = () => {
-    // 학생인 경우와 교수/관리자인 경우 분리
-    if (user?.role === 'STUDENT') {
-      // 학생인 경우 직접 chartData 사용
-      // 학생 데이터에서 관리자/조교/교수 역할을 필터링
-      const filteredChartData = chartData.filter(item => {
-        // 관리자/조교/교수 역할을 확인할 수 있는 정보가 있는 경우 제외
-        const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
-        if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'ASSISTANT' || userInfo.role === 'PROFESSOR')) {
-          return false;
-        }
-        return true;
-      });
-      
-      const labels = filteredChartData.map(item => {
-        // 자신의 학번인 경우 "나"로 표시, 아닌 경우 학번만 표시
-        const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
-        return isCurrentUser ? `나 (${item.student_num})` : `학생${item.student_num}`;
-      });
-      
-      const chartDataObj = {
-        labels: labels,
-        datasets: [
-          {
-            type: 'bar',
-            label: '코드 변화량',
-            data: filteredChartData.map(item => item.size_change || 0),
-            backgroundColor: filteredChartData.map(item => {
-              // 자신의 학번인 경우 강조 색상 사용
-              const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
-              return isCurrentUser ? 'rgba(255, 152, 0, 0.8)' : 'rgba(66, 165, 245, 0.8)';
-            }),
-            borderColor: filteredChartData.map(item => {
-              const isCurrentUser = currentUser && String(currentUser.studentNum) === String(item.student_num);
-              return isCurrentUser ? 'rgba(230, 81, 0, 1)' : 'rgb(30, 136, 229)';
-            }),
-            borderWidth: 1
-          },
-          {
-            type: 'line',
-            label: '평균',
-            data: Array(filteredChartData.length).fill(
-              filteredChartData.reduce((sum, item) => sum + (item.size_change || 0), 0) / 
-              (filteredChartData.length || 1)
-            ),
-            borderColor: 'rgba(255, 99, 132, 0.8)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            fill: false,
-            pointRadius: 0
-          }
-        ]
-      };
-
-      return chartDataObj;
-    } else {
-      // 교수/관리자인 경우 기존 코드 유지
-      // 학생만 필터링 (교수/조교/관리자 제외)
-      const filteredSubmissions = submissions.filter(submission => 
-        submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN'
-      );
-      
-      // 학생 정보와 차트 데이터 매핑
-      const mappedData = filteredSubmissions.map(student => {
-        // 해당 학생의 변화량 데이터 찾기
-        const changeData = chartData.find(item => 
-          String(item.student_num) === String(student.studentNum)
-        );
-        
-        return {
-          ...student,
-          totalChanges: changeData ? changeData.size_change : 0
-        };
-      });
-      
-      // 평균 변화량 계산
-      const totalChanges = mappedData.reduce((sum, submission) => sum + (submission.totalChanges || 0), 0);
-      const averageChanges = mappedData.length > 0 ? totalChanges / mappedData.length : 0;
-      
-      // 색상 결정 함수 - 평균 이상/이하 두 가지 색상으로 단순화
-      const getBarColor = (submission) => {
-        // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 색상 사용
-        if (searchQuery && 
-            ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
-             (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
-          return 'rgba(255, 152, 0, 0.8)'; // 검색 결과 하이라이트 색상 (주황색)
-        }
-        
-        return submission.totalChanges >= averageChanges 
-          ? 'rgba(66, 165, 245, 0.8)' // 평균 이상은 푸른색
-          : 'rgba(179, 157, 219, 0.7)'; // 평균 이하는 연한 보라색
-      };
-      
-      // 테두리 색상 결정 함수
-      const getBorderColor = (submission) => {
-        // 검색어가 있고 학생 이름이나 학번에 검색어가 포함되어 있으면 하이라이트 테두리 색상 사용
-        if (searchQuery && 
-            ((submission.name && submission.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
-             (submission.studentNum && String(submission.studentNum).toLowerCase().includes(searchQuery.toLowerCase())))) {
-          return 'rgba(230, 81, 0, 1)'; // 검색 결과 하이라이트 테두리 색상 (진한 주황색)
-        }
-        
-        return submission.totalChanges >= averageChanges 
-          ? 'rgb(30, 136, 229)' // 평균 이상은 진한 푸른색
-          : 'rgb(123, 97, 175)'; // 평균 이하는 진한 보라색
-      };
-      
-      // API 데이터를 사용하도록 수정
-      const chartDataObj = {
-        // 라벨 형식 변경 - 이름과 학번을 괄호로 구분
-        labels: mappedData.map(submission => `${submission.name || ''}\n(${submission.studentNum || ''})`),
-        datasets: [
-          {
-            type: 'bar',
-            label: '코드 변화량',
-            data: mappedData.map(submission => submission.totalChanges || 0),
-            backgroundColor: mappedData.map(submission => 
-              getBarColor(submission)
-            ),
-            borderColor: mappedData.map(submission => 
-              getBorderColor(submission)
-            ),
-            borderWidth: 1,
-            // 마우스 호버 시 커서 변경을 위한 속성 추가
-            hoverCursor: 'pointer'
-          },
-          {
-            type: 'line',
-            label: '평균',
-            data: Array(mappedData.length).fill(averageChanges),
-            borderColor: 'rgba(255, 99, 132, 0.8)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            fill: false,
-            pointRadius: 0
-          }
-        ]
-      };
-
-      return chartDataObj;
-    }
-  };
-
-  // y축 범위를 계산하는 함수 수정
-  const calculateYAxisRange = (chart) => {
-    if (!chart || !chart.data || !chart.data.datasets || chart.data.datasets.length === 0) return;
-    
-    // 현재 보이는 x축 범위 가져오기
-    const xMin = chart.scales.x.min || 0;
-    const xMax = chart.scales.x.max || chart.data.labels.length - 1;
-    
-    // 현재 보이는 데이터 범위만 필터링
-    const visibleIndices = [];
-    for (let i = 0; i < chart.data.labels.length; i++) {
-      if (i >= xMin && i <= xMax) {
-        visibleIndices.push(i);
-      }
-    }
-    
-    // 보이는 범위의 데이터만 추출
-    const visibleData = visibleIndices.map(i => chart.data.datasets[0].data[i]);
-    
-    if (visibleData.length > 0) {
-      // 최대값 계산 및 여유 공간 추가 (20%)
-      const max = Math.max(...visibleData);
-      
-      // 500 단위로 올림
-      const roundedMax = Math.ceil(max / 500) * 500;
-      
-      // 최소 y축 값 설정 (너무 작은 값이면 기본값 사용)
-      const minYValue = 1000;
-      
-      // y축 범위 설정
-      chart.options.scales.y.max = Math.max(roundedMax * 1.2, minYValue);
-      chart.update('none');
-    }
-  };
-
-  // 차트 옵션 수정 - 범례 부분 수정
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 1000,  // 애니메이션 지속 시간 (밀리초)
-      easing: 'easeOutQuart',  // 애니메이션 이징 함수
-      delay: (context) => {
-        // 각 바마다 약간의 지연 시간을 두어 순차적으로 나타나도록 함
-        return context.dataIndex * 10;
-      }
-    },
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    // 교수, 관리자, 조교인 경우에만 클릭 이벤트 활성화
-    onClick: (event, elements, chart) => {
-      // 학생이 아닌 경우에만 클릭 이벤트 처리
-      if (user?.role === 'STUDENT') return;
-      
-      if (elements && elements.length > 0) {
-        const dataIndex = elements[0].index;
-        
-        // 전체 통계 탭에서 사용하는 맵핑된 데이터 목록 가져오기
-        const filteredSubmissions = submissions.filter(submission => 
-          submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN'
-        );
-        
-        
-        // 맵핑된 데이터에서 클릭한 인덱스에 해당하는 학생 정보 찾기
-        // 차트에 표시된 라벨을 기준으로 해당 학생 찾기 (더 정확한 매핑)
-        if (chart.data.labels && chart.data.labels.length > dataIndex) {
-          const clickedLabel = chart.data.labels[dataIndex];
-          
-          // 라벨에서 학번 추출 (괄호 안의 내용)
-          const studentNumMatch = clickedLabel.match(/\(([^)]+)\)/);
-          const studentNum = studentNumMatch ? studentNumMatch[1] : null;
-          
-          if (studentNum) {
-            // 학번으로 학생 정보 찾기
-            const selectedSubmission = filteredSubmissions.find(s => 
-              String(s.studentNum) === String(studentNum)
-            );
-            
-            if (selectedSubmission) {
-              // 다이얼로그 상태를 업데이트하여 표시
-              setSelectedStudent(selectedSubmission);
-              setOpenDialog(true);
-              return;
-            }
-          }
-        }
-        
-        // 기존 방식으로 시도 (인덱스 기반)
-        if (filteredSubmissions[dataIndex]) {
-          setSelectedStudent(filteredSubmissions[dataIndex]);
-          setOpenDialog(true);
-        } else {
-          console.error('Cannot find student data for clicked index', dataIndex);
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          generateLabels: (chart) => {
-            // 기본 범례 생성
-            const defaultLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
-            
-            // 학생인 경우와 교수/관리자인 경우 분리
-            if (user?.role === 'STUDENT') {
-              // 학생인 경우 커스텀 범례
-              const customLabels = [
-                {
-                  text: '평균 이상',
-                  fillStyle: 'rgba(66, 165, 245, 0.8)',
-                  strokeStyle: 'rgb(30, 136, 229)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 1
-                },
-                {
-                  text: '평균 이하',
-                  fillStyle: 'rgba(179, 157, 219, 0.7)',
-                  strokeStyle: 'rgb(123, 97, 175)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 2
-                },
-                {
-                  text: '나',
-                  fillStyle: 'rgba(255, 152, 0, 0.8)',
-                  strokeStyle: 'rgba(230, 81, 0, 1)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 3
-                }
-              ];
-              
-              return [...defaultLabels, ...customLabels];
-            } else {
-              // 교수/관리자인 경우 기존 코드 유지
-              const customLabels = [
-                {
-                  text: '평균 이상',
-                  fillStyle: 'rgba(66, 165, 245, 0.8)',
-                  strokeStyle: 'rgb(30, 136, 229)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 1
-                },
-                {
-                  text: '평균 이하',
-                  fillStyle: 'rgba(179, 157, 219, 0.7)',
-                  strokeStyle: 'rgb(123, 97, 175)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 2
-                },
-                {
-                  text: '검색 결과',
-                  fillStyle: 'rgba(255, 152, 0, 0.8)',
-                  strokeStyle: 'rgba(230, 81, 0, 1)',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: 3
-                }
-              ];
-              
-              return [...defaultLabels, ...customLabels];
-            }
-          },
-          // 범례 클릭 시 동작 방지
-          onClick: () => {}
-        }
-      },
-      title: {
-        display: false
-      },
-      tooltip: {
-        enabled: true,
-        mode: 'index',
-        intersect: false,
-        position: 'nearest',
-        animation: false,
-        callbacks: {
-          label: (context) => {
-            if (context.dataset.label === '평균') {
-              return `평균: ${formatBytes(context.raw)}`;
-            }
-            
-            // 학생인 경우와 교수/관리자인 경우 분리
-            if (user?.role === 'STUDENT') {
-              const bytes = Math.round(context.raw);
-              const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
-              
-              // 현재 학생의 데이터인지 확인
-              const isCurrentUser = currentUser && 
-                chartData[context.dataIndex] && 
-                String(currentUser.studentNum) === String(chartData[context.dataIndex].student_num);
-              
-              return [
-                `${context.dataset.label}: ${formatBytes(bytes)}`,
-                `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`,
-                isCurrentUser ? '(나)' : ''
-              ].filter(Boolean); // 빈 문자열 제거
-            } else {
-              // 교수/관리자인 경우 기존 코드 유지
-              const submission = submissions[context.dataIndex];
-              if (submission) {
-                const bytes = Math.round(context.raw);
-                const avgDiff = bytes - (context.chart.data.datasets[1].data[0] || 0);
-                return [
-                  `${context.dataset.label}: ${formatBytes(bytes)}`,
-                  `평균과의 차이: ${avgDiff > 0 ? '+' : ''}${formatBytes(avgDiff)}`
-                ];
-              }
-              return context.dataset.label;
-            }
-          }
-        }
-      },
-      crosshair: {
-        line: {
-          color: '#6272A4',
-          width: 1,
-          dashPattern: [5, 5]
-        },
-        sync: {
-          enabled: true,
-          group: 1,
-        },
-        zoom: {
-          enabled: false
-        }
-      },
-      zoom: {
-        limits: {
-          x: { min: 'original', max: 'original' },
-          y: { min: 'original', max: 'original', minRange: 100 }
-        },
-        pan: {
-          enabled: true,
-          mode: 'x',  // x축만 패닝 가능
-          onPan: ({ chart }) => {
-            calculateYAxisRange(chart);
-          }
-        },
-        zoom: {
-          wheel: {
-            enabled: true,
-            mode: 'x'  // x축만 줌 가능
-          },
-          pinch: {
-            enabled: true,
-            mode: 'x'  // x축만 줌 가능
-          },
-          mode: 'x',  // x축만 줌 가능
-          drag: {
-            enabled: false
-          },
-          onZoom: ({ chart }) => {
-            calculateYAxisRange(chart);
-          },
-          onZoomComplete: ({ chart }) => {
-            calculateYAxisRange(chart);
-          }
-        }
-      },
-      noDataText: {
-        text: '아직 학생이 코드를 입력하지 않았습니다',
-        font: '16px "JetBrains Mono", "Noto Sans KR", sans-serif',
-        color: isDarkMode ? '#F8F8F2' : '#282A36',
-        backgroundColor: isDarkMode ? 'rgba(40, 42, 54, 0.8)' : 'rgba(255, 255, 255, 0.8)'
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          font: {
-            size: 10,
-            family: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-          },
-          padding: 8,
-          autoSkip: true,
-          maxTicksLimit: 30
-        },
-        grid: {
-          display: false
-        }
-      },
-      y: {
-        title: {
-          display: true,
-          text: '코드 변화량 (Bytes)'
-        },
-        min: 0,
-        max: (context) => {
-          if (!context?.chart?.data?.datasets?.[0]?.data) return 100;
-          const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          // 500 단위로 올림
-          return Math.ceil(maxValue / 500) * 500 * 1.2; // 최대값보다 20% 더 큰 범위 설정
-        },
-        ticks: {
-          callback: (value) => {
-            return formatBytes(value);
-          }
-        }
-      }
-    },
-    transitions: {
-      active: {
-        animation: {
-          duration: 300  // 호버 시 애니메이션 지속 시간
-        }
-      }
-    }
-  };
-
-  // 바이트 형식화 함수 수정 - 소수점 2자리까지 표시
-  const formatBytes = (bytes, decimals = 2) => {
-    if (Math.abs(bytes) >= 1048576) { // 1MB = 1024 * 1024
-      return `${(bytes / 1048576).toFixed(decimals)}MB`;
-    } else if (Math.abs(bytes) >= 1024) { // 1KB
-      return `${(bytes / 1024).toFixed(decimals)}KB`;
-    }
-    return `${Math.round(bytes)}B`; // 바이트는 정수로 표시
-  };
-
-  // 정렬 버튼 기능 개선
-  const handleSortByName = () => {
-    if (user?.role === 'STUDENT') {
-      // 학생인 경우 chartData 정렬
-      const sorted = [...chartData].sort((a, b) => {
-        // 학번 기준으로 정렬 (이름 정보가 없으므로)
-        return String(a.student_num).localeCompare(String(b.student_num));
-      });
-      setChartData(sorted);
-    } else {
-      // 교수/관리자인 경우 기존 코드 유지
-      const sorted = [...submissions].sort((a, b) => a.name.localeCompare(b.name));
-      setSubmissions(sorted);
-    }
-  };
-
-  const handleSortByChanges = () => {
-    if (user?.role === 'STUDENT') {
-      // 학생인 경우 chartData 정렬
-      const sorted = [...chartData].sort((a, b) => (b.size_change || 0) - (a.size_change || 0));
-      setChartData(sorted);
-    } else {
-      // 교수/관리자인 경우 기존 코드 유지
-      const submissionsWithChanges = submissions.map(student => {
-        // 해당 학생의 변화량 데이터 찾기
-        const changeData = chartData.find(item => 
-          String(item.student_num) === String(student.studentNum)
-        );
-        
-        return {
-          ...student,
-          totalChanges: changeData ? changeData.size_change : 0
-        };
-      });
-      
-      // 변화량 기준으로 정렬
-      const sorted = [...submissionsWithChanges].sort((a, b) => (b.totalChanges || 0) - (a.totalChanges || 0));
-      setSubmissions(sorted);
-    }
-  };
-
-  const handleSortByStudentNum = () => {
-    if (user?.role === 'STUDENT') {
-      // 학생인 경우 chartData 정렬
-      const sorted = [...chartData].sort((a, b) => {
-        // 학번 기준으로 정렬
-        return String(a.student_num).localeCompare(String(b.student_num));
-      });
-      setChartData(sorted);
-    } else {
-      // 교수/관리자인 경우 기존 코드 유지
-      const sorted = [...submissions].sort((a, b) => {
-        // 문자열로 변환하여 비교
-        const aNum = String(a.studentNum || '');
-        const bNum = String(b.studentNum || '');
-        return aNum.localeCompare(bNum);
-      });
-      setSubmissions(sorted);
-    }
-  };
-
-  // 다이얼로그 닫기 핸들러 추가
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedStudent(null);
-  };
-
-  // JCode 이동 핸들러
+  // JCode 리다이렉션 핸들러 수정
   const handleJCodeRedirect = async (student) => {
     try {
-      // API 요청으로 리다이렉트 URL 가져오기
-      const response = await api.post('/api/redirect', {
-        userEmail: student.email,
-        courseId: courseId
-      }, { withCredentials: true });
-      
-      // 응답에서 최종 URL 추출
-      const finalUrl = response.request?.responseURL || response.data?.url;
+      if (!student || !student.email) {
+        //console.error('학생 이메일 정보가 없어 JCode로 이동할 수 없습니다.');
+        toast.error('학생 정보가 불완전합니다. 이메일이 필요합니다.');
+        return;
+      }
+
+      const finalUrl = await redirectToJCode(student.email, courseId);
       
       if (!finalUrl) {
         throw new Error("리다이렉트 URL을 찾을 수 없습니다");
       }
       
-      // 새 탭에서 URL 열기
       window.open(finalUrl, '_blank');
-      
     } catch (err) {
+      //console.error('JCode 리다이렉트 오류:', err);
       toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
         icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
         style: {
@@ -1035,17 +608,86 @@ const AssignmentDetail = () => {
           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
           borderRadius: '8px',
           fontSize: '0.95rem',
-          padding: '12px 20px',
-          maxWidth: '500px',
-          width: 'auto',
-          textOverflow: 'ellipsis',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center'
+          padding: '12px 20px'
         }
       });
     }
   };
+
+  // Watcher 리다이렉션 핸들러
+  const handleWatcherRedirect = (student) => {
+    navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${student.userId}`);
+    handleCloseDialog();
+  };
+
+  // 학생 차트 클릭 핸들러
+  const handleStudentChartClick = (studentData) => {
+    if (user?.role === 'STUDENT') return;
+    
+    //console.log('AssignmentDetail에서 받은 학생 데이터:', studentData);
+    //console.log('현재 다이얼로그 상태:', { openDialog, selectedStudent });
+    
+    // 학생 정보가 직접 전달된 경우
+    if (studentData && studentData.studentNum) {
+      const studentInfo = {
+        userId: studentData.userId,
+        studentNum: studentData.studentNum,
+        name: studentData.name,
+        email: studentData.email
+      };
+      
+      //console.log('다이얼로그에 표시할 학생 정보:', studentInfo);
+      
+      // 다이얼로그 표시 상태 업데이트
+      // 상태 업데이트를 위해 setTimeout 사용
+      setTimeout(() => {
+        setSelectedStudent(studentInfo);
+        setOpenDialog(true);
+        //console.log('다이얼로그 상태 업데이트됨:', true);
+      }, 0);
+      return;
+    }
+    
+    // studentNum만 있는 경우 (기존 로직)
+    const studentInfo = submissions.find(s => 
+      String(s.studentNum) === String(studentData.studentNum || studentData.student_num)
+    );
+    
+    if (studentInfo) {
+      //console.log('submissions에서 찾은 학생 정보:', studentInfo);
+      
+      // 다이얼로그 표시 상태 업데이트
+      setTimeout(() => {
+        setSelectedStudent(studentInfo);
+        setOpenDialog(true);
+        //console.log('다이얼로그 상태 업데이트됨:', true);
+      }, 0);
+    } else {
+      //console.error('학생 정보를 찾을 수 없습니다:', studentData);
+      
+      // 최소한의 정보라도 표시
+      setTimeout(() => {
+        setSelectedStudent({
+          userId: studentData.userId || studentData.user_id || studentData.id || '',
+          studentNum: studentData.studentNum || studentData.student_num || '',
+          name: studentData.name || '이름 없음',
+          email: studentData.email || ''
+        });
+        setOpenDialog(true);
+        //console.log('최소 정보로 다이얼로그 상태 업데이트됨:', true);
+      }, 0);
+    }
+  };
+
+  // 학생 목록 필터링 후 카운트 업데이트
+  useEffect(() => {
+    if (submissions.length > 0) {
+      const filteredStudents = getFilteredAndSortedStudents();
+      setStudentCount(filteredStudents.length);
+    } else {
+      setStudentCount(0);
+    }
+  }, [submissions, searchQuery, sort]);
 
   if (loading) {
     return (
@@ -1091,43 +733,11 @@ const AssignmentDetail = () => {
             ]} 
           />
 
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" gutterBottom sx={{ 
-              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-              mb: 2
-            }}>
-              {assignment?.assignmentName}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Chip 
-                label={`시작: ${new Date(assignment?.startDateTime || assignment?.kickoffDate).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}`}
-                sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-              />
-              <Chip 
-                label={`마감: ${new Date(assignment?.endDateTime || assignment?.deadlineDate).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}`}
-                sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-              />
-              <RemainingTime deadline={assignment?.endDateTime || assignment?.deadlineDate} />
-            </Box>
-            <Typography sx={{ 
-              whiteSpace: 'pre-line',
-              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-            }}>
-              {assignment?.assignmentDescription}
-            </Typography>
-          </Box>
+          <ChartHeader
+            student={null}
+            assignment={assignment}
+            course={course}
+          />
 
           <Box sx={{ width: '100%' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -1158,7 +768,7 @@ const AssignmentDetail = () => {
                   <Tab 
                     icon={<PeopleIcon />} 
                     iconPosition="start" 
-                    label={`학생 (${getFilteredAndSortedSubmissions().length})`} 
+                    label={`학생 목록 (${studentCount})`} 
                   />
                 )}
               </Tabs>
@@ -1166,300 +776,107 @@ const AssignmentDetail = () => {
             
             <TabPanel value={tabValue} index={0}>
               <Box sx={{ p: 2 }}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12}>
-                    <Card sx={{ p: 2 }}>
-                      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                        <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                          학생별 코드 변화량
-                        </Typography>
-                        {/* 학생이 아닌 경우에만 검색 필드 표시 */}
-                        {user?.role !== 'STUDENT' && (
-                          <TextField
-                            size="small"
-                            placeholder="이름 또는 학번으로 검색"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{ 
-                              width: { xs: '100%', sm: '250px' },
-                              '& .MuiInputBase-root': {
-                                borderRadius: '20px',
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.875rem'
-                              }
-                            }}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <SearchIcon fontSize="small" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Box>
-                      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
-                        <Button
-                          size="small"
-                          variant="text"
-                          color="primary"
-                          onClick={handleSortByName}
-                          startIcon={<SortIcon sx={{ fontSize: '1rem' }} />}
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            textTransform: 'none',
-                            borderRadius: '8px',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            px: 1.5
-                          }}
-                        >
-                          이름순
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="text"
-                          color="primary"
-                          onClick={handleSortByChanges}
-                          startIcon={<BarChartIcon sx={{ fontSize: '1rem' }} />}
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            textTransform: 'none',
-                            borderRadius: '8px',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            px: 1.5
-                          }}
-                        >
-                          변화량순
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="text"
-                          color="primary"
-                          onClick={handleSortByStudentNum}
-                          startIcon={<NumbersIcon sx={{ fontSize: '1rem' }} />}
-                          sx={{ 
-                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                            textTransform: 'none',
-                            borderRadius: '8px',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            px: 1.5
-                          }}
-                        >
-                          학번순
-                        </Button>
-                        <IconButton
-                          onClick={() => setIsFullScreen(true)}
-                          sx={{ ml: 'auto' }}
-                          size="small"
-                        >
-                          <FullscreenIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Box sx={{ height: 600, position: 'relative' }}>
-                        {chartError ? (
-                          <Box 
-                            display="flex" 
-                            justifyContent="center" 
-                            alignItems="center" 
-                            height="100%"
-                            flexDirection="column"
-                            gap={2}
-                          >
-                            <Typography color="error" align="center">
-                              {chartError}
-                            </Typography>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={handleFetchData}
-                            >
-                              다시 시도
-                            </Button>
-                          </Box>
-                        ) : (
-                          <>
-                            {/* 교수/관리자인 경우에만 안내 메시지 표시 */}
-                            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
-                              <Typography 
-                                variant="caption" 
-                                color="textSecondary"
-                                sx={{ 
-                                  position: 'absolute', 
-                                  top: 50, // 범례 아래로 위치 조정
-                                  left: '50%', 
-                                  transform: 'translateX(-50%)', 
-                                  zIndex: 1,
-                                  backgroundColor: (theme) => 
-                                    theme.palette.mode === 'dark' ? 'rgba(40, 42, 54, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-                                  px: 2,
-                                  py: 0.8,
-                                  borderRadius: 4,
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  border: (theme) =>
-                                    `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                                  <InfoIcon sx={{ fontSize: '1rem' }} />
-                                  차트를 클릭하여 학생의 JCode 또는 Watcher로 이동할 수 있습니다
-                                </Box>
-                              </Typography>
-                            )}
-                            
-                            <Bar options={{
-                              ...chartOptions,
-                              maintainAspectRatio: false,
-                              plugins: {
-                                ...chartOptions.plugins,
-                                zoom: {
-                                  ...chartOptions.plugins.zoom,
-                                  pan: {
-                                    ...chartOptions.plugins.zoom.pan,
-                                    onPan: ({ chart }) => {
-                                      calculateYAxisRange(chart);
-                                    }
-                                  }
-                                }
-                              }
-                            }} data={getChartData()} />
-                          </>
-                        )}
-                      </Box>
-                      <Box sx={{ px: 3, py: 2, mt: 2 }}>
-                        <Stack spacing={2}>
-                          <Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                              <Typography variant="caption" color="textSecondary" gutterBottom>
-                                기간 선택
-                              </Typography>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="primary"
-                                onClick={handleFetchData}
-                                sx={{ 
-                                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                  textTransform: 'none',
-                                  borderRadius: '8px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 500,
-                                  py: 0.5,
-                                  px: 1.5
-                                }}
-                              >
-                                조회
-                              </Button>
-                            </Box>
-                            
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="caption" color="textSecondary">
-                                {startDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                                {getRangeDateTimeString(rangeStartDate)} ~ {getRangeDateTimeString(rangeEndDate)}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {endDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                              </Typography>
-                            </Box>
-                            
-                            <Slider
-                              value={currentRange}
-                              onChange={handleRangeChange}
-                              valueLabelDisplay="auto"
-                              valueLabelFormat={(value) => {
-                                if (!startDate || !endDate) return '';
-                                const totalMillis = endDate.getTime() - startDate.getTime();
-                                const currentMillis = totalMillis * (value / 100);
-                                const currentDate = new Date(startDate.getTime() + currentMillis);
-                                return currentDate.toLocaleString('ko-KR', {
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                });
-                              }}
-                              marks={[
-                                { value: 0, label: '시작' },
-                                { value: 50, label: '중간' },
-                                { value: 100, label: '마감' }
-                              ]}
-                              sx={{ 
-                                mt: 1,
-                                '& .MuiSlider-markLabel': {
-                                  fontSize: '0.75rem'
-                                }
-                              }}
-                            />
-                            
-                            <Box sx={{ 
-                              display: 'flex', 
-                              justifyContent: 'center', 
-                              mt: 3,
-                              gap: 2 
-                            }}>
-                              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
-                                <DateTimePicker
-                                  label="시작 검색 시간"
-                                  value={rangeStartDate}
-                                  onChange={handleStartDateChange}
-                                  renderInput={(params) => 
-                                    <TextField 
-                                      {...params} 
-                                      size="small" 
-                                      fullWidth
-                                      sx={{ 
-                                        '& .MuiInputBase-root': {
-                                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                          fontSize: '0.75rem'
-                                        },
-                                        '& .MuiInputLabel-root': {
-                                          fontSize: '0.75rem'
-                                        },
-                                        maxWidth: '160px'
-                                      }}
-                                    />
-                                  }
-                                  minDateTime={startDate}
-                                  maxDateTime={rangeEndDate}
-                                />
-                                <DateTimePicker
-                                  label="종료 검색 시간"
-                                  value={rangeEndDate}
-                                  onChange={handleEndDateChange}
-                                  renderInput={(params) => 
-                                    <TextField 
-                                      {...params} 
-                                      size="small" 
-                                      fullWidth
-                                      sx={{ 
-                                        '& .MuiInputBase-root': {
-                                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                          fontSize: '0.75rem'
-                                        },
-                                        '& .MuiInputLabel-root': {
-                                          fontSize: '0.75rem'
-                                        },
-                                        maxWidth: '160px'
-                                      }}
-                                    />
-                                  }
-                                  minDateTime={rangeStartDate}
-                                  maxDateTime={endDate}
-                                />
-                              </LocalizationProvider>
-                            </Box>
-                          </Box>
-                        </Stack>
-                      </Box>
-                    </Card>
-                  </Grid>
-                </Grid>
+                {/* 검색 필드 - 학생이 아닌 경우에만 표시 */}
+                {user?.role !== 'STUDENT' && (
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="이름 또는 학번으로 검색"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ 
+                      mb: 3,
+                      '& .MuiInputBase-root': {
+                        borderRadius: '20px',
+                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                        fontSize: '0.875rem'
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+                
+                {/* 정렬 버튼 */}
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    onClick={handleSortByName}
+                    startIcon={<SortIcon sx={{ fontSize: '1rem' }} />}
+                    sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      px: 1.5
+                    }}
+                  >
+                    이름순
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    onClick={handleSortByChanges}
+                    startIcon={<BarChartIcon sx={{ fontSize: '1rem' }} />}
+                    sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      px: 1.5
+                    }}
+                  >
+                    변화량순
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    onClick={handleSortByStudentNum}
+                    startIcon={<NumbersIcon sx={{ fontSize: '1rem' }} />}
+                    sx={{ 
+                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      px: 1.5
+                    }}
+                  >
+                    학번순
+                  </Button>
+                </Box>
+                
+                {/* 학생 차트 */}
+                <StudentChart 
+                  data={chartData}
+                  searchQuery={searchQuery}
+                  userRole={user?.role}
+                  onStudentClick={handleStudentChartClick}
+                />
+                
+                {/* 날짜 범위 선택기 */}
+                <DateRangeSelector 
+                  startDate={startDate}
+                  endDate={endDate}
+                  rangeStartDate={rangeStartDate}
+                  rangeEndDate={rangeEndDate}
+                  currentRange={currentRange}
+                  onRangeChange={handleRangeChange}
+                  onStartDateChange={handleStartDateChange}
+                  onEndDateChange={handleEndDateChange}
+                  onFetchData={fetchChartData}
+                />
               </Box>
             </TabPanel>
             
@@ -1487,6 +904,7 @@ const AssignmentDetail = () => {
                     }}
                   />
                 </Box>
+                
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -1539,19 +957,19 @@ const AssignmentDetail = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {getFilteredAndSortedSubmissions().map((submission, index) => (
-                        <TableRow key={submission.userId}>
+                      {getFilteredAndSortedStudents().map((student, index) => (
+                        <TableRow key={student.userId || student.id || index}>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                             {index + 1}
                           </TableCell>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            {submission.studentNum}
+                            {student.studentNum || '정보 없음'}
                           </TableCell>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            {submission.name}
+                            {student.name || '정보 없음'}
                           </TableCell>
                           <TableCell sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                            {submission.email}
+                            {student.email || '정보 없음'}
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -1559,44 +977,7 @@ const AssignmentDetail = () => {
                                 variant="contained"
                                 size="small"
                                 startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                                onClick={async () => {
-                                  try {
-                                    // API 요청으로 리다이렉트 URL 가져오기
-                                    const response = await api.post('/api/redirect', {
-                                      userEmail: submission.email,
-                                      courseId: courseId
-                                    }, { withCredentials: true });
-                                    
-                                    // 응답에서 최종 URL 추출
-                                    const finalUrl = response.request?.responseURL || response.data?.url;
-                                    
-                                    if (!finalUrl) {
-                                      throw new Error("리다이렉트 URL을 찾을 수 없습니다");
-                                    }
-                                    
-                                    // 새 탭에서 URL 열기
-                                    window.open(finalUrl, '_blank');
-                                    
-                                  } catch (err) {
-                                    toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
-                                      icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
-                                      style: {
-                                        background: isDarkMode ? '#d32f2f' : '#f44336',
-                                        color: '#fff',
-                                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                        borderRadius: '8px',
-                                        fontSize: '0.95rem',
-                                        padding: '12px 20px',
-                                        maxWidth: '500px',
-                                        width: 'auto',
-                                        textOverflow: 'ellipsis',
-                                        overflow: 'hidden',
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                      }
-                                    });
-                                  }
-                                }}
+                                onClick={() => handleJCodeRedirect(student)}
                                 sx={{ 
                                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                                   fontSize: '0.75rem',
@@ -1613,7 +994,7 @@ const AssignmentDetail = () => {
                                 variant="outlined"
                                 size="small"
                                 startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                                onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${submission.userId}`)}
+                                onClick={() => handleWatcherRedirect(student)}
                                 sx={{ 
                                   fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                                   fontSize: '0.75rem',
@@ -1630,6 +1011,15 @@ const AssignmentDetail = () => {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {getFilteredAndSortedStudents().length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                            <Typography variant="body1" color="textSecondary">
+                              검색 결과가 없거나 학생 목록을 불러오지 못했습니다.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -1638,483 +1028,20 @@ const AssignmentDetail = () => {
           </Box>
         </Paper>
 
-        {/* 전체화면 다이얼로그 추가 */}
-        <Dialog
-          fullScreen
-          open={isFullScreen}
-          onClose={() => setIsFullScreen(false)}
-        >
-          <Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <Typography variant="h6" sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-                학생별 코드 변화량
-              </Typography>
-              {/* 학생이 아닌 경우에만 검색 필드 표시 */}
-              {user?.role !== 'STUDENT' && (
-                <TextField
-                  size="small"
-                  placeholder="이름 또는 학번으로 검색"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  sx={{ 
-                    width: { xs: '100%', sm: '250px' },
-                    '& .MuiInputBase-root': {
-                      borderRadius: '20px',
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontSize: '0.875rem'
-                    }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              )}
-            </Box>
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 1 }}>
-              <Button
-                size="small"
-                variant="text"
-                color="primary"
-                onClick={handleSortByName}
-                startIcon={<SortIcon sx={{ fontSize: '1rem' }} />}
-                sx={{ 
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  px: 1.5
-                }}
-              >
-                이름순
-              </Button>
-              <Button
-                size="small"
-                variant="text"
-                color="primary"
-                onClick={handleSortByChanges}
-                startIcon={<BarChartIcon sx={{ fontSize: '1rem' }} />}
-                sx={{ 
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  px: 1.5
-                }}
-              >
-                변화량순
-              </Button>
-              <Button
-                size="small"
-                variant="text"
-                color="primary"
-                onClick={handleSortByStudentNum}
-                startIcon={<NumbersIcon sx={{ fontSize: '1rem' }} />}
-                sx={{ 
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  px: 1.5
-                }}
-              >
-                학번순
-              </Button>
-              <IconButton
-                onClick={() => setIsFullScreen(false)}
-                sx={{ ml: 'auto' }}
-                size="small"
-              >
-                <FullscreenExitIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <Box sx={{ flex: 1, position: 'relative' }}>
-              {chartError ? (
-                <Box 
-                  display="flex" 
-                  justifyContent="center" 
-                  alignItems="center" 
-                  height="100%"
-                  flexDirection="column"
-                  gap={2}
-                >
-                  <Typography color="error" align="center">
-                    {chartError}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={handleFetchData}
-                  >
-                    다시 시도
-                  </Button>
-                </Box>
-              ) : (
-                <>
-                  {/* 교수/관리자인 경우에만 안내 메시지 표시 */}
-                  {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
-                    <Typography 
-                      variant="caption" 
-                      color="textSecondary"
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 50, // 범례 아래로 위치 조정
-                        left: '50%', 
-                        transform: 'translateX(-50%)', 
-                        zIndex: 1,
-                        backgroundColor: (theme) => 
-                          theme.palette.mode === 'dark' ? 'rgba(40, 42, 54, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-                        px: 2,
-                        py: 0.8,
-                        borderRadius: 4,
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        border: (theme) =>
-                          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                        <InfoIcon sx={{ fontSize: '1rem' }} />
-                        차트를 클릭하여 학생의 JCode 또는 Watcher로 이동할 수 있습니다
-                      </Box>
-                    </Typography>
-                  )}
-                  
-                  <Bar options={{
-                    ...chartOptions,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      ...chartOptions.plugins,
-                      zoom: {
-                        ...chartOptions.plugins.zoom,
-                        pan: {
-                          ...chartOptions.plugins.zoom.pan,
-                          onPan: ({ chart }) => {
-                            calculateYAxisRange(chart);
-                          }
-                        }
-                      }
-                    }
-                  }} data={getChartData()} />
-                </>
-              )}
-            </Box>
-            <Box sx={{ px: 3, py: 2, mt: 2 }}>
-              <Stack spacing={2}>
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="caption" color="textSecondary" gutterBottom>
-                      기간 선택
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="primary"
-                      onClick={handleFetchData}
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        textTransform: 'none',
-                        borderRadius: '8px',
-                        fontSize: '0.75rem',
-                        fontWeight: 500,
-                        py: 0.5,
-                        px: 1.5
-                      }}
-                    >
-                      조회
-                    </Button>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      {startDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                      {getRangeDateTimeString(rangeStartDate)} ~ {getRangeDateTimeString(rangeEndDate)}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {endDate?.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                    </Typography>
-                  </Box>
-                  
-                  <Slider
-                    value={currentRange}
-                    onChange={handleRangeChange}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => {
-                      if (!startDate || !endDate) return '';
-                      const totalMillis = endDate.getTime() - startDate.getTime();
-                      const currentMillis = totalMillis * (value / 100);
-                      const currentDate = new Date(startDate.getTime() + currentMillis);
-                      return currentDate.toLocaleString('ko-KR', {
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                      });
-                    }}
-                    marks={[
-                      { value: 0, label: '시작' },
-                      { value: 50, label: '중간' },
-                      { value: 100, label: '마감' }
-                    ]}
-                    sx={{ 
-                      mt: 1,
-                      '& .MuiSlider-markLabel': {
-                        fontSize: '0.75rem'
-                      }
-                    }}
-                  />
-                  
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    mt: 3,
-                    gap: 2 
-                  }}>
-                    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
-                      <DateTimePicker
-                        label="시작 검색 시간"
-                        value={rangeStartDate}
-                        onChange={handleStartDateChange}
-                        renderInput={(params) => 
-                          <TextField 
-                            {...params} 
-                            size="small" 
-                            fullWidth
-                            sx={{ 
-                              '& .MuiInputBase-root': {
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem'
-                              },
-                              '& .MuiInputLabel-root': {
-                                fontSize: '0.75rem'
-                              },
-                              maxWidth: '160px'
-                            }}
-                          />
-                        }
-                        minDateTime={startDate}
-                        maxDateTime={rangeEndDate}
-                      />
-                      <DateTimePicker
-                        label="종료 검색 시간"
-                        value={rangeEndDate}
-                        onChange={handleEndDateChange}
-                        renderInput={(params) => 
-                          <TextField 
-                            {...params} 
-                            size="small" 
-                            fullWidth
-                            sx={{ 
-                              '& .MuiInputBase-root': {
-                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                                fontSize: '0.75rem'
-                              },
-                              '& .MuiInputLabel-root': {
-                                fontSize: '0.75rem'
-                              },
-                              maxWidth: '160px'
-                            }}
-                          />
-                        }
-                        minDateTime={rangeStartDate}
-                        maxDateTime={endDate}
-                      />
-                    </LocalizationProvider>
-                  </Box>
-                </Box>
-              </Stack>
-            </Box>
-          </Box>
-        </Dialog>
-
-        {/* 학생 선택 다이얼로그 추가 */}
-        <Dialog
+        {/* 학생 선택 다이얼로그 */}
+        <StudentSelector
           open={openDialog}
-          maxWidth="xs"
-          fullWidth
           onClose={handleCloseDialog}
-          PaperProps={{
-            sx: {
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              background: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-              backgroundImage: (theme) => theme.palette.mode === 'dark' 
-                ? 'linear-gradient(rgba(66, 66, 77, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 66, 77, 0.2) 1px, transparent 1px)'
-                : 'linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-              overflow: 'hidden'
-            }
-          }}
-        >
-          <DialogTitle 
-            sx={{ 
-              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-              borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-              p: 2.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5
-            }}
-          >
-            <Box sx={{ 
-              width: '36px',
-              height: '36px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              backgroundColor: (theme) => theme.palette.primary.main,
-              color: '#FFFFFF',
-              mr: 1
-            }}>
-              <PeopleIcon fontSize="small" />
-            </Box>
-            학생 활동 보기
-            <IconButton 
-              sx={{ 
-                position: 'absolute', 
-                right: 8, 
-                top: 8,
-                color: (theme) => theme.palette.text.secondary
-              }} 
-              onClick={handleCloseDialog}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ p: 0 }}>
-            {selectedStudent && (
-              <Box sx={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                p: 3,
-                pt: 4
-              }}>
-                <Box sx={{ 
-                  width: '80px',
-                  height: '80px',
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#44475A' : '#F5F5F5',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mb: 2,
-                  color: (theme) => theme.palette.primary.main,
-                  fontSize: '2rem',
-                  fontWeight: 'bold',
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                }}>
-                  {selectedStudent.name ? selectedStudent.name.charAt(0) : '?'}
-                </Box>
-                
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    mb: 0.5, 
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {selectedStudent.name}
-                </Typography>
-                
-                <Typography 
-                  variant="body2" 
-                  color="textSecondary" 
-                  sx={{ 
-                    mb: 3,
-                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                  }}
-                >
-                  학번: {selectedStudent.studentNum || '정보 없음'}
-                </Typography>
-                
-                <Box sx={{ 
-                  width: '100%', 
-                  p: 1, 
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(68, 71, 90, 0.3)' : 'rgba(0, 0, 0, 0.03)',
-                  borderRadius: '8px',
-                  mb: 3
-                }}>
-                  <Typography 
-                    variant="body2" 
-                    color="textSecondary" 
-                    sx={{ 
-                      textAlign: 'center',
-                      p: 1,
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                    }}
-                  >
-                    {selectedStudent.email || '이메일 정보 없음'}
-                  </Typography>
-                </Box>
-                
-                <Stack direction="row" spacing={2} justifyContent="center" sx={{ width: '100%' }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                    onClick={() => handleJCodeRedirect(selectedStudent)}
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontSize: '0.75rem',
-                      py: 0.75,
-                      px: 2,
-                      minHeight: '32px',
-                      borderRadius: '16px',
-                      textTransform: 'none',
-                      flex: 1,
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                      '&:hover': {
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-                      }
-                    }}
-                  >
-                    JCode
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<MonitorIcon sx={{ fontSize: '1rem' }} />}
-                    onClick={() => {
-                      navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${selectedStudent.userId}`);
-                      handleCloseDialog();
-                    }}
-                    sx={{ 
-                      fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                      fontSize: '0.75rem',
-                      py: 0.75,
-                      px: 2,
-                      minHeight: '32px',
-                      borderRadius: '16px',
-                      textTransform: 'none',
-                      flex: 1,
-                      borderWidth: '1.5px',
-                      '&:hover': {
-                        borderWidth: '1.5px'
-                      }
-                    }}
-                  >
-                    Watcher
-                  </Button>
-                </Stack>
-              </Box>
-            )}
-          </DialogContent>
-        </Dialog>
+          student={selectedStudent}
+          onJCodeRedirect={handleJCodeRedirect}
+          onWatcherRedirect={handleWatcherRedirect}
+        />
       </Container>
     </Fade>
   );
 };
 
-export default AssignmentDetail; 
+export default AssignmentDetail;
+
+
+
