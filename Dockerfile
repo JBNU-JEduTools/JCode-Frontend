@@ -1,10 +1,10 @@
 # 1단계: 빌드 단계
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 # 종속성 설치 최적화
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # 소스 코드 복사 및 빌드
 COPY . .
@@ -15,7 +15,7 @@ ENV GENERATE_SOURCEMAP=false
 RUN npm run build
 
 # 중간 단계: 정적 파일 최적화
-FROM node:18-alpine AS optimize
+FROM node:20-alpine AS optimize
 WORKDIR /app
 COPY --from=build /app/build /app/build
 # 추가 최적화 도구 설치 및 실행
