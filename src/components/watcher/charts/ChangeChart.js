@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Box, Paper, useTheme } from '@mui/material';
 import { chartSyncEvents } from './TotalSizeChart';
 import { getHoverTemplate, getTimeFormatStops } from './ChartUtils';
+import { cleanupChartInstance } from './api';
 
 const ChangeChart = ({ data, student, assignment }) => {
   const theme = useTheme();
@@ -267,11 +268,8 @@ const ChangeChart = ({ data, student, assignment }) => {
     return () => {
       // window.Plotly가 있고, DOM 요소가 존재하는 경우에만 purge 실행
       if (window.Plotly) {
-        // 각 차트 요소가 존재하는지 확인 후 purge
         const changeChartElement = document.getElementById('changeChart');
-        if (changeChartElement) {
-          window.Plotly.purge('changeChart');
-        }
+        cleanupChartInstance(changeChartElement, window.Plotly);
       }
     };
   }, [data, isDarkMode, student, assignment]);
