@@ -1,4 +1,5 @@
 import api from '../../../api/axios';
+import CacheManager from '../../../utils/cache-manager';
 
 // 시간 간격 계산 함수
 export const calculateIntervalValue = (timeUnit, minuteValue) => {
@@ -18,23 +19,23 @@ export const calculateIntervalValue = (timeUnit, minuteValue) => {
   }
 };
 
-// 데이터 가져오기 함수
+// 데이터 가져오기 함수 (최적화) - 싱글톤 캐시 매니저 사용
 export const fetchMonitoringData = async (intervalValue, courseId, assignmentId, userId) => {
-  try {
-    // 기존 API 경로 대신 AssignmentMonitoring에서 사용하는 경로로 수정
-    const params = new URLSearchParams({
-      course: courseId,
-      assignment: assignmentId,
-      user: userId
-    });
+  // API 요청 생성
+  const params = new URLSearchParams({
+    course: courseId,
+    assignment: assignmentId,
+    user: userId
+  });
 
-    const response = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+  const response = await api.get(`/api/watcher/graph_data/interval/${intervalValue}?${params}`);
+  return response.data;
+};
 
-    return response.data;
-  } catch (error) {
-    // 오류 발생 시 빈 객체 반환하고 에러를 다시 던지지 않음
-    return { trends: [] };
-  }
+// 캐시 무효화 함수
+export const invalidateMonitoringCache = (intervalValue, courseId, assignmentId, userId) => {
+  const cacheKey = `${intervalValue}_${courseId}_${assignmentId}_${userId}`;
+  CacheManager.invalidateCache(cacheKey, 'monitoringData');
 };
 
 // ISO 형식 (YYYY-MM-DD HH:MM:SS)으로 날짜 포맷 변환
@@ -53,7 +54,7 @@ export const formatDateToISO = (dateStr) => {
     // 이미 다른 형식이면 그대로 반환
     return dateStr;
   } catch (error) {
-    console.error('날짜 변환 오류:', error);
+    //console.error('날짜 변환 오류:', error);
     return dateStr;
   }
 };
@@ -62,7 +63,7 @@ export const formatDateToISO = (dateStr) => {
 export const processChartData = (rawData, assignment) => {
   // 데이터가 없거나 유효하지 않은 경우 기본값 반환
   if (!rawData || !rawData.trends || !Array.isArray(rawData.trends)) {
-    console.warn('유효한 데이터가 없습니다:', rawData);
+    //console.warn('유효한 데이터가 없습니다:', rawData);
     return {
       timeData: [],
       timestamps: [],
@@ -78,7 +79,7 @@ export const processChartData = (rawData, assignment) => {
   // 데이터 항목에 timestamp가 없는 경우 처리 방법 수정
   const timeData = rawData.trends.map((item, index) => {
     if (!item.timestamp) {
-      console.warn('timestamp가 없는 데이터 항목:', item);
+      //console.warn('timestamp가 없는 데이터 항목:', item);
     }
     
     // timestamp 형식 변환 (YYYYMMDD_HHMM -> YYYY-MM-DD HH:MM)
@@ -95,14 +96,14 @@ export const processChartData = (rawData, assignment) => {
           timestamp = new Date(dateStr).getTime();
           formattedTime = `${year}-${month}-${day} ${hour}:${minute}`;
         } else {
-          console.warn('타임스탬프 형식 오류:', item.timestamp);
+          //console.warn('타임스탬프 형식 오류:', item.timestamp);
           // 가상 타임스탬프 사용
           timestamp = new Date().getTime() - (rawData.trends.length - index) * 60000;
           const date = new Date(timestamp);
           formattedTime = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         }
       } catch (error) {
-        console.error('타임스탬프 파싱 오류:', error);
+        //console.error('타임스탬프 파싱 오류:', error);
         // 가상 타임스탬프 사용
         timestamp = new Date().getTime() - (rawData.trends.length - index) * 60000;
         const date = new Date(timestamp);
@@ -159,7 +160,7 @@ export const fetchStudentInfo = async (courseId, userId) => {
       const userResponse = await api.get(`/api/courses/${courseId}/users`);
       studentData = userResponse.data;
     } catch (error1) {
-      console.warn('첫 번째 경로에서 학생 정보를 가져오는데 실패했습니다:', error1);
+      //console.warn('첫 번째 경로에서 학생 정보를 가져오는데 실패했습니다:', error1);
       
       try {
         // 두 번째 경로 시도
@@ -174,10 +175,10 @@ export const fetchStudentInfo = async (courseId, userId) => {
         
         if (studentData) {
         } else {
-          console.warn('두 번째 경로에서도 학생 정보를 찾을 수 없습니다.');
+          //console.warn('두 번째 경로에서도 학생 정보를 찾을 수 없습니다.');
         }
       } catch (error2) {
-        console.warn('두 번째 경로에서도 학생 정보를 가져오는데 실패했습니다:', error2);
+        //console.warn('두 번째 경로에서도 학생 정보를 가져오는데 실패했습니다:', error2);
       }
     }
     
@@ -261,5 +262,26 @@ export const fetchCourseInfo = async (courseId) => {
     return foundCourse;
   } catch (error) {
     throw error;
+  }
+};
+
+// 사용자 ID로 사용자 정보 직접 조회 함수
+export const fetchUserById = async (userId) => {
+  try {
+    //console.log(`사용자 직접 조회 시작: ID=${userId}`);
+    const response = await api.get(`/api/users/${userId}`);
+    //console.log('사용자 정보 응답:', response.data);
+    return response.data;
+  } catch (error) {
+    //console.error(`사용자 정보 조회 실패(ID=${userId}):`, error);
+    // 기본 사용자 객체 반환
+    return {
+      id: userId,
+      userId: parseInt(userId),
+      studentId: '정보 없음',
+      studentNum: '정보 없음',
+      name: '정보 없음',
+      email: '정보 없음'
+    };
   }
 }; 
