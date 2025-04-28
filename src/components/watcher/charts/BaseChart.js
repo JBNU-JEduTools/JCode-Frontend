@@ -112,7 +112,7 @@ const BaseChart = ({
       // 에러 초기화
       setError(null);
     } catch (err) {
-      console.error('차트 생성 오류:', err);
+      //console.error('차트 생성 오류:', err);
       setError(err.message || '차트 생성 중 오류가 발생했습니다');
       createEmptyChart(chartId, isDarkMode, `${title} - 오류 발생`);
     }
@@ -124,7 +124,7 @@ const BaseChart = ({
         try {
           Plotly.purge(chartId);
         } catch (err) {
-          console.error('차트 정리 중 오류 발생:', err);
+          //console.error('차트 정리 중 오류 발생:', err);
         }
       }
     };
