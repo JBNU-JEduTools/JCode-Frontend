@@ -30,49 +30,50 @@ import WatcherBreadcrumbs from '../common/WatcherBreadcrumbs';
 import TotalSizeChart from './charts/TotalSizeChart';
 import ChangeChart from './charts/ChangeChart';
 import ChartControls from './charts/ChartControls';
+import RemainingTime from './RemainingTime';
 import {
   calculateIntervalValue,
   fetchMonitoringData,
   processChartData,
   fetchStudentInfo,
   fetchAssignmentInfo,
-  fetchCourseInfo
+  fetchCourseInfo,
+  fetchUserById
 } from './charts/ChartDataService';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import CacheManager from '../../utils/cache-manager';
 
 // ChartHeader 컴포넌트
 const ChartHeader = ({ student, assignment, course }) => {
+  // student가 배열인 경우 첫 번째 학생 정보만 사용하도록 처리
+  const studentData = Array.isArray(student) ? student[0] : student;
+  
   // 데이터가 로딩되었는지 확인
-  const hasStudentData = student && Object.keys(student).length > 0;
+  const hasStudentData = studentData && Object.keys(studentData).length > 0;
   const hasAssignmentData = assignment && Object.keys(assignment).length > 0;
   const hasCourseData = course && Object.keys(course).length > 0;
-  
-  // // 디버깅용 로그 추가
-  // console.log('ChartHeader - student 데이터:', student);
-  // console.log('ChartHeader - student 속성:', hasStudentData ? Object.keys(student) : 'No student data');
-  // console.log('ChartHeader - assignment 데이터:', assignment);
   
   // 학생 정보 가져오기
   const getStudentId = () => {
     if (!hasStudentData) return null;
-    if (student.studentNum) return student.studentNum;
-    if (student.studentId) return student.studentId;
-    if (student.id) return student.id;
+    if (studentData.studentNum) return studentData.studentNum;
+    if (studentData.studentId) return studentData.studentId;
+    if (studentData.id) return studentData.id;
     return null;
   };
   
   const getStudentName = () => {
     if (!hasStudentData) return null;
-    if (student.name) return student.name;
-    if (student.userName) return student.userName;
+    if (studentData.name) return studentData.name;
+    if (studentData.userName) return studentData.userName;
     return null;
   };
   
   const getStudentEmail = () => {
     if (!hasStudentData) return null;
-    if (student.email) return student.email;
-    if (student.userEmail) return student.userEmail;
+    if (studentData.email) return studentData.email;
+    if (studentData.userEmail) return studentData.userEmail;
     return null;
   };
   
@@ -121,6 +122,7 @@ const ChartHeader = ({ student, assignment, course }) => {
   };
   
   const studentId = getStudentId();
+  //console.log('학번:', studentId);
   const studentName = getStudentName();
   const studentEmail = getStudentEmail();
   const startDate = getStartDate();
@@ -160,14 +162,41 @@ const ChartHeader = ({ student, assignment, course }) => {
         )}
         
         {hasAssignmentData && (
-          <Typography variant="body2" color="text.secondary">
-            <strong>과제 기간:</strong> {formatDateTime(startDate)} ~ {formatDateTime(endDate)}
-          </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            mb: 3,
+            flexWrap: 'wrap' 
+          }}>
+            <Chip 
+              label={`시작: ${new Date(assignment.startDateTime || assignment.kickoffDate).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })}`}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            />
+            <Chip 
+              label={`마감: ${new Date(assignment.endDateTime || assignment.deadlineDate).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })}`}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            />
+            <RemainingTime deadline={assignment.endDateTime || assignment.deadlineDate} />
+          </Box>
         )}
         
         {!hasStudentData && !hasAssignmentData && (
-          <Typography variant="body2" color="error">
-            데이터를 불러오는 중 문제가 발생했습니다. 학생 또는 과제 정보를 찾을 수 없습니다.
+          <Typography variant="body2" color="info">
+            강의 데이터 로딩 중 입니다.
           </Typography>
         )}
       </Box>
@@ -218,57 +247,102 @@ const AssignmentPlotly = () => {
     month: '월'
   };
 
-  // 카운트다운 업데이트 함수
+  // 카운트다운 업데이트 함수 - 완전히 새로 작성
   const updateCountdown = () => {
     if (!liveUpdate) return;
     
     const now = new Date();
     const lastUpdate = lastUpdateTimeRef.current || now;
     const elapsedSeconds = Math.floor((now - lastUpdate) / 1000);
-    const remainingSeconds = Math.max(0, 60 - elapsedSeconds);
+    // 30초 주기로 변경
+    const remainingSeconds = Math.max(0, 30 - elapsedSeconds);
     
-    setNextUpdateTime(remainingSeconds);
-    
-    if (remainingSeconds === 0 && liveUpdate) {
-      setLiveUpdateStatus('updating');
-      handleDataRefresh(true);
+    // DOM 요소를 직접 업데이트하여 리렌더링 최소화
+    const countdownElement = document.getElementById('countdown-timer');
+    if (countdownElement) {
+      countdownElement.textContent = `${remainingSeconds}초 후 갱신`;
+      
+      // 원형 프로그레스 업데이트 (MUI CircularProgress는 직접 DOM 업데이트가 어려움)
+      // 따라서 30초에 한번씩만 차트가 리렌더링되도록 값을 업데이트
+      if (remainingSeconds > 0) {
+        // 로그만 출력하고 상태는 업데이트하지 않음
+      } else {
+        // 0초일 때만 상태 업데이트하여 리렌더링 발생
+        setNextUpdateTime(0);
+      }
+    } else {
+      // 초기 렌더링이나 DOM 요소를 찾을 수 없을 때는 상태 업데이트
+      setNextUpdateTime(remainingSeconds);
     }
   };
 
-  // 실시간 업데이트 토글 함수
-  const toggleLiveUpdate = () => {
-    const newLiveUpdate = !liveUpdate;
-    setLiveUpdate(newLiveUpdate);
+  // 타이머 ref 변수 추가
+  const timerRef = useRef(30);
+
+  // 실시간 업데이트 타이머 설정
+  useEffect(() => {
+    // 타이머 정리
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
     
-    if (newLiveUpdate) {
-      // 실시간 업데이트 활성화
-      setLiveUpdateStatus('waiting');
-      lastUpdateTimeRef.current = new Date();
+    // 타이머 시작 (liveUpdate가 true일 때만)
+    if (liveUpdate) {
+      timerRef.current = 30;
+      setNextUpdateTime(30);
       
-      // 카운트다운 타이머 시작
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      countdownRef.current = setInterval(updateCountdown, 1000);
-      
-      // 첫 번째 업데이트 바로 실행
-      handleDataRefresh(true);
-    } else {
-      // 실시간 업데이트 비활성화
-      setLiveUpdateStatus('idle');
+      // 카운트다운 업데이트를 위한 타이머
+      countdownRef.current = setInterval(() => {
+        // 카운트다운 로직
+        timerRef.current -= 1;
+        updateCountdown();
+        
+        // 30초마다 데이터 새로고침
+        const now = new Date();
+        const lastUpdate = lastUpdateTimeRef.current || now;
+        const elapsedSeconds = Math.floor((now - lastUpdate) / 1000);
+        
+        if (elapsedSeconds >= 30) {
+          handleDataRefresh(true);
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      // 컴포넌트 언마운트 또는 의존성 변경 시 타이머 정리
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
         countdownRef.current = null;
       }
-    }
-  };
-
-  // 컴포넌트 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
     };
-  }, []);
+  }, [liveUpdate]);
+
+  // 실시간 업데이트 토글 함수 - 완전히 새로 작성
+  const toggleLiveUpdate = () => {
+    const newLiveUpdate = !liveUpdate;
+    
+    if (newLiveUpdate) {
+      // 실시간 업데이트 활성화
+      setLiveUpdateStatus('updating');
+      
+      // 초기 타이머 값 설정
+      timerRef.current = 30;
+      setNextUpdateTime(30);
+      
+      // 즉시 데이터 새로고침
+      handleDataRefresh(true).then(() => {
+        // 데이터 로드 후 현재 시간을 기준으로 설정
+        lastUpdateTimeRef.current = new Date();
+      });
+    } else {
+      // 실시간 업데이트 비활성화
+      setLiveUpdateStatus('idle');
+    }
+    
+    // 상태 업데이트 (useEffect 트리거용)
+    setLiveUpdate(newLiveUpdate);
+  };
 
   // 실행 로그 가져오기 함수
   const fetchRunLogs = async () => {
@@ -378,8 +452,12 @@ const AssignmentPlotly = () => {
     if (isLiveUpdate) setLiveUpdateStatus('updating');
     
     try {
+      // 항상 API 호출하여 최신 데이터 가져오기
       const intervalValue = calculateIntervalValue(timeUnit, minuteValue);
+      
+      // API 호출하여 데이터 가져오기
       const response = await fetchMonitoringData(intervalValue, courseId, assignmentId, userId);
+      
       const processedData = processChartData(response, assignment);
       
       setData(processedData);
@@ -397,7 +475,6 @@ const AssignmentPlotly = () => {
         setLiveUpdateStatus('waiting');
       }
     } catch (error) {
-      //console.error('데이터 새로고침 오류:', error);
       // 오류 발생 시에도 UI를 보여주기 위해 빈 데이터로 설정
       setData({
         timeData: [],
@@ -430,70 +507,106 @@ const AssignmentPlotly = () => {
   // 초기 데이터 로드
   useEffect(() => {
     const fetchInitialData = async () => {
+      const startTime = performance.now();
       setLoading(true);
+      
       try {
-        // 과제 정보 가져오기
-        const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
-        //console.log('과제 정보:', assignmentData);
-        setAssignment(assignmentData);
+        // 모든 API 요청을 병렬로 실행
+        const apiStartTime = performance.now();
         
-        // 강의 정보 가져오기
-        const courseData = await fetchCourseInfo(courseId);
-        //console.log('강의 정보:', courseData);
-        setCourse(courseData);
+        // 모든 데이터를 병렬로 가져오기
+        const [assignmentData, courseData, monitoringData, runLogsData, buildLogsData] = await Promise.all([
+          // 과제 정보 가져오기
+          fetchAssignmentInfo(courseId, assignmentId).catch(err => {
+            return null;
+          }),
+          
+          // 강의 정보 가져오기
+          fetchCourseInfo(courseId).catch(err => {
+            return null;
+          }),
+          
+          // 모니터링 데이터 가져오기 - 항상 API에서 데이터 요청
+          fetchMonitoringData(
+            calculateIntervalValue(timeUnit, minuteValue), 
+            courseId, 
+            assignmentId, 
+            userId
+          ).catch(err => {
+            return { trends: [] };
+          }),
+          
+          // 로그 데이터 가져오기 (실행 로그)
+          fetchRunLogs().catch(() => []),
+          
+          // 로그 데이터 가져오기 (빌드 로그)
+          fetchBuildLogs().catch(() => [])
+        ]);
         
-        // 학생 정보 가져오기 - 사용자 역할에 따라 다르게 처리
+        // 학생 정보 가져오기 (사용자 정보에 따라 달라질 수 있어 별도 처리)
+        let studentData = null;
+        
         if (userId) {
           try {
             if (authUser?.role === 'STUDENT') {
               // 학생인 경우 자신의 정보를 가져옴
               const meResponse = await api.get('/api/users/me');
-              //console.log('내 정보:', meResponse.data);
-              setStudent(meResponse.data);
+              studentData = meResponse.data;
             } else {
               // 교수/조교인 경우 해당 학생의 정보를 가져옴
-              const studentData = await fetchStudentInfo(courseId, userId);
-              //console.log('학생 정보:', studentData);
-              if (studentData) {
-                setStudent(studentData);
+              try {
+                // 먼저 직접 API로 사용자 정보 조회 시도
+                studentData = await fetchUserById(userId);
+                
+                // 정보가 불완전하면 기존 방식으로 시도
+                if (!studentData || !studentData.name || studentData.name === '정보 없음') {
+                  const fallbackData = await fetchStudentInfo(courseId, userId);
+                  
+                  // 배열인 경우 적절한 학생 정보 찾기
+                  if (Array.isArray(fallbackData)) {
+                    const targetStudent = fallbackData.find(s => 
+                      String(s.userId) === String(userId) || 
+                      String(s.id) === String(userId)
+                    );
+                    
+                    if (targetStudent) {
+                      studentData = targetStudent;
+                    } else {
+                      studentData = fallbackData;
+                    }
+                  } else {
+                    studentData = fallbackData;
+                  }
+                }
+              } catch (error) {
+                studentData = {
+                  id: userId,
+                  userId: parseInt(userId),
+                  studentId: '정보 없음',
+                  studentNum: '정보 없음',
+                  name: '정보 없음',
+                  email: '정보 없음'
+                };
               }
             }
           } catch (userError) {
-            //console.warn('학생 정보를 가져오는데 실패했습니다:', userError);
-            // 학생 정보 오류가 있어도 계속 진행
           }
         }
         
-        // 모니터링 데이터 가져오기
-        try {
-          const intervalValue = calculateIntervalValue(timeUnit, minuteValue);
-          const monitoringData = await fetchMonitoringData(intervalValue, courseId, assignmentId, userId);
-          const processedData = processChartData(monitoringData, assignmentData);
-          setData(processedData);
-          const now = new Date();
-          setLastUpdated(now);
-          lastUpdateTimeRef.current = now;
-        } catch (monitoringError) {
-          //console.error('모니터링 데이터 로드 실패:', monitoringError);
-          // 기본 데이터로 설정
-          setData({
-            timeData: [],
-            timestamps: [],
-            totalBytes: [],
-            changeBytes: [],
-            formattedTimes: [],
-            additions: [],
-            deletions: []
-          });
-        }
+        // 상태 업데이트
+        if (assignmentData) setAssignment(assignmentData);
+        if (courseData) setCourse(courseData);
+        if (studentData) setStudent(studentData);
         
-        // 로그 데이터 가져오기
-        await Promise.all([
-          fetchRunLogs(),
-          fetchBuildLogs()
-        ]);
+        // 모니터링 데이터 처리 및 설정
+        const processedData = processChartData(monitoringData, assignmentData);
+        setData(processedData);
+        
+        // 마지막 업데이트 시간 설정
+        const now = new Date();
+        setLastUpdated(now);
+        lastUpdateTimeRef.current = now;
       } catch (error) {
-        //console.error('초기 데이터 로딩 오류:', error);
         setError('데이터를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
@@ -718,13 +831,36 @@ const AssignmentPlotly = () => {
             ml: 'auto'
           }}>
             {liveUpdate && (
-              <Chip 
-                color="primary"
-                size="small"
-                icon={<CircularProgress size={16} color="inherit" />}
-                label="실시간 업데이트 중"
-                sx={{ height: 28 }}
-              />
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1, 
+                backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(189, 147, 249, 0.15)' : 'rgba(98, 114, 164, 0.1)',
+                p: '4px 8px',
+                borderRadius: '16px',
+                border: '1px solid',
+                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(189, 147, 249, 0.3)' : 'rgba(98, 114, 164, 0.2)',
+              }}>
+                <CircularProgress 
+                  size={16}
+                  variant={nextUpdateTime < 5 ? "indeterminate" : "determinate"}
+                  value={(30 - nextUpdateTime) * (100/30)}
+                  color="primary"
+                  thickness={6}
+                />
+                <Typography 
+                  variant="caption" 
+                  id="countdown-timer"
+                  sx={{ 
+                    fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    color: theme => theme.palette.mode === 'dark' ? '#BD93F9' : '#6272A4',
+                  }}
+                >
+                  {nextUpdateTime}초 후 갱신
+                </Typography>
+              </Box>
             )}
             
             {lastUpdated && (
@@ -769,7 +905,14 @@ const AssignmentPlotly = () => {
               <Switch 
                 checked={showRunLogs}
                 onChange={handleToggleRunLogs}
-                color="success"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#2E7D32', // 더 진한 녹색
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#2E7D32',
+                  }
+                }}
               />
             }
             label="실행 로그"
@@ -779,7 +922,14 @@ const AssignmentPlotly = () => {
               <Switch 
                 checked={showBuildLogs}
                 onChange={handleToggleBuildLogs}
-                color="info"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#0277BD', // 더 진한 파란색
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#0277BD',
+                  }
+                }}
               />
             }
             label="빌드 로그"
@@ -789,7 +939,14 @@ const AssignmentPlotly = () => {
               <Switch 
                 checked={showSuccessLogs}
                 onChange={handleToggleSuccessLogs}
-                color="success"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#2E7D32', // 더 진한 녹색
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#2E7D32',
+                  }
+                }}
               />
             }
             label="성공 로그"
@@ -799,7 +956,14 @@ const AssignmentPlotly = () => {
               <Switch 
                 checked={showFailLogs}
                 onChange={handleToggleFailLogs}
-                color="error"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#C62828', // 더 진한 빨간색
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#C62828',
+                  }
+                }}
               />
             }
             label="실패 로그"
