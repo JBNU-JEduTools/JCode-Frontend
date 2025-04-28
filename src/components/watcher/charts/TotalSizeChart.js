@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Paper, useTheme } from '@mui/material';
 import { 
   getHoverTemplate, 
@@ -7,7 +7,6 @@ import {
   findNearestLog,
   getTimeFormatStops 
 } from './ChartUtils';
-import LogDialogComponent from './LogDialogComponent';
 
 // 차트 간 동기화를 위한 이벤트 버스
 export const chartSyncEvents = {
@@ -21,22 +20,6 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
   const isDarkMode = theme.palette.mode === 'dark';
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  
-  // 로그 다이얼로그 상태 추가
-  const [logDialogOpen, setLogDialogOpen] = useState(false);
-  const [selectedLog, setSelectedLog] = useState(null);
-
-  // 로그 다이얼로그 열기 함수
-  const handleLogClick = (log) => {
-    setSelectedLog(log);
-    setLogDialogOpen(true);
-  };
-
-  // 로그 다이얼로그 닫기 함수
-  const handleCloseLogDialog = () => {
-    setLogDialogOpen(false);
-    setSelectedLog(null);
-  };
 
   // Plotly 차트 생성 및 업데이트
   useEffect(() => {
@@ -286,35 +269,6 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
               }
             }, 200); // 200ms 디바운스
           });
-          
-          // 로그 마커 클릭 이벤트 처리
-          totalSizeElement.on('plotly_click', function(data) {
-            // 클릭한 포인트가 로그 마커인 경우 처리
-            if (data.points[0].curveNumber > 0) { // 첫 번째 트레이스(코드 크기)가 아닌 경우
-              const point = data.points[0];
-              const logType = point.data.name;
-              const clickedX = point.x;
-              
-              // 로그 타입에 따라 적절한 로그 배열에서 검색
-              let result = null;
-              
-              if (logType.includes('실행')) {
-                result = findNearestLog(runLogs, logType, clickedX);
-              } else if (logType.includes('빌드')) {
-                result = findNearestLog(buildLogs, logType, clickedX);
-              }
-              
-              // 결과가 있을 경우 처리
-              if (result) {
-                const clickedLog = result.log;
-                clickedLog.logType = logType;
-                clickedLog.isRun = result.isRunLog;
-                
-                // 다이얼로그 표시
-                handleLogClick(clickedLog);
-              } 
-            }
-          });
         }
       } catch (err) {
       }
@@ -356,14 +310,6 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
         width: '100%', 
         minHeight: '500px' 
       }} id="totalSizeChart" ref={chartRef} />
-      
-      {/* 로그 다이얼로그 */}
-      <LogDialogComponent 
-        open={logDialogOpen}
-        onClose={handleCloseLogDialog}
-        selectedLog={selectedLog}
-        isDarkMode={isDarkMode}
-      />
     </Paper>
   );
 };
