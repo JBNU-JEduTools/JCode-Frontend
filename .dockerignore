@@ -4,5 +4,6 @@ Dockerfile
 .dockerignore
 .git
 .gitignore
-.env
+# .env 주석 처리하여 환경 파일들이 포함되도록 함
+# .env
 jcode-front.tar
