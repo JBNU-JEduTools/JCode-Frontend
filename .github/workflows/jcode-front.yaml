@@ -6,76 +6,18 @@ on:
       - master
 
 jobs:
-  bump-build-push:
+  build-push:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
     env:
-      HARBOR_REGISTRY: harbor.jbnu.ac.kr  # 여기에 Harbor 레지스트리 주소 입력
-      HARBOR_PROJECT: jsh2256    # 여기에 프로젝트 이름 입력
-      IMAGE_NAME: jcode-front           # 여기에 이미지 이름 입력
+      HARBOR_REGISTRY: harbor.jbnu.ac.kr
+      HARBOR_PROJECT: jsh2256
+      IMAGE_NAME: jcode-front
     
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
-
-      - name: 디렉토리 구조 디버깅
-        run: |
-          pwd
-          ls -la
-          ls -la frontend || echo "frontend 디렉토리 없음"
-          ls -la frontend/nginx || echo "frontend/nginx 디렉토리 없음" 
-          ls -la frontend/Dockerfile || echo "frontend/Dockerfile 파일 없음"
-          find . -name "Dockerfile" || echo "Dockerfile 파일 찾을 수 없음"
-      
-      - name: default.conf 파일 확인 및 생성
-        run: |
-          mkdir -p frontend/nginx
-          
-          if [ ! -f "frontend/nginx/default.conf" ]; then
-            echo "server {" > frontend/nginx/default.conf
-            echo "    listen 80;" >> frontend/nginx/default.conf
-            echo "    server_name jcode.jbnu.ac.kr;" >> frontend/nginx/default.conf
-            echo "" >> frontend/nginx/default.conf
-            echo "    root /usr/share/nginx/html;" >> frontend/nginx/default.conf
-            echo "    index index.html;" >> frontend/nginx/default.conf
-            echo "" >> frontend/nginx/default.conf
-            echo "    location / {" >> frontend/nginx/default.conf
-            echo "        try_files \$uri /index.html;" >> frontend/nginx/default.conf
-            echo "    }" >> frontend/nginx/default.conf
-            echo "" >> frontend/nginx/default.conf
-            echo "    # 정적 파일 서빙" >> frontend/nginx/default.conf
-            echo "    location /static/ {" >> frontend/nginx/default.conf
-            echo "        root /usr/share/nginx/html;" >> frontend/nginx/default.conf
-            echo "        expires 6M;" >> frontend/nginx/default.conf
-            echo "        access_log off;" >> frontend/nginx/default.conf
-            echo "        add_header Cache-Control \"public, max-age=31536000\";" >> frontend/nginx/default.conf
-            echo "    }" >> frontend/nginx/default.conf
-            echo "" >> frontend/nginx/default.conf
-            echo "    # MIME 타입 설정 (필요 시)" >> frontend/nginx/default.conf
-            echo "    location ~* \\.(?:css|js|woff2?|eot|ttf|otf|svg|png|jpg|jpeg|gif|ico|webp)$ {" >> frontend/nginx/default.conf
-            echo "        root /usr/share/nginx/html;" >> frontend/nginx/default.conf
-            echo "        expires 6M;" >> frontend/nginx/default.conf
-            echo "        access_log off;" >> frontend/nginx/default.conf
-            echo "        add_header Cache-Control \"public, max-age=31536000\";" >> frontend/nginx/default.conf
-            echo "    }" >> frontend/nginx/default.conf
-            echo "}" >> frontend/nginx/default.conf
-            echo "default.conf 파일이 생성되었습니다."
-          else
-            echo "default.conf 파일이 이미 존재합니다."
-          fi
-          
-      - name: 버전 태그 생성
-        id: tag_version
-        uses: anothrNick/github-tag-action@1.71.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEFAULT_BUMP: patch             # patch, minor, major 중 선택
-          PRERELEASE: true               # 개발 브랜치에 대한 사전 릴리스 태그 생성
-          PRE_RELEASE_BRANCHES: dev       # 사전 릴리스 브랜치 이름
-      
-      - name: 환경변수에 버전 설정
-        run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
       
       - name: Harbor 로그인
         uses: docker/login-action@v3
@@ -84,19 +26,13 @@ jobs:
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
       
-      - name: Docker Buildx 설정
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:latest
-          install: true
-          use: true
+      - name: 버전 설정
+        run: echo "VERSION=latest" >> $GITHUB_ENV
       
       - name: Docker 이미지 빌드 및 푸시
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-          cache-from: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:cache
-          cache-to: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:cache,mode=max
