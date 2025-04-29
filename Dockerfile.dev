@@ -6,14 +6,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# .env.dev 파일을 먼저 복사
+COPY .env.dev .env
+
 # 소스 코드 복사 및 빌드
 COPY . .
 # 개발 환경 설정
 ENV NODE_ENV=development
 # 개발용 소스맵 생성 활성화
 ENV GENERATE_SOURCEMAP=true
-# .env.dev 파일 사용
-COPY .env.dev .env
 RUN npm run build
 
 # 중간 단계: 정적 파일 최적화
