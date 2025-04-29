@@ -18,7 +18,56 @@ jobs:
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
-        
+
+      - name: 디렉토리 구조 디버깅
+        run: |
+          pwd
+          ls -la
+          ls -la nginx || echo "nginx 디렉토리 없음"
+          ls -la frontend/nginx || echo "frontend/nginx 디렉토리 없음" 
+          find . -name "default.conf" || echo "default.conf 파일 찾을 수 없음"
+      
+      - name: default.conf 파일 확인 및 생성
+        run: |
+          if [ ! -d "frontend/nginx" ]; then
+            mkdir -p frontend/nginx
+          fi
+          
+          if [ ! -f "frontend/nginx/default.conf" ]; then
+            cat > frontend/nginx/default.conf << 'EOL'
+server {
+    listen 80;
+    server_name jcode.jbnu.ac.kr;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri /index.html;
+    }
+
+    # 정적 파일 서빙
+    location /static/ {
+        root /usr/share/nginx/html;
+        expires 6M;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000";
+    }
+
+    # MIME 타입 설정 (필요 시)
+    location ~* \.(?:css|js|woff2?|eot|ttf|otf|svg|png|jpg|jpeg|gif|ico|webp)$ {
+        root /usr/share/nginx/html;
+        expires 6M;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000";
+    }
+}
+EOL
+            echo "default.conf 파일이 생성되었습니다."
+          else
+            echo "default.conf 파일이 이미 존재합니다."
+          fi
+          
       - name: 버전 태그 생성
         id: tag_version
         uses: anothrNick/github-tag-action@1.71.0
@@ -49,6 +98,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./frontend/Dockerfile
           push: true
           tags: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
           cache-from: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:cache
