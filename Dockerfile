@@ -27,7 +27,7 @@ FROM nginx:stable-alpine
 COPY --from=optimize /app/build /usr/share/nginx/html
 
 # Nginx 설정 파일 복사
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Nginx 압축 설정 추가 (캐싱 설정 제외)
 RUN echo 'gzip on; \
