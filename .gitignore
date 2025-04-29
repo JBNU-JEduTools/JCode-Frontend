@@ -99,3 +99,6 @@ k8s/
 !.eslintrc.yml
 !.prettierrc.yml
 !.stylelintrc.yml
+
+!.github/workflows/*.yaml
+!.github/workflows/*.yml
