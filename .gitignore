@@ -88,7 +88,7 @@ dist
 *.tar.lrz
 
 # Nginx
-default.conf
+# default.conf
 
 # Kubernetes
 k8s/
