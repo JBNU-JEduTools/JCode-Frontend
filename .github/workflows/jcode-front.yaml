@@ -23,9 +23,10 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la nginx || echo "nginx 디렉토리 없음"
+          ls -la frontend || echo "frontend 디렉토리 없음"
           ls -la frontend/nginx || echo "frontend/nginx 디렉토리 없음" 
-          find . -name "default.conf" || echo "default.conf 파일 찾을 수 없음"
+          ls -la frontend/Dockerfile || echo "frontend/Dockerfile 파일 없음"
+          find . -name "Dockerfile" || echo "Dockerfile 파일 찾을 수 없음"
       
       - name: default.conf 파일 확인 및 생성
         run: |
@@ -93,7 +94,7 @@ jobs:
       - name: Docker 이미지 빌드 및 푸시
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./frontend
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
