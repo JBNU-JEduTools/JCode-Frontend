@@ -2,12 +2,17 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# 빌드 인자 정의 (GitHub Actions에서 전달)
+ARG API_URL
+ARG KEYCLOAK_URL
+ARG CLIENT_ID
+ARG SCOPE
+ARG REDIRECT_URI
+ARG REALM
+
 # 종속성 설치
 COPY package*.json ./
 RUN npm install
-
-# .env.dev 파일을 먼저 복사
-COPY .env.dev .env
 
 # 소스 코드 복사 및 빌드
 COPY . .
@@ -15,6 +20,15 @@ COPY . .
 ENV NODE_ENV=development
 # 개발용 소스맵 생성 활성화
 ENV GENERATE_SOURCEMAP=true
+
+# 빌드 인자를 환경 변수로 설정
+RUN echo "REACT_APP_API_URL=$API_URL" > .env
+RUN echo "REACT_APP_KEYCLOAK_URL=$KEYCLOAK_URL" >> .env
+RUN echo "REACT_APP_CLIENT_ID=$CLIENT_ID" >> .env
+RUN echo "REACT_APP_SCOPE=$SCOPE" >> .env
+RUN echo "REACT_APP_REDIRECT_URI=$REDIRECT_URI" >> .env
+RUN echo "REACT_APP_REALM=$REALM" >> .env
+
 RUN npm run build
 
 # 중간 단계: 정적 파일 최적화
