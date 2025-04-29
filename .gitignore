@@ -91,7 +91,13 @@ dist
 # default.conf
 
 # Kubernetes
-k8s/
+!k8s/jcode-front.yaml
+k8s/argocd-application.yaml
+k8s/configmap.yaml
+k8s/ingress.yaml
+k8s/jcode-front-hpa.yaml
+
+
 # *.yaml
 # *.yml
 !package.yaml

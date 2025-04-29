@@ -68,3 +68,50 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## ArgoCD를 통한 쿠버네티스 배포
+
+GitHub Actions 워크플로우를 통해 빌드되고 Harbor 레지스트리에 푸시된 Docker 이미지를 ArgoCD를 사용해 쿠버네티스 클러스터에 배포하는 방법입니다.
+
+### 사전 요구사항
+- 쿠버네티스 클러스터 접근 권한
+- ArgoCD 설치 및 구성
+- 클러스터에 Secret 생성 (Harbor 레지스트리 인증용)
+
+### 배포 단계
+
+1. 쿠버네티스 Secret 생성 (Harbor 레지스트리 인증)
+```bash
+kubectl create secret docker-registry harbor-registry-secret \
+  --namespace=watcher \
+  --docker-server=harbor.jbnu.ac.kr \
+  --docker-username=<HARBOR_USERNAME> \
+  --docker-password=<HARBOR_PASSWORD>
+```
+
+2. 매니페스트 파일 확인
+   - Deployment (`k8s/jcode-front.yaml`): Harbor 레지스트리 이미지 참조
+   - Service (`k8s/jcode-front.yaml`): 애플리케이션 서비스 정의
+   - ConfigMap (`k8s/configmap.yaml`): 환경 변수 정의
+   - Ingress (`k8s/ingress.yaml`): 외부 접근 설정
+   - ArgoCD Application (`k8s/argocd-application.yaml`): ArgoCD 배포 정의
+
+3. ArgoCD 애플리케이션 배포
+```bash
+kubectl apply -f k8s/argocd-application.yaml
+```
+
+4. ArgoCD UI에서 배포 상태 확인
+   - ArgoCD UI 접속
+   - 애플리케이션 배포 상태 확인 및 필요 시 수동 동기화
+
+### 자동 동기화
+
+`argocd-application.yaml` 파일의 `syncPolicy.automated` 설정을 통해 GitHub 저장소의 매니페스트 파일이 변경될 때마다 ArgoCD가 자동으로 애플리케이션을 동기화합니다.
+
+### 배포 업데이트
+
+하버 이미지 태그 업데이트를 통한 배포:
+1. GitHub Actions 워크플로우가 새 이미지를 빌드하고 Harbor에 푸시
+2. 매니페스트 파일의 이미지 태그 업데이트 (수동 또는 자동화)
+3. ArgoCD가 변경 사항을 감지하고 배포 동기화
