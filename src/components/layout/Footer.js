@@ -65,7 +65,7 @@ const Footer = () => {
                 fontSize: '0.7rem',
               }}
             >
-              v1.1.2
+              v1.1.3
             </Typography>
           </Box>
 
