@@ -1,0 +1,55 @@
+name: jcode-front
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  bump-build-push:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      HARBOR_REGISTRY: harbor.jbnu.ac.kr  # 여기에 Harbor 레지스트리 주소 입력
+      HARBOR_PROJECT: jsh2256    # 여기에 프로젝트 이름 입력
+      IMAGE_NAME: jcode-front           # 여기에 이미지 이름 입력
+    
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 버전 태그 생성
+        id: tag_version
+        uses: anothrNick/github-tag-action@1.71.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch             # patch, minor, major 중 선택
+          PRERELEASE: true               # 개발 브랜치에 대한 사전 릴리스 태그 생성
+          PRE_RELEASE_BRANCHES: dev       # 사전 릴리스 브랜치 이름
+      
+      - name: 환경변수에 버전 설정
+        run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
+      
+      - name: Harbor 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: image=moby/buildkit:latest
+          install: true
+          use: true
+      
+      - name: Docker 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          cache-from: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:cache,mode=max

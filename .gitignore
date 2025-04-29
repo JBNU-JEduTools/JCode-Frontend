@@ -92,8 +92,8 @@ default.conf
 
 # Kubernetes
 k8s/
-*.yaml
-*.yml
+# *.yaml
+# *.yml
 !package.yaml
 !tsconfig.json
 !.eslintrc.yml
