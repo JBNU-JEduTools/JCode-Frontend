@@ -29,40 +29,36 @@ jobs:
       
       - name: default.conf 파일 확인 및 생성
         run: |
-          if [ ! -d "frontend/nginx" ]; then
-            mkdir -p frontend/nginx
-          fi
+          mkdir -p frontend/nginx
           
           if [ ! -f "frontend/nginx/default.conf" ]; then
-            cat > frontend/nginx/default.conf << 'EOL'
-server {
-    listen 80;
-    server_name jcode.jbnu.ac.kr;
-
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location / {
-        try_files $uri /index.html;
-    }
-
-    # 정적 파일 서빙
-    location /static/ {
-        root /usr/share/nginx/html;
-        expires 6M;
-        access_log off;
-        add_header Cache-Control "public, max-age=31536000";
-    }
-
-    # MIME 타입 설정 (필요 시)
-    location ~* \.(?:css|js|woff2?|eot|ttf|otf|svg|png|jpg|jpeg|gif|ico|webp)$ {
-        root /usr/share/nginx/html;
-        expires 6M;
-        access_log off;
-        add_header Cache-Control "public, max-age=31536000";
-    }
-}
-EOL
+            echo "server {" > frontend/nginx/default.conf
+            echo "    listen 80;" >> frontend/nginx/default.conf
+            echo "    server_name jcode.jbnu.ac.kr;" >> frontend/nginx/default.conf
+            echo "" >> frontend/nginx/default.conf
+            echo "    root /usr/share/nginx/html;" >> frontend/nginx/default.conf
+            echo "    index index.html;" >> frontend/nginx/default.conf
+            echo "" >> frontend/nginx/default.conf
+            echo "    location / {" >> frontend/nginx/default.conf
+            echo "        try_files \$uri /index.html;" >> frontend/nginx/default.conf
+            echo "    }" >> frontend/nginx/default.conf
+            echo "" >> frontend/nginx/default.conf
+            echo "    # 정적 파일 서빙" >> frontend/nginx/default.conf
+            echo "    location /static/ {" >> frontend/nginx/default.conf
+            echo "        root /usr/share/nginx/html;" >> frontend/nginx/default.conf
+            echo "        expires 6M;" >> frontend/nginx/default.conf
+            echo "        access_log off;" >> frontend/nginx/default.conf
+            echo "        add_header Cache-Control \"public, max-age=31536000\";" >> frontend/nginx/default.conf
+            echo "    }" >> frontend/nginx/default.conf
+            echo "" >> frontend/nginx/default.conf
+            echo "    # MIME 타입 설정 (필요 시)" >> frontend/nginx/default.conf
+            echo "    location ~* \\.(?:css|js|woff2?|eot|ttf|otf|svg|png|jpg|jpeg|gif|ico|webp)$ {" >> frontend/nginx/default.conf
+            echo "        root /usr/share/nginx/html;" >> frontend/nginx/default.conf
+            echo "        expires 6M;" >> frontend/nginx/default.conf
+            echo "        access_log off;" >> frontend/nginx/default.conf
+            echo "        add_header Cache-Control \"public, max-age=31536000\";" >> frontend/nginx/default.conf
+            echo "    }" >> frontend/nginx/default.conf
+            echo "}" >> frontend/nginx/default.conf
             echo "default.conf 파일이 생성되었습니다."
           else
             echo "default.conf 파일이 이미 존재합니다."
