@@ -221,6 +221,6 @@ graph LR
 
 **⭐ 이 프로젝트가 유용하다면 별점을 눌러주세요! ⭐**
 
-Made with ❤️ by [Your Name]
+Made by [sh]
 
 </div>
