@@ -29,10 +29,28 @@ jobs:
       - name: 버전 설정
         run: echo "VERSION=latest" >> $GITHUB_ENV
       
+      - name: .env.dev 파일 생성
+        run: |
+          cat > .env.dev << EOL
+          REACT_APP_API_URL=${{ secrets.DEV_API_URL }}
+          REACT_APP_KEYCLOAK_URL=${{ secrets.DEV_KEYCLOAK_URL }}
+          REACT_APP_CLIENT_ID=${{ secrets.DEV_CLIENT_ID }}
+          REACT_APP_SCOPE=${{ secrets.DEV_SCOPE }}
+          REACT_APP_REDIRECT_URI=${{ secrets.DEV_REDIRECT_URI }}
+          REACT_APP_REALM=${{ secrets.DEV_REALM }}
+          EOL
+      
       - name: Docker 이미지 빌드 및 푸시 (개발 환경)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.dev
+          build-args: |
+            API_URL=${{ secrets.DEV_API_URL }}
+            KEYCLOAK_URL=${{ secrets.DEV_KEYCLOAK_URL }}
+            CLIENT_ID=${{ secrets.DEV_CLIENT_ID }}
+            SCOPE=${{ secrets.DEV_SCOPE }}
+            REDIRECT_URI=${{ secrets.DEV_REDIRECT_URI }}
+            REALM=${{ secrets.DEV_REALM }}
           push: true
           tags: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} 

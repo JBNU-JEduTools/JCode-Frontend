@@ -1131,6 +1131,187 @@ const AboutPage = () => {
             </Box>
           </Box>
 
+          {/* 팀 소개 섹션 */}
+          <Box sx={{ mb: 12 }}>
+            <SectionTitle>Development Team</SectionTitle>
+            
+            {/* 교수님 카드 */}
+            <Box sx={{ mb: 5, display: 'flex', justifyContent: 'center' }}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Card
+                  elevation={0}
+                  sx={{
+                    width: { xs: '100%', sm: '300px' },
+                    background: theme.palette.mode === 'dark' 
+                      ? theme.palette.background.paper
+                      : theme.palette.background.default,
+                    borderRadius: theme.shape.borderRadius,
+                    transition: 'all 0.3s ease',
+                    border: `1px solid ${theme.palette.divider}`,
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: theme.shadows[4],
+                      borderColor: theme.palette.primary.main
+                    }
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Avatar
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        margin: '0 auto',
+                        mb: 2,
+                        border: `2px solid ${theme.palette.primary.main}`
+                      }}
+                    />
+                    <Typography variant="h6" gutterBottom>
+                      박현찬
+                    </Typography>
+                    <Typography variant="subtitle2" color="primary" gutterBottom>
+                      Professor
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Box>
+            
+            {/* 학생 카드들 */}
+            <Grid container spacing={3} justifyContent="center">
+              {teamMembers.slice(1, 6).map((member, index) => (
+                <Grid item xs={12} sm={6} md={3} lg={2.4} key={index}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card
+                      elevation={0}
+                      sx={{
+                        height: '100%',
+                        background: theme.palette.mode === 'dark' 
+                          ? theme.palette.background.paper
+                          : theme.palette.background.default,
+                        borderRadius: theme.shape.borderRadius,
+                        transition: 'all 0.3s ease',
+                        border: `1px solid ${theme.palette.divider}`,
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: theme.shadows[4],
+                          borderColor: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                        <Avatar
+                          src={member.avatar}
+                          sx={{
+                            width: 80,
+                            height: 80,
+                            margin: '0 auto',
+                            mb: 2,
+                            border: `2px solid ${theme.palette.primary.main}`
+                          }}
+                        />
+                        <Typography variant="h6" gutterBottom>
+                          {member.name}
+                        </Typography>
+                        <Typography variant="subtitle2" color="primary" gutterBottom>
+                          {member.role}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+            
+            {/* 도움 주신 분들 섹션 */}
+            <Box sx={{ mt: 8, textAlign: 'center' }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 'medium',
+                  mb: 3
+                }}
+              >
+                Contributors
+              </Typography>
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  justifyContent: 'center',
+                  gap: 1.5,
+                  maxWidth: '900px',
+                  margin: '0 auto',
+                  py: 2
+                }}
+              >
+                {['김담은', '노형준', '이진규', '박은송'].map((name, index) => (
+                  <Chip
+                    key={index}
+                    label={name}
+                    variant="outlined"
+                    sx={{
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                      m: 0.7,
+                      px: 1,
+                      py: 2.5,
+                      fontSize: '0.95rem',
+                      '&:hover': {
+                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                        borderColor: theme.palette.primary.main
+                      }
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}
+              >
+                <EmailIcon sx={{ color: theme.palette.primary.main }} /><Link href="https://mail.google.com/mail/?view=cm&fs=1&to=jedutools@gmail.com" target="_blank" rel="noopener noreferrer" sx={{ 
+                  color: theme.palette.primary.main,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}>jedutools@gmail.com</Link>
+              </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  mt: 1,
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}
+              >
+                <LocationOnIcon /> 전북대학교 공과대학 7호관 619호 OSLAB
+              </Typography>
+            </Box>
+          </Box>
+
           {/* 타임라인 섹션 */}
           <Box sx={{ mb: 12 }}>
             <SectionTitle>Project History</SectionTitle>
