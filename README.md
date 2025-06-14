@@ -27,6 +27,26 @@ React와 Material-UI를 기반으로 개발한 교육용 웹IDE 플랫폼입니�
 
 ---
 
+## 서비스 화면
+
+### WebIDE 개발 환경
+<!-- WebIDE 스크린샷 이미지를 여기에 추가 -->
+![WebIDE Screenshot](images/webide-screenshot.png)
+*VSCode 기반 웹 통합 개발 환경*
+
+### Watcher 모니터링 대시보드
+<!-- Watcher 대시보드 스크린샷 이미지를 여기에 추가 -->
+![Watcher Dashboard](images/watcher-dashboard.png)
+*실시간 코딩 활동 모니터링 및 분석 대시보드*
+
+### 데이터 시각화
+<!-- Plotly.js 차트 스크린샷 이미지를 여기에 추가 -->
+![Data Visualization](images/data-visualization.png)
+![Data Visualization2](images/data-visualization2.png)
+*Plotly.js를 활용한 인터랙티브 데이터 시각화*
+
+---
+
 ## 운영 환경
 
 - **Production URL**: [https://jcode.jbnu.ac.kr](https://jcode.jbnu.ac.kr/about)
