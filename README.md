@@ -158,7 +158,7 @@ npm start
 ### Docker 배포
 ```bash
 # 이미지 빌드
-docker build -t jcode-frontend .
+docker build -t jcode-frontend:{yourtag} .
 
 # 컨테이너 실행
 docker run -p 80:80 jcode-frontend
