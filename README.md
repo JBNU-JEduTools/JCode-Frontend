@@ -28,14 +28,13 @@
 
 ### WebIDE - "언제 어디서나 똑같은 나만의 개발 환경"
 - **VSCode 기반**: 웹 브라우저에서 VSCode와 동일한 개발 환경
-- **다중 언어 지원**: Python, C/C++, Java 등 주요 프로그래밍 언어
+- **다중 언어 지원**: Python, C/C++ 등 주요 프로그래밍 언어
 - **실시간 자동 저장**: 공용 PC 환경에서도 안전한 작업 환경
 - **컨테이너 격리**: 사용자별 완전히 독립된 개발 환경
 
 ### Watcher - "학습 과정을 한눈에"  
 - **실시간 모니터링**: 코딩 활동, 컴파일, 실행 과정 실시간 추적
 - **학습 분석**: 시간별 작업 패턴 및 학습 진도 시각화
-- **이상 행동 감지**: 비정상적인 코딩 활동 패턴 구분
 - **통계 대시보드**: Plotly.js 기반 인터랙티브 차트
 
 ### 사용자 경험
@@ -86,8 +85,7 @@
 
 ```bash
 # 1. 레포지토리 클론
-git clone https://github.com/your-repo/jcode-frontend.git
-cd jcode-frontend/frontend
+git clone https://github.com/JBNU-JEduTools/JCode-Frontend.git
 
 # 2. 의존성 설치
 npm install
@@ -105,9 +103,6 @@ npm start
 ### Docker로 실행
 
 ```bash
-# 개발용 이미지 빌드 및 실행
-docker-compose -f docker-compose.dev.yml up
-
 # 프로덕션용 이미지 빌드
 docker build -t jcode-frontend:latest .
 
@@ -125,10 +120,10 @@ REACT_APP_API_URL=http://localhost:8080
 
 # OAuth2 설정 (선택사항)
 REACT_APP_KEYCLOAK_URL=http://localhost:8080/auth
-REACT_APP_CLIENT_ID=jcode-client
+REACT_APP_CLIENT_ID=your-client-id
 REACT_APP_SCOPE=openid
 REACT_APP_REDIRECT_URI=http://localhost:3000/auth/callback
-REACT_APP_REALM=jcode-realm
+REACT_APP_REALM=your-realm
 ```
 
 ---
@@ -139,7 +134,7 @@ JCode Frontend는 오픈소스 프로젝트로, 여러분의 기여를 환영합
 
 ### 기여 방법
 
-1. **이슈 확인**: [Issues](https://github.com/your-repo/jcode-frontend/issues)에서 해결하고 싶은 문제를 찾아보세요
+1. **이슈 확인**: 이슈 발견
 2. **포크 & 클론**: 레포지토리를 포크하고 로컬에 클론하세요
 3. **브랜치 생성**: `git checkout -b feature/your-feature-name`
 4. **개발 & 테스트**: 변경사항을 구현하고 테스트하세요
@@ -162,11 +157,11 @@ JCode Frontend는 오픈소스 프로젝트로, 여러분의 기여를 환영합
 ### 폴더 구조
 ```
 frontend/
-├── public/                    # 정적 파일
-│   ├── index.html            # 메인 HTML 템플릿
-│   └── manifest.json         # PWA 매니페스트
+├── public/                  # 정적 파일
+│   ├── index.html           # 메인 HTML 템플릿
+│   └── manifest.json        # PWA 매니페스트
 ├── src/
-│   ├── components/           # 재사용 가능한 UI 컴포넌트
+│   ├── components/          # 재사용 가능한 UI 컴포넌트
 │   │   ├── common/          # 공통 컴포넌트 (Breadcrumbs 등)
 │   │   ├── layout/          # 레이아웃 (Header, Footer, Sidebar)
 │   │   └── ui/              # 기본 UI (Button, LoadingSpinner 등)
@@ -179,7 +174,7 @@ frontend/
 │   │   └── webide/          # 웹IDE 인터페이스
 │   ├── pages/               # 라우트별 페이지 컴포넌트
 │   ├── services/            # API 서비스 레이어
-│   │   └── api/            # RESTful API 클라이언트
+│   │   └── api/             # RESTful API 클라이언트
 │   ├── contexts/            # React Context Providers
 │   ├── hooks/               # 커스텀 Hooks
 │   ├── utils/               # 유틸리티 함수
@@ -200,15 +195,6 @@ frontend/
 - **React Router 7**: Client-side Routing + Code Splitting
 - **Plotly.js 3.0.1**: Scientific Visualization Library
 
-#### **상태 관리 패턴**
-```mermaid
-graph TD
-    A[App Component] --> B[Theme Context]
-    A --> C[Auth Context]
-    B --> D[Feature Components]
-    C --> D
-    D --> E[Custom Hooks]
-    E --> F[API Services]
 ```
 
 - **Context API**: 글로벌 상태 (인증, 테마)
@@ -216,47 +202,10 @@ graph TD
 - **Custom Hooks**: 비즈니스 로직 재사용
 - **Memo/Callback**: 성능 최적화
 
-#### **API 통신 아키텍처**
-```javascript
-// Layered API Architecture
-api/
-├── axios.js          // HTTP Client 설정
-├── apiHelpers.js     // 공통 헬퍼 함수
-├── errorHandler.js   // 에러 처리 로직
-└── services/
-    ├── authService.js    // 인증 API
-    ├── userService.js    // 사용자 API
-    ├── watcherService.js // 모니터링 API
-    └── adminService.js   // 관리자 API
-```
-
-#### **보안 및 성능**
-- **JWT 토큰**: 자동 갱신 + Interceptor 패턴
-- **CORS 처리**: 백엔드 연동 보안
-- **Lazy Loading**: 라우트별 코드 스플리팅
-- **Error Boundaries**: 컴포넌트 레벨 에러 처리
-- **Service Worker**: PWA 지원 (예정)
-
----
-
-## 테스트
-
-```bash
-# 모든 테스트 실행
-npm test
-
-# 테스트 커버리지 확인
-npm run test:coverage
-
-# E2E 테스트 (향후 추가 예정)
-npm run test:e2e
-```
-
 ---
 
 ## 성능 최적화
 
-- **코드 스플리팅**: React.lazy() + Suspense
 - **메모이제이션**: React.memo, useMemo, useCallback 최적화
 - **번들 최적화**: Webpack 청크 분할
 - **이미지 최적화**: WebP 지원, lazy loading
@@ -267,27 +216,10 @@ npm run test:e2e
 ## 로드맵
 
 ### v1.3.0 (계획 중)
-- [ ] 영어 UI 지원 (국제화)
-- [ ] 테스트 커버리지 80% 달성
-- [ ] PWA 지원 (오프라인 사용)
-- [ ] 플러그인 시스템 도입
+- [ ] 코드 통계 - 컴파일, 빌드 학생 간 비교 기능 추가
 
 ### v1.4.0 (장기 계획)
-- [ ] WebAssembly 기반 컴파일러 통합
-- [ ] 실시간 협업 기능
-- [ ] AI 기반 코드 분석
-- [ ] 모바일 앱 (React Native)
-
----
-
-## 기여자들
-
-JCode Frontend는 다음 분들의 기여로 발전하고 있습니다:
-
-<!-- 기여자 목록은 GitHub API를 통해 자동 업데이트됩니다 -->
-<a href="https://github.com/your-repo/jcode-frontend/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=your-repo/jcode-frontend" />
-</a>
+- [ ] 코드 통계 - 과제에 대한 과거 기록 분석 및 ai 분석 추가가
 
 ---
 
@@ -324,18 +256,11 @@ SOFTWARE.
 ## 지원 및 커뮤니티
 
 ### 질문하기
-- [GitHub Discussions](https://github.com/your-repo/jcode-frontend/discussions) - 일반적인 질문과 아이디어 공유
-- [Issues](https://github.com/your-repo/jcode-frontend/issues) - 버그 리포트 및 기능 요청
-- 이메일: [maintainer@example.com](mailto:maintainer@example.com)
-
-### 실시간 소통
-- Discord: [JCode 개발자 커뮤니티](https://discord.gg/jcode) *(예정)*
-- Twitter: [@JCodePlatform](https://twitter.com/JCodePlatform) *(예정)*
+- 이메일: [jedutools@gmail.com](mailto:jedutools@gmail.com)
 
 ### 관련 프로젝트
-- [JCode Backend](https://github.com/your-repo/jcode-backend) - 백엔드 API 서버
-- [JCode Infrastructure](https://github.com/your-repo/jcode-infrastructure) - Kubernetes 배포 설정
-- [JCode CLI](https://github.com/your-repo/jcode-cli) - 명령줄 도구 *(예정)*
+- [JCode Backend](https://github.com/JBNU-JEduTools/JCode-Backend) - 백엔드 API 서버
+- [JCode Watcher](https://github.com/JBNU-JEduTools/JCode-Watcher) - 데이터 수집 및 가공공
 
 ---
 
