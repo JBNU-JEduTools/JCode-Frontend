@@ -97,22 +97,7 @@ const WebIDECourses = () => {
 
   const handleWebIDEOpen = async (courseId, isSnapshot = false) => {
     try {
-      if (isSnapshot) {
-        try {
-          // JCode 생성 (스냅샷용)
-          await jcodeService.createJCode(courseId, {
-            userEmail: user.email,
-            snapshot: true
-          });
-          console.log('스냅샷용 JCode 생성 성공');
-        } catch (error) {
-          // JCode가 이미 존재하거나 권한 없음 - 계속 진행
-          console.warn('스냅샷용 JCode 생성 실패 (이미 존재하거나 권한 없음):', error.message);
-          // 403, 404 등의 에러는 예상 가능하므로 계속 진행
-        }
-      }
-
-      // JCode 리다이렉트 실행
+      // JCode 리다이렉트 실행 (스냅샷의 경우 기존 스냅샷에 접속)
       console.log('JCode 리다이렉트 요청 시작:', { courseId, isSnapshot, userEmail: user.email });
       
       const redirectData = await redirectService.redirectToJCode({

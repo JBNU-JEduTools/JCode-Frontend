@@ -120,20 +120,7 @@ const authService = {
     }
   },
 
-  /**
-   * 현재 토큰 가져오기
-   */
-  getCurrentToken,
 
-  /**
-   * 토큰 저장
-   */
-  saveToken,
-
-  /**
-   * 토큰 제거
-   */
-  removeToken
 };
 
 export default authService; 
