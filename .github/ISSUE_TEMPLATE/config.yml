@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/your-repo/jcode-frontend/discussions
+    about: 일반적인 질문, 아이디어 공유, 커뮤니티 소통
+  - name: 📚 문서
+    url: https://github.com/your-repo/jcode-frontend/blob/main/README.md
+    about: 프로젝트 문서 및 사용 가이드
+  - name: 🔧 백엔드 관련 이슈
+    url: https://github.com/your-repo/jcode-backend/issues
+    about: 백엔드 API 관련 문제는 여기로 이동해주세요
+  - name: 🔧 Watcher 관련 이슈
+    url: https://github.com/your-repo/jcode-watcher/issues
+    about: Watcher 관련 문제는 여기로 이동해주세요
