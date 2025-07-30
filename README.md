@@ -219,22 +219,7 @@ frontend/
 - [ ] 코드 통계 - 컴파일, 빌드 학생 간 비교 기능 추가
 
 ### v1.4.0 (장기 계획)
-- [ ] 코드 통계 - 과제에 대한 과거 기록 분석 및 ai 분석 추가
-
-## 지원 및 커뮤니티
-
-### 질문하기
-- 이메일: [jedutools@gmail.com](mailto:jedutools@gmail.com)
-
-### 관련 프로젝트
-- [JCode Backend](https://github.com/JBNU-JEduTools/JCode-Backend) - 백엔드 API 서버
-- [JCode Watcher](https://github.com/JBNU-JEduTools/JCode-Watcher) - 데이터 수집 및 가공공
-
----
-
-** 이 프로젝트가 도움이 되셨다면 스타를 눌러주세요! ⭐**
-
-Made with ❤️ by the JCode Community
+- [ ] 코드 통계 - 과제에 대한 과거 기록 분석 및 ai 분석 추가가
 
 ---
 
@@ -268,6 +253,21 @@ SOFTWARE.
 
 ---
 
+## 지원 및 커뮤니티
 
+### 질문하기
+- 이메일: [jedutools@gmail.com](mailto:jedutools@gmail.com)
+
+### 관련 프로젝트
+- 🔗 [JCode Backend](https://github.com/JBNU-JEduTools/JCode-Backend) - 백엔드 API 서버
+- 🔗 [JCode Watcher](https://github.com/JBNU-JEduTools/JCode-Watcher) - 데이터 수집 및 가공
+
+---
+
+
+
+** 이 프로젝트가 도움이 되셨다면 스타를 눌러주세요! ⭐**
+
+Made with ❤️ by the JCode Community
 
 
