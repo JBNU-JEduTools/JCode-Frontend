@@ -264,10 +264,10 @@ SOFTWARE.
 
 ---
 
-<div align="center">
+
 
 ** 이 프로젝트가 도움이 되셨다면 스타를 눌러주세요! ⭐**
 
 Made with ❤️ by the JCode Community
 
-</div>
+
