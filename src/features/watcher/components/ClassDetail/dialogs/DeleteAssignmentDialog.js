@@ -8,6 +8,7 @@ import {
   Typography
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
+import { GlassPaper } from '../../../../../components/ui';
 
 /**
  * 과제 삭제 확인 다이얼로그 컴포넌트
@@ -40,6 +41,7 @@ const DeleteAssignmentDialog = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      PaperComponent={GlassPaper}
     >
       <DialogTitle sx={{ 
         fontFamily: FONT_FAMILY,

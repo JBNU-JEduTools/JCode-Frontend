@@ -13,10 +13,10 @@ const Footer = () => {
         py: 1.5,
         px: 2,
         mt: 'auto',
-        backgroundColor: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'rgba(0, 0, 0, 0.2)'
-            : 'rgba(0, 0, 0, 0.02)',
+        background: 'transparent',
+        backdropFilter: 'blur(8px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+        borderTop: 'none'
       }}
     >
       <Container maxWidth="lg">

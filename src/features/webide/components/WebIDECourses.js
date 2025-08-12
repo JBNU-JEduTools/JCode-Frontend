@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { 
   Container, 
   CircularProgress, 
@@ -32,7 +33,7 @@ import { toast } from 'react-toastify';
 import { useTheme } from '../../../contexts/ThemeContext';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { LoadingSpinner } from '../../../components/ui';
+import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -232,14 +233,7 @@ const WebIDECourses = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>  
-        <Paper elevation={0} sx={{ 
-          p: 3,
-          backgroundColor: (theme) => 
-            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-          border: (theme) =>
-            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-          borderRadius: '16px'
-        }}>
+        <GlassPaper>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -746,7 +740,7 @@ const WebIDECourses = () => {
               </Button>
             </DialogActions>
           </Dialog>
-        </Paper>
+        </GlassPaper>
       </Container>
     </Fade>
   );

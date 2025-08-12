@@ -12,6 +12,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
+import { GlassPaper } from '../../../../../components/ui';
 
 /**
  * 과제 수정 다이얼로그 컴포넌트
@@ -81,6 +82,7 @@ const EditAssignmentDialog = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      PaperComponent={GlassPaper}
       PaperProps={{
         sx: {
           minHeight: '500px'

@@ -1,57 +1,48 @@
 import React from 'react';
-import { Container, Paper, Button, Typography, Box, Fade, Divider } from '@mui/material';
+import { Container, Button, Typography, Box, Fade } from '@mui/material';
 import { useAuth } from '../../../contexts/AuthContext';
 import SchoolIcon from '@mui/icons-material/School';
-import { useTheme } from '../../../contexts/ThemeContext';
 import CodeIcon from '@mui/icons-material/Code';
 
 const Login = () => {
   const { login } = useAuth();
-  const { isDarkMode } = useTheme();
 
   return (
     <Fade in={true} timeout={300}>
-      <Container 
-        maxWidth="md" 
-        sx={{ 
+      <Container
+        maxWidth="md"
+        sx={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 'calc(100vh - 500px)'
+          justifyContent: 'flex-start',
+          minHeight: '100vh',
+          position: 'relative',
+          overflow: 'visible',
+          pt: 18,
+          pb: 4
         }}
       >
-        <Paper 
-          elevation={isDarkMode ? 3 : 7} 
-          sx={{ 
+        <Box
+          className="liquidGlass-wrapper"
+          sx={{
             p: 5,
             width: '100%',
             maxWidth: 640,
-            borderRadius: 2,
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? '#282A36' 
-                : '#FFFFFF',
+            borderRadius: '16px',
+            position: 'relative',
+            zIndex: 1,
+            fontWeight: 600,
+            background: 'transparent',
+            border: (theme) => `1px solid ${theme.palette.divider}`,
             boxShadow: (theme) =>
               theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0, 0, 0, 0.4)'
-                : '0 8px 32px rgba(0, 0, 0, 0.1)',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '5px',
-              background: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(90deg, #FF79C6, #BD93F9)'
-                  : 'linear-gradient(90deg, #004C9C, #0070E0)',
-            }
+                ? '0 12px 28px rgba(0,0,0,0.55)'
+                : '0 12px 28px rgba(0,0,0,0.12)'
           }}
         >
+          {/* 컨텐츠 */}
+          <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box 
               sx={{ 
@@ -67,8 +58,8 @@ const Login = () => {
                   fontSize: '2.2rem',
                   color: (theme) => 
                     theme.palette.mode === 'dark' 
-                      ? '#FF79C6'
-                      : '#004C9C',
+                      ? '#BD93F9'
+                      : '#0A84FF',
                   mr: 1
                 }} 
               />
@@ -87,17 +78,6 @@ const Login = () => {
               </Typography>
             </Box>
             <Typography 
-              variant="body1" 
-              color="text.secondary"
-              sx={{
-                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                fontSize: '1rem',
-                mb: 0.5
-              }}
-            >
-              전북대학교 통합계정으로 로그인하세요
-            </Typography>
-            <Typography 
               variant="body2" 
               sx={{
                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
@@ -108,7 +88,7 @@ const Login = () => {
                     : 'text.disabled'
               }}
             >
-              JCode에서 프로그래밍의 여정을 시작하세요
+              Talk is cheap. Show me the code.
             </Typography>
           </Box>
           
@@ -123,22 +103,35 @@ const Login = () => {
             }
             onClick={login}
             sx={{ 
-              py: 1.8,
-              backgroundColor: '#004C9C',
+              py: 1,
               color: '#FFFFFF',
               fontSize: '1rem',
-              fontWeight: 600,
+              fontWeight: 700,
               textTransform: 'none',
-              borderRadius: '8px',
+              borderRadius: '10px',
               fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-              boxShadow: 'none',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '#BD93F9'
+                  : 'linear-gradient(180deg,rgb(34, 10, 255) 0%, #0060DF 100%)',
+              border: '1px solid rgba(255,255,255,0.35)',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 10px 24px rgba(255, 121, 198, 0.35)'
+                  : '0 10px 24px rgba(0, 96, 223, 0.35)',
               '&:hover': {
-                backgroundColor: '#004C9C',
-                boxShadow: 'none'
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? '#A084E8'
+                    : 'linear-gradient(180deg, #0B75F5 0%, #0056C9 100%)',
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? '0 12px 28px rgba(245, 107, 182, 0.42)'
+                    : '0 12px 28px rgba(0, 86, 201, 0.42)'
               }
             }}
           >
-            JEduTools 통합 로그인
+            JEduTools Login
           </Button>
 
           <Box sx={{ mt: 3, textAlign: 'center' }}>
@@ -152,10 +145,11 @@ const Login = () => {
                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
               }}
             >
-              © {new Date().getFullYear()} JEduTools. All rights reserved.
+              © {new Date().getFullYear()} JEduTools.
             </Typography>
           </Box>
-        </Paper>
+          </Box>
+        </Box>
       </Container>
     </Fade>
   );

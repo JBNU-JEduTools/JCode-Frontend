@@ -1,10 +1,11 @@
 import React from 'react';
+import { Box } from '@mui/material';
 import WatcherBreadcrumbs from '../../../../components/common/WatcherBreadcrumbs';
 import ChartHeader from '../charts/ChartHeader';
 
 const AssignmentHeader = ({ course, assignment, assignmentId }) => {
   return (
-    <>
+    <Box sx={{ backgroundColor: 'transparent' }}>
       <WatcherBreadcrumbs 
         paths={[
           { 
@@ -23,7 +24,7 @@ const AssignmentHeader = ({ course, assignment, assignmentId }) => {
         assignment={assignment}
         course={course}
       />
-    </>
+    </Box>
   );
 };
 

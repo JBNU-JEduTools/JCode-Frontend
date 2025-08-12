@@ -81,6 +81,20 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
 
   // 차트 레이아웃 메모이제이션
   const layout = useMemo(() => ({
+    // StudentChart와 동일한 x축 스타일/스파이크 설정
+    xaxis: {
+      tickformatstops: getTimeFormatStops(),
+      gridcolor: isDarkMode ? '#44475A' : '#E0E0E0',
+      zerolinecolor: isDarkMode ? '#44475A' : '#E0E0E0',
+      color: isDarkMode ? '#F8F8F2' : '#282A36',
+      showspikes: true,
+      spikecolor: isDarkMode ? '#BD93F9' : '#6272A4',
+      spikethickness: -2,
+      spikemode: 'across',
+      spikesnap: 'cursor',
+      spikedash: 'dash',
+      fixedrange: false,
+    },
     yaxis: {
       title: '로그 유형',
       titlefont: {
@@ -97,7 +111,16 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
       side: 'left',
       fixedrange: true,
       autorange: false,
-      constrain: 'domain'
+      constrain: 'domain',
+      gridcolor: isDarkMode ? '#44475A' : '#E0E0E0',
+      zerolinecolor: isDarkMode ? '#44475A' : '#E0E0E0',
+      color: isDarkMode ? '#F8F8F2' : '#282A36',
+      showspikes: true,
+      spikecolor: isDarkMode ? '#BD93F9' : '#6272A4',
+      spikethickness: -2,
+      spikemode: 'across',
+      spikesnap: 'cursor',
+      spikedash: 'dash',
     },
     // 코드 크기 Y축 설정
     yaxis2: {
@@ -105,7 +128,15 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
       tickformat: ',d', // 천 단위 구분 기호 사용
       fixedrange: false, // 바이트 축은 확대/축소 가능하게 설정
       overlaying: 'y',
-      side: 'right'
+      side: 'right',
+      gridcolor: isDarkMode ? '#44475A' : '#E0E0E0',
+      color: isDarkMode ? '#F8F8F2' : '#282A36',
+      showspikes: true,
+      spikecolor: isDarkMode ? '#BD93F9' : '#6272A4',
+      spikethickness: -2,
+      spikemode: 'across',
+      spikesnap: 'cursor',
+      spikedash: 'dash',
     },
     margin: { t: 30, r: 100, b: 60, l: 100 }, // 양쪽 여백 확보
     hovermode: 'x',
@@ -127,8 +158,9 @@ const TotalSizeChart = ({ data, student, assignment, runLogs = [], buildLogs = [
         sx={{ 
           height: '100%', 
           p: 1, 
-          backgroundColor: theme => theme.palette.mode === 'dark' ? '#282a36' : '#ffffff',
-          border: theme => `1px solid ${theme.palette.mode === 'dark' ? '#44475a' : '#e0e0e0'}`,
+          backgroundColor: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
           borderRadius: '8px'
         }}
       >

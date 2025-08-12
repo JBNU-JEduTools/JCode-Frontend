@@ -42,6 +42,7 @@ const Navbar = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isLoginRoute = location.pathname === '/' || location.pathname.startsWith('/login');
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -103,6 +104,10 @@ const Navbar = () => {
     }
   }, [location.pathname, navItems]);
 
+  if (isLoginRoute) {
+    return null; // 로그인 페이지에서는 네비게이션바 숨김
+  }
+
   if (loading || profileLoading) {
     return null;
   }
@@ -159,7 +164,9 @@ const Navbar = () => {
 
   return (
     <AppBar position="fixed" sx={{ 
-      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+      background: 'transparent',
+      backdropFilter: 'blur(14px) saturate(160%)',
+      WebkitBackdropFilter: 'blur(14px) saturate(160%)',
       color: 'text.primary',
       boxShadow: 'none',
       borderBottom: 'none'

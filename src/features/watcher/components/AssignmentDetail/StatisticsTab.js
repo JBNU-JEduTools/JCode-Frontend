@@ -32,7 +32,7 @@ const StatisticsTab = ({
   onSortByStudentNum
 }) => {
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, backgroundColor: 'transparent' }}>
       {/* 검색 필드 - 학생이 아닌 경우에만 표시 */}
       {userRole !== 'STUDENT' && (
         <TextField

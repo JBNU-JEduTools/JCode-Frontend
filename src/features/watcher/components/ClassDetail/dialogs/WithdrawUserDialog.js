@@ -9,6 +9,7 @@ import {
   TextField
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
+import { GlassPaper } from '../../../../../components/ui';
 
 /**
  * 사용자 탈퇴 확인 다이얼로그 컴포넌트
@@ -62,6 +63,7 @@ const WithdrawUserDialog = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      PaperComponent={GlassPaper}
     >
       <DialogTitle sx={{ 
         fontFamily: FONT_FAMILY,

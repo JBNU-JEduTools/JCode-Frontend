@@ -658,7 +658,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
 
   //console.log('차트 렌더링: 데이터 있음, 차트 표시');
   return (
-    <Paper elevation={1} sx={{ p: 3, mb: 1, borderRadius: 2 }}>
+    <Paper elevation={0} sx={{ p: 3, mb: 1, borderRadius: 2, backgroundColor: 'transparent', boxShadow: 'none' }}>
       <div id="studentChart" style={{ width: '100%', height: '600px' }} ref={chartRef}></div>
       
       {/* 관리자/교수/조교인 경우에만 StudentSelector 다이얼로그 표시 */}

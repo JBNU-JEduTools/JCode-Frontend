@@ -30,7 +30,7 @@ const AssignmentStudentsTab = ({
 }) => {
   return (
     <>
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, backgroundColor: 'transparent' }}>
         <TextField
           fullWidth
           size="small"
@@ -53,7 +53,7 @@ const AssignmentStudentsTab = ({
         />
       </Box>
       
-      <TableContainer>
+      <TableContainer sx={{ backgroundColor: 'transparent' }}>
         <Table>
           <TableHead>
             <TableRow>

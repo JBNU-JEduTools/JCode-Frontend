@@ -5,7 +5,7 @@ import ChangeChart from '../charts/ChangeChart';
 
 const ChartsSection = ({ data, student, assignment, filteredLogs }) => {
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', backgroundColor: 'transparent' }}>
       <TotalSizeChart 
         data={data} 
         student={student} 

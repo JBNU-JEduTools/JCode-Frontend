@@ -47,6 +47,44 @@ const AboutPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
+  // 공통 리퀴드 글래스 카드 스타일
+  const glassCardSx = {
+    background: theme.palette.mode === 'dark'
+      ? 'linear-gradient(135deg, rgba(40,42,54,0.60), rgba(40,42,54,0.35))'
+      : 'linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,255,255,0.50))',
+    backdropFilter: 'blur(22px) saturate(180%) contrast(108%) brightness(105%)',
+    WebkitBackdropFilter: 'blur(22px) saturate(180%) contrast(108%) brightness(105%)',
+    border: theme.palette.mode === 'dark'
+      ? '1px solid rgba(255,255,255,0.14)'
+      : '1px solid rgba(255,255,255,0.65)',
+    boxShadow: theme.palette.mode === 'dark'
+      ? 'inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 48px rgba(0,0,0,0.55)'
+      : 'inset 0 1px 0 rgba(255,255,255,0.85), 0 18px 44px rgba(31,38,135,0.22)',
+    borderRadius: 16,
+    position: 'relative',
+    overflow: 'hidden',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      background: theme.palette.mode === 'dark'
+        ? 'linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.06))'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.40))',
+      mixBlendMode: 'overlay',
+      opacity: 0.3
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"80\\" height=\\"80\\"><filter id=\\"n\\"><feTurbulence baseFrequency=\\"0.9\\" numOctaves=\\"2\\"/></filter><rect width=\\"100%\\" height=\\"100%\\" filter=\\"url(%23n)\\" opacity=\\"0.015\\"/></svg>")',
+      backgroundSize: '80px 80px',
+      pointerEvents: 'none'
+    }
+  };
+  
   // 공지사항 더보기 상태 관리
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
@@ -224,7 +262,7 @@ const AboutPage = () => {
         fontWeight: theme.typography.fontWeightBold,
         fontFamily: theme.typography.fontFamily,
         background: theme.palette.mode === 'dark'
-          ? `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`
+          ? 'linear-gradient(45deg, #BD93F9 30%, #FF79C6 90%)'
           : `linear-gradient(45deg, ${theme.palette.primary.dark} 30%, ${theme.palette.primary.light} 90%)`,
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
@@ -238,8 +276,30 @@ const AboutPage = () => {
 
   return (
     <Fade in={true} timeout={300}>
-      <Box sx={{ overflow: 'hidden' }}>
-        <Container maxWidth="lg" sx={{ pt: 8 }}>
+      <Box sx={{ 
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          background: theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, rgba(10,10,14,0.96) 0%, rgba(10,10,14,0.96) 100%)'
+            : 'transparent'
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          background: theme.palette.mode === 'dark'
+            ? 'radial-gradient(800px 400px at 50% 8%, rgba(0,0,0,0.28), transparent 60%)'
+            : 'transparent',
+          pointerEvents: 'none'
+        }
+      }}>
+        <Container maxWidth="lg" sx={{ pt: 8, position: 'relative', zIndex: 1 }}>
           {/* 로고 섹션 */}
           <Box sx={{ mb: 8, textAlign: 'center' }}>
             <motion.div
@@ -313,15 +373,12 @@ const AboutPage = () => {
                     height: '100%',
                     minHeight: '400px',
                     overflow: 'hidden',
-                    border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 2,
-                    background: theme.palette.mode === 'dark' 
-                      ? theme.palette.background.paper
-                      : theme.palette.background.default,
+                    ...glassCardSx,
                     transition: 'all 0.3s ease',
                     '&:hover': {
                       boxShadow: theme.shadows[4],
-                      borderColor: theme.palette.primary.main
+                      borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                     }
                   }}
                 >
@@ -330,20 +387,20 @@ const AboutPage = () => {
                       p: 3,
                       borderBottom: `1px solid ${theme.palette.divider}`,
                       background: theme.palette.mode === 'dark' 
-                        ? 'rgba(25, 118, 210, 0.1)' 
+                        ? 'rgba(189, 147, 249, 0.12)'
                         : 'rgba(25, 118, 210, 0.05)'
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <NotificationsIcon sx={{ 
-                        color: theme.palette.primary.main,
+                        color: theme.palette.mode === 'dark' ? '#FF79C6' : theme.palette.primary.main,
                         fontSize: '1.5rem'
                       }} />
                       <Typography 
                         variant="h6" 
                         sx={{ 
                           fontWeight: 'bold',
-                          color: theme.palette.primary.main
+                          color: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                         }}
                       >
                         공지사항
@@ -452,16 +509,13 @@ const AboutPage = () => {
                       elevation={0}
                       sx={{
                         height: 250,
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
+                        ...glassCardSx,
                         borderRadius: theme.shape.borderRadius,
                         transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
                         '&:hover': {
                           transform: 'translateY(-8px)',
                           boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
+                          borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                         }
                       }}
                     >
@@ -523,16 +577,13 @@ const AboutPage = () => {
                       elevation={0}
                       sx={{
                         height: '100%',
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
+                        ...glassCardSx,
                         borderRadius: theme.shape.borderRadius,
                         transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
                         '&:hover': {
                           transform: 'translateY(-8px)',
                           boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
+                          borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                         }
                       }}
                     >
@@ -591,16 +642,13 @@ const AboutPage = () => {
                         elevation={0}
                         sx={{
                           height: '100%',
-                          background: theme.palette.mode === 'dark' 
-                            ? theme.palette.background.paper
-                            : theme.palette.background.default,
+                          ...glassCardSx,
                           borderRadius: theme.shape.borderRadius,
                           transition: 'all 0.3s ease',
-                          border: `1px solid ${theme.palette.divider}`,
                           '&:hover': {
                             transform: 'translateY(-5px)',
                             boxShadow: theme.shadows[4],
-                            borderColor: theme.palette.primary.main
+                            borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                           }
                         }}
                       >
@@ -639,20 +687,17 @@ const AboutPage = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
-                    <Card
+                      <Card
                       elevation={0}
                       sx={{
                         height: '160px',
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
+                          ...glassCardSx,
                         borderRadius: theme.shape.borderRadius,
                         transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
                         '&:hover': {
                           transform: 'translateY(-5px)',
                           boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
+                            borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                         }
                       }}
                     >
@@ -714,16 +759,13 @@ const AboutPage = () => {
                   elevation={0}
                   sx={{
                     width: { xs: '100%', sm: '300px' },
-                    background: theme.palette.mode === 'dark' 
-                      ? theme.palette.background.paper
-                      : theme.palette.background.default,
+                    ...glassCardSx,
                     borderRadius: theme.shape.borderRadius,
                     transition: 'all 0.3s ease',
-                    border: `1px solid ${theme.palette.divider}`,
                     '&:hover': {
                       transform: 'translateY(-5px)',
                       boxShadow: theme.shadows[4],
-                      borderColor: theme.palette.primary.main
+                      borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                     }
                   }}
                 >
@@ -761,16 +803,13 @@ const AboutPage = () => {
                       elevation={0}
                       sx={{
                         height: '100%',
-                        background: theme.palette.mode === 'dark' 
-                          ? theme.palette.background.paper
-                          : theme.palette.background.default,
+                        ...glassCardSx,
                         borderRadius: theme.shape.borderRadius,
                         transition: 'all 0.3s ease',
-                        border: `1px solid ${theme.palette.divider}`,
                         '&:hover': {
                           transform: 'translateY(-5px)',
                           boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.primary.main
+                          borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                         }
                       }}
                     >
@@ -936,16 +975,13 @@ const AboutPage = () => {
                         sx={{
                           p: 3,
                           ml: isMobile ? 5 : 0,
-                          background: theme.palette.mode === 'dark' 
-                            ? theme.palette.background.paper
-                            : theme.palette.background.default,
-                          border: `1px solid ${theme.palette.divider}`,
+                          ...glassCardSx,
                           borderRadius: theme.shape.borderRadius,
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             transform: 'translateY(-5px)',
                             boxShadow: theme.shadows[4],
-                            borderColor: theme.palette.primary.main
+                            borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                           }
                         }}
                       >
@@ -974,11 +1010,10 @@ const AboutPage = () => {
             right: '50%',
             marginLeft: '-50vw',
             marginRight: '-50vw',
-            background: theme.palette.mode === 'dark' 
-              ? theme.palette.background.default
-              : theme.palette.background.paper,
-            py: 6,
-            overflow: 'hidden'
+            background: 'transparent',
+            py: 10,
+            minHeight: 320,
+            overflow: 'visible'
           }}>
             <Container maxWidth="lg" sx={{ mb: 3 }}>
               <SectionTitle smaller>Family Sites</SectionTitle>
@@ -1004,15 +1039,18 @@ const AboutPage = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      padding: '15px',
-                      backgroundColor: theme.palette.mode === 'dark' 
-                        ? theme.palette.background.paper
-                        : theme.palette.background.default,
+                      px: 2.5,
+                      py: 1.5,
                       borderRadius: theme.shape.borderRadius,
-                      transition: 'all 0.3s ease',
+                      textDecoration: 'none',
+                      transition: 'border-color 0.2s ease',
+                      ...glassCardSx,
+                      boxShadow: 'none',
+                      transform: 'none',
                       '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: theme.shadows[4]
+                        transform: 'none',
+                        boxShadow: 'none',
+                        borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
                       }
                     }}
                   >

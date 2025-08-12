@@ -8,8 +8,8 @@ export const getChartStyles = (isDarkMode) => {
       family: CHART_FONT_FAMILY,
       color: isDarkMode ? '#F8F8F2' : '#282A36'
     },
-    paper_bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.8)' : '#FFFFFF',
-    plot_bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.4)' : '#FFFFFF',
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
     gridcolor: isDarkMode ? '#44475A' : '#E0E0E0',
     zerolinecolor: isDarkMode ? '#44475A' : '#E0E0E0',
     colors: {
@@ -18,7 +18,7 @@ export const getChartStyles = (isDarkMode) => {
       deletion: isDarkMode ? '#FF5555' : '#FF79C6'
     },
     hoverlabel: {
-      bgcolor: isDarkMode ? '#44475A' : '#FFFFFF',
+      bgcolor: isDarkMode ? 'rgba(40,42,54,0.95)' : '#FFFFFF',
       bordercolor: isDarkMode ? '#6272A4' : '#E0E0E0',
       font: {
         family: CHART_FONT_FAMILY,
@@ -157,6 +157,32 @@ export const LOG_CATEGORIES = {
 
 // 로그 트레이스 생성 함수
 export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
+  const formatLocalTime = (ts) => {
+    try {
+      const dateObj = typeof ts === 'string' ? new Date(ts) : new Date(ts);
+      return dateObj.toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+    } catch (e) {
+      return String(ts);
+    }
+  };
+
+  const buildTooltip = (log, kind) => {
+    const time = formatLocalTime(log.timestamp);
+    const cmdline = log.cmdline || log.command || '';
+    const target = log.target_path || '';
+    const targetLabel = kind === 'build' ? '대상 파일' : '대상 경로';
+
+    const lines = [
+      `<b>시간</b>: ${time}`,
+      cmdline ? `<b>명령어</b>: ${cmdline}` : '',
+      target ? `<b>${targetLabel}</b>: ${target}` : ''
+    ].filter(Boolean);
+
+    return lines.join('<br>');
+  };
   // 실행 성공 로그 트레이스
   const runLogsSuccessTrace = {
     x: runLogs.filter(log => log.exit_code === 0).map(log => {
@@ -177,13 +203,7 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#50FA7B' : '#4CAF50'
       }
     },
-    text: runLogs.filter(log => log.exit_code === 0).map(log => {
-      const stdoutPreview = log.stdout ? log.stdout.substring(0, 150) + (log.stdout.length > 150 ? '...' : '') : '없음';
-      return `<b>실행 성공</b><br>` +
-        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
-        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
-        (log.cwd ? `작업 디렉토리: ${log.cwd}<br>` : '');
-    }),
+    text: runLogs.filter(log => log.exit_code === 0).map(log => buildTooltip(log, 'run')),
     hoverinfo: 'text',
     hoverlabel: {
       bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
@@ -212,13 +232,7 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#FF5555' : '#F44336'
       }
     },
-    text: runLogs.filter(log => log.exit_code !== 0).map(log => {
-      const stderrPreview = log.stderr ? log.stderr.substring(0, 150) + (log.stderr.length > 150 ? '...' : '') : '없음';
-      return `<b>실행 실패</b><br>` +
-        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
-        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
-        (log.cwd ? `작업 디렉토리: ${log.cwd}<br>` : '');
-    }),
+    text: runLogs.filter(log => log.exit_code !== 0).map(log => buildTooltip(log, 'run')),
     hoverinfo: 'text',
     hoverlabel: {
       bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
@@ -247,13 +261,7 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#8BE9FD' : '#2196F3'
       }
     },
-    text: buildLogs.filter(log => log.exit_code === 0).map(log => {
-      const stdoutPreview = log.stdout ? log.stdout.substring(0, 150) + (log.stdout.length > 150 ? '...' : '') : '없음';
-      return `<b>빌드 성공</b><br>` +
-        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
-        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
-        (log.target_path ? `대상 파일: ${log.target_path}<br>` : '');
-    }),
+    text: buildLogs.filter(log => log.exit_code === 0).map(log => buildTooltip(log, 'build')),
     hoverinfo: 'text',
     hoverlabel: {
       bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',
@@ -282,13 +290,7 @@ export const createLogTraces = (runLogs, buildLogs, isDarkMode) => {
         color: isDarkMode ? '#FFB86C' : '#FF9800'
       }
     },
-    text: buildLogs.filter(log => log.exit_code !== 0).map(log => {
-      const stderrPreview = log.stderr ? log.stderr.substring(0, 150) + (log.stderr.length > 150 ? '...' : '') : '없음';
-      return `<b>빌드 실패</b><br>` +
-        `시간: ${new Date(log.timestamp).toLocaleString()}<br>` +
-        `명령어: ${log.cmdline || log.command || '알 수 없음'}<br>` +
-        (log.target_path ? `대상 파일: ${log.target_path}<br>` : '');
-    }),
+    text: buildLogs.filter(log => log.exit_code !== 0).map(log => buildTooltip(log, 'build')),
     hoverinfo: 'text',
     hoverlabel: {
       bgcolor: isDarkMode ? 'rgba(40, 42, 54, 0.9)' : 'rgba(255, 255, 255, 0.9)',

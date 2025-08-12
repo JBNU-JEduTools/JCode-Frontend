@@ -11,6 +11,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
+import { GlassPaper } from '../../../../../components/ui';
 
 /**
  * 학생 권한 변경 다이얼로그 컴포넌트
@@ -58,6 +59,7 @@ const PromoteStudentDialog = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      PaperComponent={GlassPaper}
     >
       <DialogTitle sx={{ 
         fontFamily: FONT_FAMILY,

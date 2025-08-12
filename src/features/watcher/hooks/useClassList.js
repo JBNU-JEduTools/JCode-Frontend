@@ -83,20 +83,26 @@ export const useClassList = () => {
   // 참가 코드 재발급
   const regenerateCourseKey = useCallback(async (courseId) => {
     try {
-      const response = await axios.post(`/api/courses/${courseId}/regenerate-key`);
-      const { courseKey } = response.data;
-      
+      // 백엔드 스펙: GET /api/courses/{courseId}/key → 응답은 문자열(newKey)
+      const response = await axios.get(`/api/courses/${courseId}/key`);
+      const data = response.data;
+      const courseKey = typeof data === 'string' ? data : data?.courseKey;
+
+      if (!courseKey) {
+        throw new Error('서버 응답에서 참가 코드를 찾을 수 없습니다.');
+      }
+
       // 목록 새로고침
       await loadClasses();
-      
-      return { 
-        success: true, 
-        courseKey 
+
+      return {
+        success: true,
+        courseKey
       };
     } catch (err) {
       console.error('참가 코드 재발급 실패:', err);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: err.message || '참가 코드 재발급에 실패했습니다.'
       };
     }

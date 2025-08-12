@@ -14,6 +14,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
 import CodeIcon from '@mui/icons-material/Code';
 import MonitorIcon from '@mui/icons-material/Monitor';
+import { GlassPaper } from '../../../../components/ui';
 
 const StudentSelector = ({ 
   open, 
@@ -30,16 +31,12 @@ const StudentSelector = ({
       maxWidth="xs"
       fullWidth
       onClose={onClose}
+      PaperComponent={GlassPaper}
       PaperProps={{
         sx: {
           borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          background: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-          backgroundImage: (theme) => theme.palette.mode === 'dark' 
-            ? 'linear-gradient(rgba(66, 66, 77, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 66, 77, 0.2) 1px, transparent 1px)'
-            : 'linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          p: 0
         }
       }}
     >

@@ -96,7 +96,7 @@ const DateRangeSelector = ({
   };
 
   return (
-    <Box sx={{ px: 3, py: 2, mt: -7 }}>
+    <Box sx={{ px: 3, py: 2, mt: -7, backgroundColor: 'transparent' }}>
       <Stack spacing={2}>
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

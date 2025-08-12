@@ -106,6 +106,7 @@ const PlotlyChart = ({
       plot_bgcolor: chartStyles.plot_bgcolor,
       margin: { t: 50, r: 30, b: 60, l: 80 },
       hovermode: 'x unified',
+      hoverlabel: chartStyles.hoverlabel,
       showlegend: showLegend,
       legend: showLegend ? chartStyles.legend : undefined,
       xaxis: {
@@ -166,7 +167,10 @@ const PlotlyChart = ({
       
       // 기본 툴팁 설정
       if (!updatedTrace.hovertemplate) {
-        if (trace.name && trace.name.includes('추가')) {
+        // 텍스트 기반 툴팁이 이미 지정된 경우(로그 점 등)에는 그대로 사용
+        if (updatedTrace.text || updatedTrace.hoverinfo === 'text') {
+          updatedTrace.hovertemplate = '%{text}<extra></extra>';
+        } else if (trace.name && trace.name.includes('추가')) {
           updatedTrace.hovertemplate = getHoverTemplate('addition', true);
         } else if (trace.name && trace.name.includes('삭제')) {
           updatedTrace.hovertemplate = getHoverTemplate('deletion', true);

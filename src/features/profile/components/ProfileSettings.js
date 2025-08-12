@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, 
-  Paper, 
   Tabs, 
   Tab, 
   Typography,
@@ -21,7 +20,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import SchoolIcon from '@mui/icons-material/School';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import { getAvatarUrl, getRandomStyle } from '../../../utils/avatar';
-import { LoadingSpinner } from '../../../components/ui';
+import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -158,15 +157,7 @@ const ProfileSettings = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 12, mb: 4 }}>
-      <Paper elevation={0} sx={{ 
-        borderRadius: '16px',
-        border: (theme) =>
-          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-        backgroundColor: (theme) => 
-          theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-        overflow: 'hidden',
-        transition: 'all 0.3s ease',
-      }}>
+      <GlassPaper sx={{ overflow: 'hidden', transition: 'all 0.3s ease' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs 
             value={currentTab} 
@@ -242,7 +233,7 @@ const ProfileSettings = () => {
         <TabPanel value={currentTab} index={1}>
           <ProfileSetup isEditMode={true} initialData={profileData} />
         </TabPanel>
-      </Paper>
+      </GlassPaper>
     </Container>
   );
 };

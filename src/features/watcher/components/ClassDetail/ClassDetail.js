@@ -11,7 +11,7 @@ import api from '../../../../api/axios';
 import { useTheme } from '../../../../contexts/ThemeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
-import { LoadingSpinner } from '../../../../components/ui';
+import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { useCourseData } from '../../hooks';
 import ClassHeader from './ClassHeader';
@@ -368,17 +368,7 @@ const ClassDetail = () => {
           px: 2,
         }}
       >
-        <Paper 
-          elevation={0}
-          sx={{ 
-            p: 3,
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-            border: (theme) =>
-              `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-            borderRadius: '16px'
-          }}
-        >
+        <GlassPaper>
           <ClassHeader 
             course={course}
             courseId={courseId}
@@ -486,7 +476,7 @@ const ClassDetail = () => {
               name: withdrawDialog.userName
             }}
           />
-        </Paper>
+        </GlassPaper>
       </Container>
     </Fade>
   );

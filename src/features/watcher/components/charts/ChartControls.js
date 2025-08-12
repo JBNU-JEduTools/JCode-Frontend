@@ -23,7 +23,8 @@ const ChartControls = ({
       alignItems: 'center', 
       flexWrap: 'wrap',
       gap: 2,
-      mb: 2
+      mb: 2,
+      backgroundColor: 'transparent'
     }}>
       <FormControl size="small" sx={{ minWidth: 120 }}>
         <InputLabel id="time-unit-label">시간 단위</InputLabel>

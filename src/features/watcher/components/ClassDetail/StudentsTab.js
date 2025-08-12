@@ -25,6 +25,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import api from '../../../../api/axios';
 import { toast } from 'react-toastify';
+// GlassPaper 중복 적용을 피하기 위해 이 탭 내부에서는 사용하지 않음
 
 /**
  * 학생 목록 탭 컴포넌트
@@ -139,7 +140,7 @@ const StudentsTab = ({
           </Typography>
         </Box>
         
-        <TableContainer component={Paper} elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ border: 1, borderColor: 'divider', backgroundColor: 'transparent' }}>
           <Table>
             <TableHead>
               <TableRow>

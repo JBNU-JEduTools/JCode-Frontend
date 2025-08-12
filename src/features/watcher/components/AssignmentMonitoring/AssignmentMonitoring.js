@@ -22,7 +22,7 @@ import {
 import api from '../../../../api/axios';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CacheManager from '../../../../utils/cache-manager';
-import { LoadingSpinner } from '../../../../components/ui';
+import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 
 
 
@@ -483,14 +483,7 @@ const AssignmentMonitoring = () => {
 
   return (
     <Container maxWidth={false} sx={{ mt: 2, px: 2 }}>
-      <Paper elevation={0} sx={{ 
-        p: 3,
-        backgroundColor: (theme) => 
-          theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-        border: (theme) =>
-          `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-        borderRadius: '16px'
-      }}>
+      <GlassPaper>
         <AssignmentMonitoringHeader 
           course={course}
           assignment={assignment}
@@ -530,7 +523,7 @@ const AssignmentMonitoring = () => {
           assignment={assignment}
           filteredLogs={filteredLogs}
         />
-      </Paper>
+      </GlassPaper>
       
       <LogDialog 
         open={logDialogOpen}

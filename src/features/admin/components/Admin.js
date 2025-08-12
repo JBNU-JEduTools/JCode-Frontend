@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container,
-  Paper,
   Fade,
   Tabs,
   Tab,
@@ -16,9 +15,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
-  Card,
-  CardContent
+  MenuItem
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -28,6 +25,7 @@ import { adminService } from '../../../services/api';
 import UserManagementTab from './UserManagement/UserManagementTab';
 import CourseManagementTab from './CourseManagement/CourseManagementTab';
 import { useAdminData } from '../hooks';
+import { GlassPaper } from '../../../components/ui';
 
 const Admin = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -452,17 +450,7 @@ const Admin = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-            border: (theme) =>
-              `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-            borderRadius: '16px'
-          }}
-        >
+        <GlassPaper>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs
               value={currentTab}
@@ -482,20 +470,8 @@ const Admin = () => {
 
 
 
-          <Card
-            sx={{
-              backgroundColor: (theme) =>
-                theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-              border: (theme) =>
-                `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-              borderRadius: '12px'
-            }}
-          >
-            <CardContent>
-              {renderCurrentTab()}
-            </CardContent>
-          </Card>
-        </Paper>
+          {renderCurrentTab()}
+        </GlassPaper>
         {renderDialog()}
       </Container>
     </Fade>

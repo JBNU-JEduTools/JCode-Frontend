@@ -34,7 +34,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { LoadingSpinner, Button } from '../../../../components/ui';
+import { LoadingSpinner, Button, GlassPaper } from '../../../../components/ui';
 import { useClassList } from '../../hooks';
 
 const ClassList = () => {
@@ -174,14 +174,7 @@ const ClassList = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={0} sx={{ 
-          p: 3,
-          backgroundColor: (theme) => 
-            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-          border: (theme) =>
-            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-          borderRadius: '16px'
-        }}>
+        <GlassPaper>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -461,6 +454,7 @@ const ClassList = () => {
             onClose={() => setOpenDialog(false)}
             maxWidth="sm"
             fullWidth
+            PaperComponent={GlassPaper}
           >
             <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
               새 수업 추가
@@ -640,6 +634,7 @@ const ClassList = () => {
             onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
             maxWidth="sm"
             fullWidth
+            PaperComponent={GlassPaper}
           >
             <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
               {courseKeyDialog.courseId ? '참가 코드 재발급 완료' : '강의 개설 완료'}
@@ -728,7 +723,7 @@ const ClassList = () => {
               </Button>
             </DialogActions>
           </Dialog>
-        </Paper>
+        </GlassPaper>
       </Container>
     </Fade>
   );

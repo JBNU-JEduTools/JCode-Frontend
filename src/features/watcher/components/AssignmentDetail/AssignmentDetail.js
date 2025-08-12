@@ -28,7 +28,7 @@ import {
   fetchMonitoringData
 } from '../charts/api';
 import { sortByName, sortByStudentNum, sortByChanges, createStringSort } from '../../../../utils/sortHelpers';
-import { LoadingSpinner } from '../../../../components/ui';
+import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 
 
 
@@ -644,14 +644,7 @@ const AssignmentDetail = () => {
   return (
     <Fade in={true} timeout={300}>
       <Container maxWidth={false} sx={{ mt: 2, px: 2 }}>
-        <Paper elevation={0} sx={{ 
-          p: 3,
-          backgroundColor: (theme) => 
-            theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-          border: (theme) =>
-            `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-          borderRadius: '16px'
-        }}>
+        <GlassPaper>
           <AssignmentHeader 
             course={course}
             assignment={assignment}
@@ -702,7 +695,7 @@ const AssignmentDetail = () => {
               </TabPanel>
             )}
           </Box>
-        </Paper>
+        </GlassPaper>
 
         {/* 학생 선택 다이얼로그 */}
         <StudentSelector

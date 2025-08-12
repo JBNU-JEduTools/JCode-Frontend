@@ -6,11 +6,12 @@ import PeopleIcon from '@mui/icons-material/People';
 
 const AssignmentTabs = ({ tabValue, onTabChange, userRole, studentCount }) => {
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', backgroundColor: 'transparent' }}>
       <Tabs 
         value={tabValue} 
         onChange={onTabChange}
         sx={{
+          backgroundColor: 'transparent',
           '& .MuiTab-root': {
             fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
             textTransform: 'none',

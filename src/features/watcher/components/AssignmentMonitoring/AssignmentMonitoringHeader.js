@@ -93,7 +93,7 @@ const ChartHeader = ({ student, assignment, course }) => {
   const endDate = getEndDate();
   
   return (
-    <Paper sx={{ p: 2, mb: 2, borderRadius: 2 }} elevation={1}>
+    <Paper sx={{ p: 2, mb: 2, borderRadius: 2, backgroundColor: 'transparent', boxShadow: 'none' }} elevation={0}>
       <Typography variant="h5" gutterBottom sx={{ 
         fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
         mb: 2
