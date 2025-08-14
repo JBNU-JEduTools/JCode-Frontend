@@ -37,7 +37,7 @@ export const useClassList = () => {
       
       setClasses(formattedData);
     } catch (err) {
-      console.error('강의 목록 로드 실패:', err);
+      //console.error('강의 목록 로드 실패:', err);
       setError('수업 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -72,7 +72,7 @@ export const useClassList = () => {
         courseKey 
       };
     } catch (err) {
-      console.error('수업 추가 실패:', err);
+      //console.error('수업 추가 실패:', err);
       return { 
         success: false, 
         error: err.message || '수업 추가에 실패했습니다.'
@@ -100,7 +100,7 @@ export const useClassList = () => {
         courseKey
       };
     } catch (err) {
-      console.error('참가 코드 재발급 실패:', err);
+      //console.error('참가 코드 재발급 실패:', err);
       return {
         success: false,
         error: err.message || '참가 코드 재발급에 실패했습니다.'
@@ -118,7 +118,7 @@ export const useClassList = () => {
       
       return { success: true };
     } catch (err) {
-      console.error('강의 삭제 실패:', err);
+      //console.error('강의 삭제 실패:', err);
       return { 
         success: false, 
         error: err.message || '강의 삭제에 실패했습니다.'

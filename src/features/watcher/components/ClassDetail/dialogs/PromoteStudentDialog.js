@@ -49,7 +49,7 @@ const PromoteStudentDialog = ({
       await onPromoteStudent(promotingStudent);
       handleClose();
     } catch (error) {
-      console.error('권한 변경 실패:', error);
+      //console.error('권한 변경 실패:', error);
     }
   };
 

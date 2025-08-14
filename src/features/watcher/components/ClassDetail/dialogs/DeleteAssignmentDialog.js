@@ -31,7 +31,7 @@ const DeleteAssignmentDialog = ({
       await onDeleteAssignment(assignment);
       handleClose();
     } catch (error) {
-      console.error('과제 삭제 실패:', error);
+      //console.error('과제 삭제 실패:', error);
     }
   };
 

@@ -57,7 +57,7 @@ const EditAssignmentDialog = ({
       await onEditAssignment(editingAssignment);
       handleClose();
     } catch (error) {
-      console.error('과제 수정 실패:', error);
+      //console.error('과제 수정 실패:', error);
     }
   };
 

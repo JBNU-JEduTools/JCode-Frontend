@@ -374,7 +374,7 @@ const AssignmentDetail = () => {
                 const cacheEndTime = performance.now();
                 //console.log(`[나의 통계] 모니터링 데이터 사전 로딩 완료: ${cacheEndTime - cacheStartTime}ms 소요`);
               })
-              .catch(err => console.error('[나의 통계] 모니터링 데이터 미리 로드 실패:', err));
+              //.catch(err => console.error('[나의 통계] 모니터링 데이터 미리 로드 실패:', err));
             
             // 기본 과제 정보 미리 가져오기
             const assignmentStartTime = performance.now();
@@ -384,7 +384,7 @@ const AssignmentDetail = () => {
                 //console.log(`[나의 통계] 과제 정보 사전 로딩 완료: ${assignmentEndTime - assignmentStartTime}ms 소요`);
                 //console.log(`[성능] 사전 로딩 전체 완료: ${performance.now() - prefetchStartTime}ms 소요`);
               })
-              .catch(err => console.error('[나의 통계] 과제 정보 미리 로드 실패:', err));
+              //.catch(err => console.error('[나의 통계] 과제 정보 미리 로드 실패:', err));
           } catch (err) {
             //console.error('[나의 통계] 사전 데이터 로드 오류:', err);
           }

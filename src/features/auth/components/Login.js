@@ -59,7 +59,7 @@ const Login = () => {
                   color: (theme) => 
                     theme.palette.mode === 'dark' 
                       ? '#BD93F9'
-                      : '#0A84FF',
+                      : '#6272A4',
                   mr: 1
                 }} 
               />
@@ -113,21 +113,21 @@ const Login = () => {
               background: (theme) =>
                 theme.palette.mode === 'dark'
                   ? '#BD93F9'
-                  : 'linear-gradient(180deg,rgb(34, 10, 255) 0%, #0060DF 100%)',
+                  : 'linear-gradient(135deg, #6272A4 0%, #44475A 100%)',
               border: '1px solid rgba(255,255,255,0.35)',
               boxShadow: (theme) =>
                 theme.palette.mode === 'dark'
                   ? '0 10px 24px rgba(255, 121, 198, 0.35)'
-                  : '0 10px 24px rgba(0, 96, 223, 0.35)',
+                  : '0 10px 24px rgba(98, 114, 164, 0.35)',
               '&:hover': {
                 background: (theme) =>
                   theme.palette.mode === 'dark'
                     ? '#A084E8'
-                    : 'linear-gradient(180deg, #0B75F5 0%, #0056C9 100%)',
+                    : 'linear-gradient(135deg, #4E5C8E 0%, #3A3F5A 100%)',
                 boxShadow: (theme) =>
                   theme.palette.mode === 'dark'
                     ? '0 12px 28px rgba(245, 107, 182, 0.42)'
-                    : '0 12px 28px rgba(0, 86, 201, 0.42)'
+                    : '0 12px 28px rgba(78, 92, 142, 0.42)'
               }
             }}
           >

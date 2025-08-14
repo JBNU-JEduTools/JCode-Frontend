@@ -113,7 +113,7 @@ const authService = {
       });
     } catch (error) {
       // 로그아웃 실패해도 토큰 제거하고 로그인 페이지로
-      console.warn('로그아웃 요청 실패:', error);
+      //console.warn('로그아웃 요청 실패:', error);
     } finally {
       removeToken();
       window.location.href = '/login';

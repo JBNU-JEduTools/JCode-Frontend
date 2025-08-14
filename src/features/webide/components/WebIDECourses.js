@@ -99,7 +99,7 @@ const WebIDECourses = () => {
   const handleWebIDEOpen = async (courseId, isSnapshot = false) => {
     try {
       // JCode 리다이렉트 실행 (스냅샷의 경우 기존 스냅샷에 접속)
-      console.log('JCode 리다이렉트 요청 시작:', { courseId, isSnapshot, userEmail: user.email });
+      //console.log('JCode 리다이렉트 요청 시작:', { courseId, isSnapshot, userEmail: user.email });
       
       const redirectData = await redirectService.redirectToJCode({
         userEmail: user.email,
@@ -107,20 +107,20 @@ const WebIDECourses = () => {
         snapshot: isSnapshot
       });
       
-      console.log('JCode 리다이렉트 응답:', redirectData);
+      //console.log('JCode 리다이렉트 응답:', redirectData);
       
       // 새 탭에서 URL 열기
       if (redirectData?.url) {
-        console.log('URL로 리다이렉트:', redirectData.url);
+        //console.log('URL로 리다이렉트:', redirectData.url);
         window.open(redirectData.url, '_blank');
       } else {
-        console.error('리다이렉트 URL을 찾을 수 없음:', redirectData);
+        //console.error('리다이렉트 URL을 찾을 수 없음:', redirectData);
         throw new Error("리다이렉트 URL을 찾을 수 없습니다. 서버 응답을 확인해주세요.");
       }
       
     } catch (err) {
       // 에러 처리 (토스트는 서비스에서 이미 표시됨)
-      console.error('Web-IDE 연결 실패:', err);
+      //console.error('Web-IDE 연결 실패:', err);
     }
   };
 
@@ -137,10 +137,10 @@ const WebIDECourses = () => {
           userEmail: user.email,
           snapshot: false
         });
-        console.log('강의 참가 후 JCode 생성 성공');
+        //console.log('강의 참가 후 JCode 생성 성공');
       } catch (jcodeError) {
         // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
-        console.warn('강의 참가 후 JCode 생성 실패:', jcodeError.message);
+        //console.warn('강의 참가 후 JCode 생성 실패:', jcodeError.message);
         // 대부분의 경우 자동으로 JCode가 생성되거나 이미 존재할 수 있음
       }
       
@@ -158,7 +158,7 @@ const WebIDECourses = () => {
       
     } catch (error) {
       // 에러 토스트는 서비스에서 자동 표시됨
-      console.error('수업 참가 실패:', error);
+      //console.error('수업 참가 실패:', error);
     }
   };
 
@@ -183,7 +183,7 @@ const WebIDECourses = () => {
       try {
         await userService.deleteMyJCode(withdrawDialog.courseId);
       } catch (jcodeError) {
-        console.error('JCode 삭제 중 오류:', jcodeError);
+        //console.error('JCode 삭제 중 오류:', jcodeError);
         // JCode 삭제 실패 시에도 강의 탈퇴는 계속 진행
       }
 
@@ -205,7 +205,7 @@ const WebIDECourses = () => {
       // 성공 토스트는 서비스에서 자동 표시됨
     } catch (error) {
       // 에러 토스트는 서비스에서 자동 표시됨  
-      console.error('강의 탈퇴 중 오류:', error);
+      //console.error('강의 탈퇴 중 오류:', error);
     }
   };
 

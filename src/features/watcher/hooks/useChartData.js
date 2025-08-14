@@ -35,7 +35,7 @@ export const useChartData = (courseId, assignmentId) => {
 
       setSelectedTimeRange({ startDate, endDate });
     } catch (err) {
-      console.error('차트 데이터 로드 실패:', err);
+      //console.error('차트 데이터 로드 실패:', err);
       setError(err.message || '차트 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ export const useChartData = (courseId, assignmentId) => {
       setSelectedStudentData(studentData);
       setSelectedStudent(studentEmail);
     } catch (err) {
-      console.error('학생 데이터 로드 실패:', err);
+      //console.error('학생 데이터 로드 실패:', err);
       setError(err.message || '학생 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export const useChartData = (courseId, assignmentId) => {
 
       return monitoringData || [];
     } catch (err) {
-      console.error('모니터링 데이터 로드 실패:', err);
+      //console.error('모니터링 데이터 로드 실패:', err);
       setError(err.message || '모니터링 데이터를 불러오는데 실패했습니다.');
       return [];
     } finally {

@@ -108,7 +108,7 @@ export const apiParallel = async (requests) => {
     
     return await Promise.all(promises);
   } catch (error) {
-    console.error('Parallel request failed:', error);
+    //console.error('Parallel request failed:', error);
     throw error;
   }
 }; 

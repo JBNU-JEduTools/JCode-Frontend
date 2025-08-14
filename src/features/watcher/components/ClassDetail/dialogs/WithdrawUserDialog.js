@@ -49,7 +49,7 @@ const WithdrawUserDialog = ({
       });
       handleClose();
     } catch (error) {
-      console.error('사용자 탈퇴 실패:', error);
+      //console.error('사용자 탈퇴 실패:', error);
     }
   };
 

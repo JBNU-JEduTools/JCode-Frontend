@@ -60,7 +60,7 @@ const AddAssignmentDialog = ({
       resetForm();
       onClose();
     } catch (error) {
-      console.error('과제 추가 실패:', error);
+      //console.error('과제 추가 실패:', error);
     }
   };
 

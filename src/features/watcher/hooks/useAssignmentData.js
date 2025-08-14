@@ -30,7 +30,7 @@ export const useAssignmentData = (courseId, assignmentId) => {
         setAssignment(assignmentData);
       }
     } catch (err) {
-      console.error('과제 정보 로드 실패:', err);
+      //console.error('과제 정보 로드 실패:', err);
       setError(err.message || '과제 정보를 불러오는데 실패했습니다.');
       setAssignment(null);
     } finally {

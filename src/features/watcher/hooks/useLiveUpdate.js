@@ -22,7 +22,7 @@ export const useLiveUpdate = (updateFunction, intervalMs = 5000, autoStart = fal
     
     intervalRef.current = setInterval(async () => {
       if (isUpdatingRef.current) {
-        console.log('이전 업데이트가 아직 진행 중입니다. 스킵합니다.');
+        //console.log('이전 업데이트가 아직 진행 중입니다. 스킵합니다.');
         return;
       }
 
@@ -37,7 +37,7 @@ export const useLiveUpdate = (updateFunction, intervalMs = 5000, autoStart = fal
         setLastUpdateTime(new Date());
         setUpdateCount(prev => prev + 1);
       } catch (err) {
-        console.error('실시간 업데이트 오류:', err);
+        //console.error('실시간 업데이트 오류:', err);
         setError(err.message || '업데이트 중 오류가 발생했습니다.');
       } finally {
         isUpdatingRef.current = false;
@@ -77,7 +77,7 @@ export const useLiveUpdate = (updateFunction, intervalMs = 5000, autoStart = fal
       setLastUpdateTime(new Date());
       setUpdateCount(prev => prev + 1);
     } catch (err) {
-      console.error('수동 업데이트 오류:', err);
+      //console.error('수동 업데이트 오류:', err);
       setError(err.message || '업데이트 중 오류가 발생했습니다.');
     } finally {
       isUpdatingRef.current = false;

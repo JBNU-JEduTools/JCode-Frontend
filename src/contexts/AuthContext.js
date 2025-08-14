@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       await authService.logout();
     } catch (error) {
-      console.error('로그아웃 실패:', error);
+      //console.error('로그아웃 실패:', error);
       // 실패해도 로컬 상태는 정리
       sessionStorage.removeItem('jwt');
       window.location.href = '/login';

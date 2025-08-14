@@ -20,22 +20,22 @@ const jcodeService = {
     }
 
     try {
-      console.log('JCode 생성 요청:', { courseId, userEmail: jcodeData.userEmail, snapshot: jcodeData.snapshot });
+      //console.log('JCode 생성 요청:', { courseId, userEmail: jcodeData.userEmail, snapshot: jcodeData.snapshot });
       
       const response = await api.post(`/api/courses/${courseId}/jcodes`, {
         userEmail: jcodeData.userEmail,
         snapshot: jcodeData.snapshot || false
       });
 
-      console.log('JCode 생성 성공:', response.data);
+      //console.log('JCode 생성 성공:', response.data);
       return response.data;
 
     } catch (error) {
-      console.error('JCode 생성 에러:', error);
+      //console.error('JCode 생성 에러:', error);
       
       if (error.response?.status === 403) {
         // 403 에러는 이미 JCode가 존재하거나 권한 없음을 의미할 수 있음
-        console.warn('JCode 생성 실패 (이미 존재하거나 권한 없음):', error.response?.data);
+        //console.warn('JCode 생성 실패 (이미 존재하거나 권한 없음):', error.response?.data);
         throw new Error('JCode가 이미 존재하거나 생성 권한이 없습니다.');
       } else if (error.response?.status === 404) {
         throw new Error('해당 강의를 찾을 수 없습니다.');
@@ -55,15 +55,15 @@ const jcodeService = {
     }
 
     try {
-      console.log('JCode 삭제 요청:', { courseId });
+      //console.log('JCode 삭제 요청:', { courseId });
       
       const response = await api.delete(`/api/courses/${courseId}/jcodes`);
 
-      console.log('JCode 삭제 성공:', response.data);
+      //console.log('JCode 삭제 성공:', response.data);
       return response.data;
 
     } catch (error) {
-      console.error('JCode 삭제 에러:', error);
+      //console.error('JCode 삭제 에러:', error);
       
       if (error.response?.status === 403) {
         throw new Error('JCode 삭제 권한이 없습니다.');

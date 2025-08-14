@@ -65,7 +65,7 @@ const Footer = () => {
                 fontSize: '0.7rem',
               }}
             >
-              v1.2.0
+              v1.3.0
             </Typography>
           </Box>
 
@@ -92,7 +92,7 @@ const Footer = () => {
             >
               OSLAB
             </Link>
-            <Link
+            {/* <Link
               href="https://www.jbnu.ac.kr/kor/?menuID=139"
               target="_blank"
               rel="noopener"
@@ -107,7 +107,7 @@ const Footer = () => {
               }}
             >
               개인정보처리방침
-            </Link>
+            </Link> */}
             <Link
               href="https://csai.jbnu.ac.kr/csai/index.do"
               target="_blank"

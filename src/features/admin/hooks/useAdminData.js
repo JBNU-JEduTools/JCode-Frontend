@@ -52,7 +52,7 @@ export const useAdminData = () => {
         ...categorizedUsers
       }));
     } catch (error) {
-      console.error('사용자 목록 조회 실패:', error);
+      //console.error('사용자 목록 조회 실패:', error);
       // 에러 토스트는 서비스에서 자동 표시됨
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export const useAdminData = () => {
         }));
       }
     } catch (error) {
-      console.error('강의 목록 조회 실패:', error);
+      //console.error('강의 목록 조회 실패:', error);
       // 에러 토스트는 서비스에서 자동 표시됨
     }
   }, []);
@@ -92,7 +92,7 @@ export const useAdminData = () => {
       // 성공 토스트는 서비스에서 자동 표시
       fetchUsers(); // 사용자 목록 새로고침
     } catch (error) {
-      console.error('역할 변경 실패:', error);
+      //console.error('역할 변경 실패:', error);
       toast.error('역할 변경에 실패했습니다.');
     }
   }, [fetchUsers]);

@@ -105,7 +105,7 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
         });
       }
     } catch (error) {
-      console.error('프로필 설정 실패:', error);
+      //console.error('프로필 설정 실패:', error);
       // 새 서비스에서는 에러 토스트가 자동으로 표시되므로 조건부 처리
       if (!error.response?.data?.message) {
         toast.error('프로필 설정에 실패했습니다. 다시 시도해주세요.', toastConfig);

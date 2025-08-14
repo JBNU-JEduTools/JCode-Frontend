@@ -126,7 +126,7 @@ export const handleApiResponse = async (apiCall, options = {}) => {
     const response = await apiCall();
     return transformData(response.data);
   } catch (error) {
-    console.error('API Error:', error);
+    //console.error('API Error:', error);
     
     // 커스텀 에러 핸들러가 있으면 실행
     if (onError && typeof onError === 'function') {

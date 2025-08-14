@@ -68,7 +68,7 @@ const ThemedApp = () => {
           minHeight: '100vh',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0A0A0E' : '#FFFFFF',
+          backgroundColor: (theme) => theme.palette.background.default,
           // 라이트 모드 기본: 로그인 화면이 아닐 땐 순수 흰색 배경 유지 (보케 제거)
           '&::before': {
             content: '""',
@@ -136,9 +136,9 @@ const ThemedApp = () => {
                 ? 'radial-gradient(900px 700px at 10% 5%, rgba(189,147,249,0.32), transparent 60%),\
                    radial-gradient(1000px 900px at 90% 95%, rgba(255,121,198,0.30), transparent 60%),\
                    linear-gradient(180deg, rgba(10,10,14,0.96) 0%, rgba(10,10,14,0.96) 100%)'
-                : 'radial-gradient(900px 700px at 10% 5%, rgba(10,132,255,0.18), transparent 60%),\
-                   radial-gradient(1000px 900px at 90% 95%, rgba(0,86,201,0.18), transparent 60%),\
-                   linear-gradient(180deg, rgba(245,247,255,0.94) 0%, rgba(245,247,255,0.94) 100%)',
+                : 'radial-gradient(900px 700px at 10% 5%, rgba(98,114,164,0.6), transparent 60%),\
+                   radial-gradient(1000px 900px at 90% 95%, rgba(68,71,90,0.6), transparent 60%),\
+                   linear-gradient(180deg, rgba(245,247,255,0.90) 0%, rgba(245,247,255,0.90) 100%)',
               backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
               backgroundSize: '160% 160%, 200% 200%, 100% 100%',
               backgroundPosition: '12% 8%, 88% 90%, 0 0',
@@ -155,7 +155,7 @@ const ThemedApp = () => {
               zIndex: 0,
               background: isDarkMode
                 ? 'radial-gradient(closest-side, rgba(189,147,249,0.26), transparent)'
-                : 'radial-gradient(closest-side, rgba(10,132,255,0.14), transparent)',
+                : 'radial-gradient(closest-side, rgba(98,114,164,0.25), transparent)',
               filter: 'blur(16px)',
               animation: 'floatLoginBlob 36s linear infinite',
               willChange: 'transform'

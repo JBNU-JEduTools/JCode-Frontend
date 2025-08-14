@@ -132,7 +132,7 @@ const ProfileSettings = () => {
         const data = await userService.getCurrentUser();
         setProfileData(data);
       } catch (error) {
-        console.error('프로필 정보 가져오기 실패:', error);
+        //console.error('프로필 정보 가져오기 실패:', error);
       } finally {
         setLoading(false);
       }

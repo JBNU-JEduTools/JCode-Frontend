@@ -56,7 +56,7 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
   const handleJCodeRedirect = async (student) => {
     try {
       if (!student || !student.email) {
-        console.error('학생 이메일 정보가 없어 JCode로 이동할 수 없습니다.');
+        //console.error('학생 이메일 정보가 없어 JCode로 이동할 수 없습니다.');
         toast.error('학생 정보가 불완전합니다. 이메일이 필요합니다.');
         return;
       }
@@ -70,7 +70,7 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
       
       window.open(finalUrl, '_blank');
     } catch (err) {
-      console.error('JCode 리다이렉트 오류:', err);
+      //console.error('JCode 리다이렉트 오류:', err);
       toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
         style: {
           background: isDarkMode ? '#d32f2f' : '#f44336',
@@ -87,7 +87,7 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
   // Watcher 리다이렉션 핸들러
   const handleWatcherRedirect = (student, courseId, assignmentId) => {
     if (!student || !student.userId) {
-      console.error('학생 정보가 없어 Watcher로 이동할 수 없습니다.');
+      //console.error('학생 정보가 없어 Watcher로 이동할 수 없습니다.');
       toast.error('학생 정보가 불완전합니다.');
       return;
     }

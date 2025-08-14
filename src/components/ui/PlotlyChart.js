@@ -78,7 +78,7 @@ const PlotlyChart = ({
           setPlotlyError(null);
         }
       } catch (err) {
-        console.error('Plotly 로드 실패:', err);
+        //console.error('Plotly 로드 실패:', err);
         if (isMounted) {
           setPlotlyError('차트 라이브러리 로드에 실패했습니다.');
         }
@@ -217,7 +217,7 @@ const PlotlyChart = ({
     try {
       await plotlyModule.newPlot(chartId, [emptyTrace], emptyLayout, chartConfig);
     } catch (err) {
-      console.error('빈 차트 생성 실패:', err);
+      //console.error('빈 차트 생성 실패:', err);
     }
   }, [chartId, chartLayout, chartConfig, chartStyles]);
 
@@ -293,7 +293,7 @@ const PlotlyChart = ({
                     syncEvents.isSyncing = false;
                   }, 100);
                 } catch (err) {
-                  console.error('차트 동기화 오류:', err);
+                  //console.error('차트 동기화 오류:', err);
                   syncEvents.isSyncing = false;
                 }
               }
@@ -302,7 +302,7 @@ const PlotlyChart = ({
         }
         
       } catch (err) {
-        console.error('차트 생성 오류:', err);
+        //console.error('차트 생성 오류:', err);
         setChartError(err.message || '차트 생성 중 오류가 발생했습니다');
         createEmptyChart('차트 생성 실패');
       }
@@ -317,7 +317,7 @@ const PlotlyChart = ({
         try {
           plotlyModule.purge(chartId);
         } catch (err) {
-          console.error('차트 정리 중 오류:', err);
+          //console.error('차트 정리 중 오류:', err);
         }
       }
     };

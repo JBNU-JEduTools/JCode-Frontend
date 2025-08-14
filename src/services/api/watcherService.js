@@ -292,11 +292,11 @@ const watcherService = {
           // Plotly.purge()를 사용하여 차트와 이벤트 리스너를 정리
           plotlyInstance.purge(chartElement);
         } catch (innerError) {
-          console.error('플롯 정리 오류:', innerError);
+          //console.error('플롯 정리 오류:', innerError);
         }
       }
     } catch (error) {
-      console.error('차트 정리 중 오류 발생:', error);
+      //console.error('차트 정리 중 오류 발생:', error);
     }
   }
 };

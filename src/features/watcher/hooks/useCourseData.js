@@ -37,7 +37,7 @@ export const useCourseData = (courseId) => {
 
       setCourse(courseData);
     } catch (err) {
-      console.error('강의 정보 로드 실패:', err);
+      //console.error('강의 정보 로드 실패:', err);
       setError(err.message || '강의 정보를 불러오는데 실패했습니다.');
       setCourse(null);
     } finally {

@@ -125,7 +125,7 @@ const ClassList = () => {
         courseId: result.courseId
       });
     } else {
-      console.error('수업 추가 실패:', result.error);
+      //console.error('수업 추가 실패:', result.error);
     }
   };
 
@@ -147,7 +147,7 @@ const ClassList = () => {
         courseId: courseId
       });
     } else {
-      console.error('참가 코드 재발급 실패:', result.error);
+      //console.error('참가 코드 재발급 실패:', result.error);
     }
   };
 

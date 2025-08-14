@@ -180,7 +180,7 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      console.error('작업 실패:', error);
+      ////console.error('작업 실패:', error);
     }
   };
 
@@ -198,7 +198,7 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      console.error('삭제 실패:', error);
+      //console.error('삭제 실패:', error);
       const errorMessage = error.response?.status === 404 ? 
         (currentTab === 3 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
         error.response?.status === 403 ? "삭제 권한이 없습니다." :

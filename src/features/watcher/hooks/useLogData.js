@@ -57,7 +57,7 @@ export const useLogData = (courseId, assignmentId) => {
         setRunLogs(mockRunLogs);
       }
     } catch (err) {
-      console.error('로그 데이터 로드 실패:', err);
+      //console.error('로그 데이터 로드 실패:', err);
       setError(err.message || '로그 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -66,31 +66,31 @@ export const useLogData = (courseId, assignmentId) => {
 
   // 빌드 로그 로드 (플레이스홀더)
   const loadBuildLogs = useCallback(async (startDate, endDate) => {
-    console.log('빌드 로그 API가 구현되지 않았습니다. 모니터링 데이터를 사용해주세요.');
+    //console.log('빌드 로그 API가 구현되지 않았습니다. 모니터링 데이터를 사용해주세요.');
     setBuildLogs([]);
   }, []);
 
   // 실행 로그 로드 (플레이스홀더)
   const loadRunLogs = useCallback(async (startDate, endDate) => {
-    console.log('실행 로그 API가 구현되지 않았습니다. 모니터링 데이터를 사용해주세요.');
+    //console.log('실행 로그 API가 구현되지 않았습니다. 모니터링 데이터를 사용해주세요.');
     setRunLogs([]);
   }, []);
 
   // 로그 평균 데이터 로드 (플레이스홀더)
   const loadLogAverage = useCallback(async (startDate, endDate) => {
-    console.log('로그 평균 API가 구현되지 않았습니다.');
+    //console.log('로그 평균 API가 구현되지 않았습니다.');
     setLogAverage([]);
   }, []);
 
   // 스냅샷 평균 데이터 로드 (플레이스홀더)
   const loadSnapshotAverage = useCallback(async (startDate, endDate) => {
-    console.log('스냅샷 평균 API가 구현되지 않았습니다.');
+    //console.log('스냅샷 평균 API가 구현되지 않았습니다.');
     setSnapshotAverage([]);
   }, []);
 
   // 모든 로그 데이터 로드
   const loadAllLogData = useCallback(async (startDate, endDate) => {
-    console.log('통합 로그 로딩은 현재 지원되지 않습니다. loadLogDataFromMonitoring을 사용해주세요.');
+    //console.log('통합 로그 로딩은 현재 지원되지 않습니다. loadLogDataFromMonitoring을 사용해주세요.');
   }, []);
 
   // 로그 필터 토글
@@ -200,7 +200,7 @@ export const useLogData = (courseId, assignmentId) => {
 
   // 로그 새로고침
   const refreshLogs = useCallback((startDate, endDate) => {
-    console.log('로그 새로고침 기능은 현재 지원되지 않습니다. loadLogDataFromMonitoring을 사용해주세요.');
+    //console.log('로그 새로고침 기능은 현재 지원되지 않습니다. loadLogDataFromMonitoring을 사용해주세요.');
   }, []);
 
   // 로그 초기화
