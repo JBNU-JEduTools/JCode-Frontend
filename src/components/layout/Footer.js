@@ -13,10 +13,12 @@ const Footer = () => {
         py: 1.5,
         px: 2,
         mt: 'auto',
-        background: 'transparent',
-        backdropFilter: 'blur(8px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-        borderTop: 'none'
+        backgroundColor: 'transparent',
+        borderTop: 'none',
+        position: 'relative',
+        zIndex: 1,
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none'
       }}
     >
       <Container maxWidth="lg">
@@ -42,9 +44,7 @@ const Footer = () => {
                 fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                 fontWeight: 700,
                 fontSize: '1rem',
-                background: (theme) => `linear-gradient(45deg, ${theme.palette.text.primary} 30%, ${theme.palette.text.secondary} 90%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: 'text.primary'
               }}
             >
               JCode

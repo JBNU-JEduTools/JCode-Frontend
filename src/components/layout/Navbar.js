@@ -163,13 +163,15 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="fixed" sx={{ 
-      background: 'transparent',
-      backdropFilter: 'blur(14px) saturate(160%)',
-      WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+    <AppBar position="sticky" sx={{ 
+      backgroundColor: (theme) => theme.palette.mode === 'dark' 
+        ? 'rgba(10, 10, 14, 0.72)'
+        : 'rgba(255, 255, 255, 0.72)',
+      backdropFilter: 'saturate(180%) blur(10px)',
+      WebkitBackdropFilter: 'saturate(180%) blur(10px)',
       color: 'text.primary',
       boxShadow: 'none',
-      borderBottom: 'none'
+      borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`
     }}>
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ height: 64 }}>
@@ -623,7 +625,7 @@ const Navbar = () => {
             width: '80%',
             maxWidth: '300px',
             boxSizing: 'border-box',
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0A0A0E' : '#FFFFFF',
           },
         }}
       >

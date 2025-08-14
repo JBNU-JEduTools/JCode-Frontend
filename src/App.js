@@ -68,7 +68,7 @@ const ThemedApp = () => {
           minHeight: '100vh',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: (theme) => theme.palette.background.default,
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0A0A0E' : '#FFFFFF',
           // 라이트 모드 기본: 로그인 화면이 아닐 땐 순수 흰색 배경 유지 (보케 제거)
           '&::before': {
             content: '""',
@@ -76,6 +76,7 @@ const ThemedApp = () => {
             inset: 0,
             zIndex: 0,
             background: 'transparent',
+            pointerEvents: 'none',
             backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
             backgroundSize: '160% 160%, 200% 200%, 100% 100%',
             backgroundPosition: '12% 8%, 88% 90%, 0 0'
@@ -89,7 +90,7 @@ const ThemedApp = () => {
             top: -160,
             zIndex: 0,
             background: 'transparent',
-            filter: 'blur(16px)'
+            pointerEvents: 'none'
           },
           // 전체 페이지 배경: 로그인 화면에서만 글래스 보케 적용
           ...(isLoginRoute ? {
@@ -136,14 +137,15 @@ const ThemedApp = () => {
                 ? 'radial-gradient(900px 700px at 10% 5%, rgba(189,147,249,0.32), transparent 60%),\
                    radial-gradient(1000px 900px at 90% 95%, rgba(255,121,198,0.30), transparent 60%),\
                    linear-gradient(180deg, rgba(10,10,14,0.96) 0%, rgba(10,10,14,0.96) 100%)'
-                : 'radial-gradient(900px 700px at 10% 5%, rgba(98,114,164,0.6), transparent 60%),\
-                   radial-gradient(1000px 900px at 90% 95%, rgba(68,71,90,0.6), transparent 60%),\
-                   linear-gradient(180deg, rgba(245,247,255,0.90) 0%, rgba(245,247,255,0.90) 100%)',
+                : 'radial-gradient(900px 700px at 10% 5%, rgba(10,132,255,0.18), transparent 60%),\
+                   radial-gradient(1000px 900px at 90% 95%, rgba(0,86,201,0.18), transparent 60%),\
+                   linear-gradient(180deg, rgba(245,247,255,0.94) 0%, rgba(245,247,255,0.94) 100%)',
               backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
               backgroundSize: '160% 160%, 200% 200%, 100% 100%',
               backgroundPosition: '12% 8%, 88% 90%, 0 0',
               willChange: 'background-position',
-              animation: 'moveLoginBg 30s linear infinite'
+              animation: 'moveLoginBg 30s linear infinite',
+              pointerEvents: 'none'
             },
             '&::after': {
               content: '""',
@@ -155,8 +157,8 @@ const ThemedApp = () => {
               zIndex: 0,
               background: isDarkMode
                 ? 'radial-gradient(closest-side, rgba(189,147,249,0.26), transparent)'
-                : 'radial-gradient(closest-side, rgba(98,114,164,0.25), transparent)',
-              filter: 'blur(16px)',
+                : 'radial-gradient(closest-side, rgba(10,132,255,0.14), transparent)',
+              pointerEvents: 'none',
               animation: 'floatLoginBlob 36s linear infinite',
               willChange: 'transform'
             }
@@ -168,7 +170,7 @@ const ThemedApp = () => {
           component="main" 
           sx={{ 
             flexGrow: 1, 
-            pt: isLoginRoute ? 0 : 10,
+            pt: isLoginRoute ? 0 : 2,
             pb: 4,
             display: 'flex',
             flexDirection: 'column',
@@ -213,3 +215,4 @@ const App = () => {
 };
 
 export default App;
+

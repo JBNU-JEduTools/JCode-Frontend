@@ -190,7 +190,7 @@ export const getTheme = (isDarkMode) => {
           root: {
             backgroundColor: isDarkMode ? themeColors.background : '#FFFFFF',
             boxShadow: 'none',
-            borderBottom: '1px solid #E0E0E0',
+            borderBottom: isDarkMode ? 'none' : '1px solid #E0E0E0',
             '& .MuiTypography-root': {
               color: themeColors.foreground,
             },
