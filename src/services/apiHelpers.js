@@ -49,8 +49,10 @@ export const apiPut = (url, data = null, options = {}) => {
  * DELETE 요청 헬퍼 (기본적으로 토스트 표시)
  */
 export const apiDelete = (url, options = {}) => {
+  const { customErrorMessage, showToast = true, ...axiosConfig } = options;
+
   return handleApiResponse(
-    () => api.delete(url),
+    () => api.delete(url, axiosConfig),
     {
       showToast: true, // 삭제 작업은 결과 표시
       ...options

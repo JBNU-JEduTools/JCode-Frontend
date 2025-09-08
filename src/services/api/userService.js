@@ -137,10 +137,26 @@ const userService = {
       throw new Error('강의 ID가 필요합니다.');
     }
 
+    // 스냅샷용 JCode 삭제 시 options에 snapshot 키가 존재할 때만 쿼리에 포함
+    const { snapshot, params: extraParams, ...rest } = options;
+    const params = { ...(extraParams || {}) };
+
+    if (Object.prototype.hasOwnProperty.call(options, 'snapshot')) {
+      params.snapshot = snapshot;
+    }
+
     return apiDelete(`/api/users/me/courses/${courseId}/jcodes`, {
       customErrorMessage: 'JCode 삭제에 실패했습니다.',
-      ...options
+      params,
+      ...rest
     });
+  },
+
+  /**
+   * 스냅샷 JCode 삭제: 기본 함수를 래핑 
+   */
+  deleteMySnapshot: (courseId, options = {}) => {
+    return userService.deleteMyJCode(courseId, { ...options, snapshot: true });
   },
 
   // ===========================================

@@ -12,6 +12,7 @@ import { useTheme } from '../../../../contexts/ThemeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
+import { jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { useCourseData } from '../../hooks';
 import ClassHeader from './ClassHeader';
@@ -287,20 +288,45 @@ const ClassDetail = () => {
     }
   };
 
-  const handlePromoteToTA = async () => {
+  const handlePromoteToTA = async (selectedPromotingStudent) => {
     try {
-      await api.put(`/api/users/${promotingStudent.userId}/role`, {
-        newRole: promotingStudent.newRole,
+      await api.put(`/api/users/${selectedPromotingStudent.userId}/role`, {
+        newRole: selectedPromotingStudent.newRole,
         courseId: course.courseId
       });
+
+      // 강의 권한이 수정될 시 스냅샷 컨테이너 생성/삭제 처리
+      if (selectedPromotingStudent.newRole !== 'STUDENT') {
+        try {
+          await jcodeService.createJCode(course.courseId, {
+            userEmail: selectedPromotingStudent.email,
+            snapshot: true
+          });
+          //console.log('강의 참가 후 JCode 생성 성공');
+        } catch (jcodeError) {
+          // 학생에서 권한이 상승 되는 경우가 아니면 이미 존재할 수 있음
+          // 따라서 403 에러는 무시
+        }
+      }
+      else {
+        try {
+          await jcodeService.deleteJCode(course.courseId, {
+            userEmail: selectedPromotingStudent.email,
+            snapshot: true
+          });
+        } catch (jcodeError) {
+          //console.error('JCode 삭제 중 오류:', jcodeError);
+          // JCode 삭제 실패 시에도 권한 변경은 계속 진행
+        }
+      }
       
       const roleText = {
         'STUDENT': '학생',
         'ASSISTANT': '조교',
         'PROFESSOR': '교수'
-      }[promotingStudent.newRole];
+      }[selectedPromotingStudent.newRole];
       
-      toast.success(`${promotingStudent.name}님의 권한을 ${roleText}(으)로 변경했습니다.`);
+      toast.success(`${selectedPromotingStudent.name}님의 권한을 ${roleText}(으)로 변경했습니다.`);
       
       const studentsResponse = await api.get(`/api/courses/${courseId}/users`);
       setStudents(studentsResponse.data);

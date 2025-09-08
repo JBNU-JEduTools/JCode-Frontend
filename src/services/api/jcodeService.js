@@ -49,15 +49,23 @@ const jcodeService = {
    * JCode 삭제
    * DELETE /api/courses/{courseId}/jcodes
    */
-  deleteJCode: async (courseId, options = {}) => {
-    if (!courseId) {
-      throw new Error('강의 ID가 필요합니다.');
+  deleteJCode: async (courseId, jcodeData, options = {}) => {
+    if (!courseId || !jcodeData) {
+      throw new Error('강의 ID와 JCode 데이터가 필요합니다.');
+    }
+
+    const { userEmail, snapshot = false } = jcodeData;
+    if (!userEmail) {
+      throw new Error('사용자 이메일이 필요합니다.');
     }
 
     try {
       //console.log('JCode 삭제 요청:', { courseId });
       
-      const response = await api.delete(`/api/courses/${courseId}/jcodes`);
+      const response = await api.delete(`/api/courses/${courseId}/jcodes`, {
+        data: { userEmail, snapshot },
+        headers: { 'Content-Type': 'application/json' }
+      });
 
       //console.log('JCode 삭제 성공:', response.data);
       return response.data;

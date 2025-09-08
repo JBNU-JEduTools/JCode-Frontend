@@ -186,6 +186,13 @@ const WebIDECourses = () => {
         //console.error('JCode 삭제 중 오류:', jcodeError);
         // JCode 삭제 실패 시에도 강의 탈퇴는 계속 진행
       }
+      // Snapshot JCode 삭제 시도
+      try {
+        await userService.deleteMySnapshot(withdrawDialog.courseId);
+      } catch (jcodeError) {
+        //console.error('JCode 삭제 중 오류:', jcodeError);
+        // JCode 삭제 실패 시에도 권한 변경은 계속 진행
+      }
 
       // 강의 탈퇴 진행
       await userService.leaveCourse(withdrawDialog.courseId);
