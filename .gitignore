@@ -108,3 +108,5 @@ k8s/jcode-front-hpa.yaml
 
 !.github/workflows/*.yaml
 !.github/workflows/*.yml
+
+.gitmessage.txt

@@ -27,15 +27,17 @@ const PromoteStudentDialog = ({
 
   // student가 변경될 때마다 promotingStudent 업데이트
   useEffect(() => {
-    if (student) {
-      setPromotingStudent({
+    if (!open || !student) return;
+    // 학생이 바뀌었을 때만 초기화 (userId 기준)
+    
+    setPromotingStudent(prev => {
+      if (prev?.userId === student.userId) return prev; // 이미 사용자가 수정 중이면 보존
+      return {
         ...student,
-        newRole: student.courseRole || 'STUDENT'
-      });
-    } else {
-      setPromotingStudent(null);
-    }
-  }, [student]);
+        newRole: student.newRole ?? student.courseRole ?? student.role ?? 'STUDENT',
+      };
+    });
+  }, [open, student?.userId]);
   
   // 다이얼로그 닫기
   const handleClose = () => {

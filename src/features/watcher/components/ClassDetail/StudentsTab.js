@@ -231,7 +231,7 @@ const StudentsTab = ({
                     <TableCell sx={{ fontFamily: FONT_FAMILY }}>
                       {student.studentNum}
                       {/* 교수 역할 표시 */}
-                      {(student.courseRole === 'PROFESSOR' || student.role === 'PROFESSOR') && (
+                      {(student.courseRole === 'PROFESSOR') && (
                         <Chip
                           label="교수"
                           size="small"
@@ -250,7 +250,7 @@ const StudentsTab = ({
                         />
                       )}
                       {/* 조교 역할 표시 */}
-                      {(student.courseRole === 'ASSISTANT' || student.role === 'ASSISTANT') && (
+                      {(student.courseRole === 'ASSISTANT') && (
                         <Chip
                           label="조교"
                           size="small"
