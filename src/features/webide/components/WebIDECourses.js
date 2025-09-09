@@ -143,6 +143,19 @@ const WebIDECourses = () => {
         //console.warn('강의 참가 후 JCode 생성 실패:', jcodeError.message);
         // 대부분의 경우 자동으로 JCode가 생성되거나 이미 존재할 수 있음
       }
+
+      // 수업 참가 성공 후 참가자가 교수님이라면 Snapshot JCode 생성 시도
+      if (user.role === 'PROFESSOR') {
+        try {
+          await jcodeService.createJCode(courseId, {
+            userEmail: user.email,
+            snapshot: true
+          });
+          //console.log('강의 참가 후 JCode 생성 성공');
+        } catch (jcodeError) {
+          // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
+        }
+      }
       
       // 수업 목록 새로고침
       const courses = await userService.getMyCourses();
