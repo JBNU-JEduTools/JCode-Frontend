@@ -37,7 +37,8 @@ const ClassDetail = () => {
     loading: courseLoading,
     error: courseError,
     canViewStudents,
-    canCreateAssignments
+    canCreateAssignments,
+    userRole
   } = useCourseData(courseId);
 
   const [students, setStudents] = useState([]);
@@ -123,8 +124,8 @@ const ClassDetail = () => {
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab');
     
-    // 학생인 경우 무조건 assignments 탭으로
-    if (user?.role === 'STUDENT') {
+    // 순수 학생인 경우 무조건 assignments 탭으로 (수업별 조교는 제외)
+    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
       return 'assignments';
     }
     
@@ -147,8 +148,8 @@ const ClassDetail = () => {
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
-    // 학생인 경우 탭 변경 불가
-    if (user?.role === 'STUDENT') {
+    // 순수 학생인 경우 탭 변경 불가 (수업별 조교는 제외)
+    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
       return;
     }
     
@@ -403,7 +404,7 @@ const ClassDetail = () => {
           <ClassTabs
             currentTab={currentTab}
             onTabChange={handleTabChange}
-            userRole={user?.role}
+            userRole={userRole}
           />
 
           {/* 학생 목록 탭 */}
@@ -429,7 +430,7 @@ const ClassDetail = () => {
                 });
                 setOpenPromoteDialog(true);
               }}
-              userRole={user?.role}
+              userRole={userRole}
               courseId={courseId}
               isDarkMode={isDarkMode}
             />
@@ -448,7 +449,7 @@ const ClassDetail = () => {
                 setDeletingAssignment(assignment);
                 setOpenDeleteDialog(true);
               }}
-              userRole={user?.role}
+              userRole={userRole}
               courseId={courseId}
             />
           )}
@@ -458,6 +459,7 @@ const ClassDetail = () => {
             onClose={() => setOpenAssignmentDialog(false)}
             onAddAssignment={handleAddAssignment}
             existingAssignments={assignments}
+            hwCount={course?.hwCount || 10}
           />
 
           <EditAssignmentDialog
@@ -469,6 +471,7 @@ const ClassDetail = () => {
             onEditAssignment={handleEditAssignment}
             assignment={editingAssignment}
             existingAssignments={assignments}
+            hwCount={course?.hwCount || 10}
           />
 
           <DeleteAssignmentDialog

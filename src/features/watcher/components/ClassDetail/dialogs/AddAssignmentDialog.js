@@ -17,12 +17,14 @@ import { GlassPaper } from '../../../../../components/ui';
 /**
  * 과제 추가 다이얼로그 컴포넌트
  */
-const AddAssignmentDialog = ({ 
-  open, 
-  onClose, 
-  onAddAssignment, 
-  existingAssignments = [] 
+const AddAssignmentDialog = ({
+  open,
+  onClose,
+  onAddAssignment,
+  existingAssignments = [],
+  hwCount = 10
 }) => {
+  const [loading, setLoading] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
     assignmentName: '',
     assignmentDescription: '',
@@ -55,12 +57,16 @@ const AddAssignmentDialog = ({
 
   // 과제 추가 처리
   const handleAddAssignment = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onAddAssignment(newAssignment);
       resetForm();
       onClose();
     } catch (error) {
       //console.error('과제 추가 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,7 +115,7 @@ const AddAssignmentDialog = ({
             gap: 1
           }}>
             <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
-            현재 버전에서는 과제코드가 hw1~hw10까지만 지원됩니다.
+            과제코드는 hw1~hw{hwCount}까지 지원됩니다.
           </Typography>
         </Box>
         
@@ -133,12 +139,12 @@ const AddAssignmentDialog = ({
                 }
               }}
             >
-              {[...Array(10)].map((_, index) => {
+              {[...Array(hwCount)].map((_, index) => {
                 const code = `hw${index + 1}`;
                 const exists = isAssignmentCodeExists(code);
                 return (
-                  <MenuItem 
-                    key={index} 
+                  <MenuItem
+                    key={index}
                     value={code}
                     disabled={exists}
                     sx={{
@@ -267,7 +273,7 @@ const AddAssignmentDialog = ({
           onClick={handleAddAssignment} 
           variant="contained"
           size="small"
-          disabled={!isFormValid()}
+          disabled={loading || !isFormValid()}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',

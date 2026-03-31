@@ -54,8 +54,9 @@ const WebIDECourses = () => {
     confirmText: '',
     doubleCheck: false
   });
+  const [actionLoading, setActionLoading] = useState(false);
   // 사용자 역할 확인 (교수, 조교, 관리자)
-  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ASSISTANT' || user.role === 'ADMIN');
+  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ADMIN' || user.assistantCourses?.length > 0);
 
   // 고유한 연도와 학기 목록 추출
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
@@ -97,6 +98,8 @@ const WebIDECourses = () => {
   }, []);
 
   const handleWebIDEOpen = async (courseId, isSnapshot = false) => {
+    if (actionLoading) return;
+    setActionLoading(true);
     try {
       // JCode 리다이렉트 실행 (스냅샷의 경우 기존 스냅샷에 접속)
       //console.log('JCode 리다이렉트 요청 시작:', { courseId, isSnapshot, userEmail: user.email });
@@ -121,10 +124,14 @@ const WebIDECourses = () => {
     } catch (err) {
       // 에러 처리 (토스트는 서비스에서 이미 표시됨)
       //console.error('Web-IDE 연결 실패:', err);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleJoinCourse = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
     try {
       const joinedCourse = await userService.joinCourse({
         courseKey: joinDialog.courseKey
@@ -172,10 +179,13 @@ const WebIDECourses = () => {
     } catch (error) {
       // 에러 토스트는 서비스에서 자동 표시됨
       //console.error('수업 참가 실패:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleWithdrawCourse = async () => {
+    if (actionLoading) return;
     if (withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다') {
       toast.error('정확한 확인 문구를 입력해주세요.', {
         icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
@@ -191,6 +201,7 @@ const WebIDECourses = () => {
       return;
     }
 
+    setActionLoading(true);
     try {
       // JCode 삭제 시도
       try {
@@ -224,13 +235,16 @@ const WebIDECourses = () => {
       
       // 성공 토스트는 서비스에서 자동 표시됨
     } catch (error) {
-      // 에러 토스트는 서비스에서 자동 표시됨  
+      // 에러 토스트는 서비스에서 자동 표시됨
       //console.error('강의 탈퇴 중 오류:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  // 필터링된 강의 목록
+  // 필터링된 강의 목록 (ARCHIVED 강의는 제외)
   const filteredCourses = courses.filter(course => {
+    if (course.status === 'ARCHIVED') return false;
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
@@ -498,15 +512,23 @@ const WebIDECourses = () => {
                       >
                         {course.courseName}
                       </Typography>
-                      <Chip 
-                        label={course.courseCode}
-                        color="primary"
-                        size="small"
-                        sx={{ 
-                          mb: 2,
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={course.courseCode}
+                          color="primary"
+                          size="small"
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        />
+                        {course.status === 'ENDED' && (
+                          <Chip
+                            label="종료됨"
+                            color="warning"
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          />
+                        )}
+                      </Box>
                       <Typography 
                         color="text.secondary" 
                         gutterBottom
@@ -530,12 +552,28 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
+                      {course.status === 'ENDED' ? (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            textAlign: 'center',
+                            width: '100%',
+                            py: 0.5
+                          }}
+                        >
+                          종료된 강의입니다
+                        </Typography>
+                      ) : (
+                      <>
                       <Button
                         fullWidth
                         variant="contained"
                         startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
                         onClick={() => handleWebIDEOpen(course.courseId, false)}
                         size="small"
+                        disabled={actionLoading}
                         sx={{
                           fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                           fontSize: '0.75rem',
@@ -549,7 +587,7 @@ const WebIDECourses = () => {
                       >
                         JCode 실행
                       </Button>
-                      
+
                       {isAuthorized && (
                         <Button
                           fullWidth
@@ -557,6 +595,7 @@ const WebIDECourses = () => {
                           startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
                           onClick={() => handleWebIDEOpen(course.courseId, true)}
                           size="small"
+                          disabled={actionLoading}
                           sx={{
                             fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                             fontSize: '0.75rem',
@@ -581,6 +620,8 @@ const WebIDECourses = () => {
                         >
                           스냅샷 확인
                         </Button>
+                      )}
+                      </>
                       )}
                     </CardActions>
                   </Card>
@@ -698,7 +739,7 @@ const WebIDECourses = () => {
               <Button 
                 onClick={handleJoinCourse}
                 variant="contained"
-                disabled={!joinDialog.courseKey.trim()}
+                disabled={actionLoading || !joinDialog.courseKey.trim()}
               >
                 참가
               </Button>
@@ -754,7 +795,7 @@ const WebIDECourses = () => {
                 onClick={handleWithdrawCourse}
                 variant="contained"
                 color="error"
-                disabled={withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다'}
+                disabled={actionLoading || withdrawDialog.confirmText !== '강의를 탈퇴하겠습니다'}
               >
                 탈퇴
               </Button>

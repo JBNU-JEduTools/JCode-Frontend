@@ -17,13 +17,15 @@ import { GlassPaper } from '../../../../../components/ui';
 /**
  * 과제 수정 다이얼로그 컴포넌트
  */
-const EditAssignmentDialog = ({ 
-  open, 
-  onClose, 
-  onEditAssignment, 
+const EditAssignmentDialog = ({
+  open,
+  onClose,
+  onEditAssignment,
   assignment = null,
-  existingAssignments = [] 
+  existingAssignments = [],
+  hwCount = 10
 }) => {
+  const [loading, setLoading] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
 
   // assignment가 변경될 때마다 editingAssignment 업데이트
@@ -53,11 +55,15 @@ const EditAssignmentDialog = ({
 
   // 과제 수정 처리
   const handleEditAssignment = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onEditAssignment(editingAssignment);
       handleClose();
     } catch (error) {
       //console.error('과제 수정 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,7 +115,7 @@ const EditAssignmentDialog = ({
             gap: 1
           }}>
             <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
-            현재 버전에서는 과제코드가 hw1~hw10까지만 지원됩니다.
+            과제코드는 hw1~hw{hwCount}까지 지원됩니다.
           </Typography>
         </Box>
         
@@ -135,12 +141,12 @@ const EditAssignmentDialog = ({
                 }
               }}
             >
-              {[...Array(10)].map((_, index) => {
+              {[...Array(hwCount)].map((_, index) => {
                 const code = `hw${index + 1}`;
                 const exists = isAssignmentCodeExists(code) && code !== editingAssignment?.originalAssignmentName;
                 return (
-                  <MenuItem 
-                    key={index} 
+                  <MenuItem
+                    key={index}
                     value={code}
                     disabled={exists}
                     sx={{
@@ -269,7 +275,7 @@ const EditAssignmentDialog = ({
           onClick={handleEditAssignment} 
           variant="contained"
           size="small"
-          disabled={!isFormValid()}
+          disabled={loading || !isFormValid()}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',
