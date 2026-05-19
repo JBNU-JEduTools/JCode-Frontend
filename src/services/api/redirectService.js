@@ -29,10 +29,11 @@ const redirectService = {
       const response = await api.post('/api/redirect', {
         userEmail: redirectData.userEmail,
         courseId: redirectData.courseId,
-        snapshot: redirectData.snapshot || false
+        snapshot: redirectData.snapshot || false,
+        ...(redirectData.assignmentId && { assignmentId: redirectData.assignmentId })
       });
 
-      //console.log('리다이렉트 응답:', response);
+      console.log('[RedirectService] 응답 status:', response.status, 'data:', JSON.stringify(response.data));
 
       // 응답에서 URL 찾기 - 여러 가능한 필드 확인
       const redirectUrl = response.data?.url || 
