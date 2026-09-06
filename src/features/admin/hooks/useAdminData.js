@@ -66,14 +66,17 @@ export const useAdminData = () => {
           courses: courses.map(course => ({
             courseId: course.courseId,
             courseName: course.name,
-            courseCode: course.code,
             term: course.term,
             year: course.year,
             professor: course.professor || '-',
             clss: course.clss || '-',
             vnc: course.vnc,
+            hwCount: course.hwCount,
+            pracEnabled: course.pracEnabled,
+            pracCount: course.pracCount,
             status: course.status || 'ACTIVE',
-            endedAt: course.endedAt
+            endedAt: course.endedAt,
+            canCancelCreation: course.canCancelCreation === true
           }))
         }));
       }
@@ -101,6 +104,13 @@ export const useAdminData = () => {
     fetchCourses();
   }, [fetchUsers, fetchCourses]);
 
+  useEffect(() => {
+    const transitional = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    if (!users.courses.some(course => transitional.has(course.status))) return undefined;
+    const timer = window.setInterval(fetchCourses, 3000);
+    return () => window.clearInterval(timer);
+  }, [users.courses, fetchCourses]);
+
   return {
     loading,
     users,
@@ -108,4 +118,4 @@ export const useAdminData = () => {
     fetchCourses,
     handleRoleChange
   };
-}; 
+};

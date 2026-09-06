@@ -10,7 +10,10 @@ import {
   IconButton,
   Stack,
   Typography,
-  Fade
+  Fade,
+  Chip,
+  CircularProgress,
+  Tooltip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import RemainingTime from '../common/RemainingTime';
+import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../../../utils/assignmentStatus';
 
 /**
  * 과제 목록 탭 컴포넌트
@@ -32,6 +36,7 @@ const AssignmentsTab = ({
   courseId
 }) => {
   const navigate = useNavigate();
+  const visibleAssignments = assignments.filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED');
 
   // 날짜 형식 변환 함수
   const formatToLocalDateTimeString = (dateString) => {
@@ -60,8 +65,9 @@ const AssignmentsTab = ({
   };
 
   // 과제 행 클릭 핸들러
-  const handleRowClick = (assignmentId) => {
-    navigate(`/watcher/class/${courseId}/assignment/${assignmentId}`);
+  const handleRowClick = (assignment) => {
+    if (assignment.lifecycleStatus && assignment.lifecycleStatus !== 'ACTIVE') return;
+    navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`);
   };
 
   return (
@@ -86,6 +92,9 @@ const AssignmentsTab = ({
                 <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '250px' }}>
                   남은 시간
                 </TableCell>
+                <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '130px' }}>
+                  상태
+                </TableCell>
                 {userRole !== 'STUDENT' && (
                   <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '100px' }}>
                     작업
@@ -94,11 +103,15 @@ const AssignmentsTab = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {assignments.map((assignment) => (
+              {visibleAssignments.map((assignment) => {
+                const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
+                const status = getAssignmentStatus(assignment);
+                const canManage = lifecycle === 'ACTIVE';
+                return (
                 <TableRow 
                   key={assignment.assignmentId}
                   sx={{ 
-                    cursor: 'pointer',
+                    cursor: canManage ? 'pointer' : 'default',
                     '&:hover': {
                       backgroundColor: (theme) => 
                         theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
@@ -107,13 +120,13 @@ const AssignmentsTab = ({
                   }}
                 >
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {assignment.assignmentName}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ 
                       fontFamily: FONT_FAMILY,
                       maxWidth: '300px',
@@ -125,7 +138,7 @@ const AssignmentsTab = ({
                     {assignment.assignmentDescription}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
@@ -137,7 +150,7 @@ const AssignmentsTab = ({
                     })}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
@@ -149,7 +162,7 @@ const AssignmentsTab = ({
                     })}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ 
                       width: '250px',
                       textAlign: 'left'
@@ -157,11 +170,28 @@ const AssignmentsTab = ({
                   >
                     <RemainingTime deadline={assignment.deadlineDate} />
                   </TableCell>
+                  <TableCell>
+                    <Tooltip title={getAssignmentDeadlineTooltip(assignment.deadlineDate)} arrow>
+                      <Chip
+                        size="small"
+                        color={status.color}
+                        variant="outlined"
+                        label={(
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                            {status.progress && <CircularProgress size={12} />}
+                            {status.label}
+                          </Box>
+                        )}
+                      />
+                    </Tooltip>
+                  </TableCell>
                   
                   {/* 학생이 아닌 경우에만 작업 셀을 표시 */}
                   {userRole !== 'STUDENT' && (
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {canManage && <>
+                        <Tooltip title="과제 수정">
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -178,6 +208,8 @@ const AssignmentsTab = ({
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
+                        </Tooltip>
+                        <Tooltip title="과제 보관">
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -194,11 +226,14 @@ const AssignmentsTab = ({
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
+                        </Tooltip>
+                        </>}
                       </Stack>
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+                );
+              })}
               
               {/* 학생이 아닌 경우에만 과제 추가 행을 표시 */}
               {userRole !== 'STUDENT' && (
@@ -215,7 +250,7 @@ const AssignmentsTab = ({
                   }}
                 >
                   <TableCell 
-                    colSpan={6}
+                    colSpan={7}
                     align="center"
                     sx={{ 
                       border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
@@ -248,4 +283,4 @@ const AssignmentsTab = ({
   );
 };
 
-export default AssignmentsTab; 
+export default AssignmentsTab;

@@ -7,6 +7,7 @@ import {
   Chip,
   Tooltip
 } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StopIcon from '@mui/icons-material/Stop';
@@ -37,14 +38,18 @@ const CourseTableRow = memo(({
     <TableRow key={item.courseId}>
       <TableCell sx={CELL_STYLE}>{itemIndex}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.courseName}</TableCell>
-      <TableCell sx={CELL_STYLE}>{item.courseCode}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.professor}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.year}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.term}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.clss}</TableCell>
       <TableCell sx={CELL_STYLE}>
         <Chip
-          label={statusConfig.label}
+          label={(
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+              {['PROVISIONING', 'TERMINATING', 'ARCHIVING'].includes(item.status) && <CircularProgress size={12} />}
+              {statusConfig.label}
+            </Box>
+          )}
           color={statusConfig.color}
           size="small"
           variant="outlined"
@@ -122,8 +127,8 @@ const CourseTableRow = memo(({
               </Tooltip>
             </>
           )}
-          {item.status === 'ARCHIVED' && (
-            <Tooltip title="삭제">
+          {item.canCancelCreation && item.status === 'PROVISIONING' && (
+            <Tooltip title="강의 생성 취소">
               <IconButton
                 size="small"
                 color="error"
@@ -137,18 +142,32 @@ const CourseTableRow = memo(({
             </Tooltip>
           )}
           {item.status === 'ERROR' && (
-            <Tooltip title="인프라 작업 재시도">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenDialog('retry', item);
-                }}
-              >
-                <SyncProblemIcon />
-              </IconButton>
-            </Tooltip>
+            <>
+              <Tooltip title="인프라 작업 재시도">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDialog('retry', item);
+                  }}
+                >
+                  <SyncProblemIcon />
+                </IconButton>
+              </Tooltip>
+              {item.canCancelCreation && <Tooltip title="실패한 강의 생성 취소">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDialog('delete', item);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>}
+            </>
           )}
         </Box>
       </TableCell>

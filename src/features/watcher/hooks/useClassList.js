@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getErrorMessage } from '../../../services/errorHandler';
 
 export const useClassList = () => {
   const { user } = useAuth();
@@ -9,17 +10,14 @@ export const useClassList = () => {
   const [error, setError] = useState('');
 
   // 강의 목록 로드
-  const loadClasses = useCallback(async () => {
+  const loadClasses = useCallback(async (background = false) => {
     try {
-      setLoading(true);
-      setError('');
+      if (!background) setLoading(true);
       
       let response;
       
       if (user?.role === 'ADMIN') {
         response = await axios.get('/api/courses');
-      } else if (user?.assistantCourses?.length > 0) {
-        response = await axios.get('/api/users/me/assistant/courses');
       } else {
         response = await axios.get('/api/users/me/courses');
       }
@@ -28,29 +26,32 @@ export const useClassList = () => {
         response.data.map(course => ({
           courseId: course.courseId,
           courseName: course.name,
-          courseCode: course.code,
           courseProfessor: course.professor,
           courseYear: course.year,
           courseTerm: course.term,
-          courseClss: course.clss
+          courseClss: course.clss,
+          courseRole: 'ADMIN',
+          status: course.status,
+          canCancelCreation: course.canCancelCreation
         })) : response.data;
       
       setClasses(formattedData);
+      setError('');
     } catch (err) {
       //console.error('강의 목록 로드 실패:', err);
-      setError('수업 목록을 불러오는데 실패했습니다.');
+      if (!background) setError('수업 목록을 불러오는데 실패했습니다.');
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [user]);
 
   // 새 강의 추가
   const addClass = useCallback(async (classData) => {
+    const knownCourseIds = new Set(classes.map(course => course.courseId));
     try {
       const createResponse = await axios.post('/api/courses', {
-        code: classData.code,
         name: classData.name,
-        professor: classData.professor,
+        ...(classData.professor?.trim() ? { professor: classData.professor.trim() } : {}),
         year: classData.year,
         term: classData.term,
         clss: parseInt(classData.clss),
@@ -59,12 +60,8 @@ export const useClassList = () => {
 
       const { courseId, courseKey } = createResponse.data;
 
-      await axios.post('/api/users/me/courses', {
-        courseKey: courseKey
-      });
-
-      // 목록 새로고침
-      await loadClasses();
+      // 생성 요청이 수락되면 창을 즉시 닫을 수 있도록 목록 갱신은 백그라운드에서 수행한다.
+      void loadClasses(true);
 
       return { 
         success: true, 
@@ -72,13 +69,35 @@ export const useClassList = () => {
         courseKey 
       };
     } catch (err) {
-      //console.error('수업 추가 실패:', err);
+      if (!err.response && user?.role === 'ADMIN') {
+        try {
+          const latest = await axios.get('/api/courses');
+          const accepted = latest.data.find(course =>
+            !knownCourseIds.has(course.courseId)
+            && course.name?.trim() === classData.name.trim()
+            && Number(course.clss) === Number(classData.clss)
+            && Number(course.year) === Number(classData.year)
+            && Number(course.term) === Number(classData.term)
+            && course.status !== 'ARCHIVED'
+          );
+          if (accepted) {
+            void loadClasses(true);
+            return {
+              success: true,
+              courseId: accepted.courseId,
+              courseKey: null
+            };
+          }
+        } catch {
+          // 원래 요청 오류를 유지한다.
+        }
+      }
       return { 
         success: false, 
-        error: err.message || '수업 추가에 실패했습니다.'
+        error: getErrorMessage(err, '수업 생성 요청에 실패했습니다.')
       };
     }
-  }, [loadClasses]);
+  }, [classes, loadClasses, user?.role]);
 
   // 참가 코드 재발급
   const regenerateCourseKey = useCallback(async (courseId) => {
@@ -103,7 +122,7 @@ export const useClassList = () => {
       //console.error('참가 코드 재발급 실패:', err);
       return {
         success: false,
-        error: err.message || '참가 코드 재발급에 실패했습니다.'
+        error: getErrorMessage(err, '참가 코드 재발급에 실패했습니다.')
       };
     }
   }, [loadClasses]);
@@ -121,7 +140,7 @@ export const useClassList = () => {
       //console.error('강의 삭제 실패:', err);
       return { 
         success: false, 
-        error: err.message || '강의 삭제에 실패했습니다.'
+        error: getErrorMessage(err, '강의 삭제에 실패했습니다.')
       };
     }
   }, [loadClasses]);
@@ -129,6 +148,7 @@ export const useClassList = () => {
   // 강의 목록 필터링 유틸리티
   const filterClasses = useCallback((selectedYear, selectedTerm) => {
     return classes.filter(course => {
+      if (['ENDED', 'ARCHIVING', 'ARCHIVED'].includes(course.status)) return false;
       const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
       const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
       return yearMatch && termMatch;
@@ -156,8 +176,18 @@ export const useClassList = () => {
 
   // 폼 유효성 검사
   const validateClassForm = useCallback((formData) => {
-    const errors = { courseClss: '', courseCode: '' };
+    const errors = { courseClss: '', courseName: '', professor: '' };
     let isValid = true;
+
+    if (!formData.name?.trim()) {
+      errors.courseName = '과목명을 입력해주세요';
+      isValid = false;
+    }
+
+    if (user?.role === 'ADMIN' && !formData.professor?.trim()) {
+      errors.professor = '담당 교수명을 입력해주세요';
+      isValid = false;
+    }
 
     // 분반 유효성 검사 - 숫자만 허용
     if (!/^\d+$/.test(formData.clss)) {
@@ -165,14 +195,8 @@ export const useClassList = () => {
       isValid = false;
     }
 
-    // 과목 코드 유효성 검사 - 영문자로 시작하고 영문자+숫자 조합만 허용
-    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(formData.code)) {
-      errors.courseCode = '영문자로 시작하고 영문자와 숫자만 사용 가능합니다';
-      isValid = false;
-    }
-
     return { isValid, errors };
-  }, []);
+  }, [user?.role]);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -180,6 +204,13 @@ export const useClassList = () => {
       loadClasses();
     }
   }, [user, loadClasses]);
+
+  useEffect(() => {
+    const transitional = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    if (!classes.some(course => transitional.has(course.status))) return undefined;
+    const timer = window.setInterval(() => loadClasses(true), 3000);
+    return () => window.clearInterval(timer);
+  }, [classes, loadClasses]);
 
   return {
     // 상태
@@ -202,4 +233,4 @@ export const useClassList = () => {
     filterClasses,
     validateClassForm
   };
-}; 
+};

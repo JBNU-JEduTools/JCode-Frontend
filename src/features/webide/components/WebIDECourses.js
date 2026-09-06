@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { 
   Container, 
@@ -22,7 +22,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { userService, jcodeService, redirectService, assignmentService } from '../../../services/api';
@@ -36,6 +37,13 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
+import { getErrorMessage } from '../../../services/errorHandler';
+import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
+import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
+import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../../utils/assignmentStatus';
+
+const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
+const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
 
 const WebIDECourses = () => {
   const { user } = useAuth();
@@ -59,9 +67,6 @@ const WebIDECourses = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseAssignments, setCourseAssignments] = useState({});
-  // 사용자 역할 확인 (교수, 조교, 관리자)
-  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ADMIN' || user.assistantCourses?.length > 0);
-
   const handleToggleAssignments = async (courseId) => {
     if (expandedCourse === courseId) {
       setExpandedCourse(null);
@@ -74,16 +79,7 @@ const WebIDECourses = () => {
         setCourseAssignments(prev => ({ ...prev, [courseId]: assignments }));
       } catch (err) {
         setCourseAssignments(prev => ({ ...prev, [courseId]: [] }));
-        const status = err?.response?.status;
-        const serverMsg = err?.response?.data?.message;
-        if (status === 403) {
-          toast.error('과제 목록 조회 권한이 없습니다.');
-        } else if (!err.response) {
-          toast.error('네트워크 연결을 확인해주세요.');
-        } else {
-          toast.error(serverMsg || '과제 목록을 불러오는데 실패했습니다.');
-        }
-        console.error(`[Assignments] ${status || 'NETWORK'}: ${serverMsg || err.message}`);
+        toast.error(getErrorMessage(err, '과제 목록을 불러오지 못했습니다.'));
       }
     }
   };
@@ -92,57 +88,122 @@ const WebIDECourses = () => {
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);
   const terms = [...new Set(courses.map(course => course.courseTerm))].sort();
 
-  useEffect(() => {
-    const fetchCourses = async () => {
+  const fetchCourses = useCallback(async (initial = false) => {
       try {
-        const courses = await userService.getMyCourses();
-        if (Array.isArray(courses)) {
-          setCourses(courses);
-          if (courses.length > 0) {
+        const nextCourses = await userService.getMyCourses({ showToast: false });
+        if (Array.isArray(nextCourses)) {
+          setCourses(nextCourses);
+          if (initial && nextCourses.length > 0) {
             const currentDate = new Date();
             const currentYear = currentDate.getFullYear();
             const currentMonth = currentDate.getMonth() + 1;
             const currentTerm = currentMonth >= 9 ? 2 : 1;
             setSelectedYear(currentYear);
             setSelectedTerm(currentTerm);
-          } else {
+          } else if (initial) {
             setSelectedYear('all');
             setSelectedTerm('all');
           }
         } else {
           setCourses([]);
+          if (initial) {
+            setSelectedYear('all');
+            setSelectedTerm('all');
+          }
+        }
+      } catch (err) {
+        if (initial) {
+          setError('수업 목록을 불러오는데 실패했습니다.');
+          setCourses([]);
           setSelectedYear('all');
           setSelectedTerm('all');
         }
-        setLoading(false);
-      } catch (err) {
-        setError('수업 목록을 불러오는데 실패했습니다.');
-        setCourses([]);
-        setLoading(false);
-        setSelectedYear('all');
-        setSelectedTerm('all');
+      } finally {
+        if (initial) setLoading(false);
       }
-    };
-
-    fetchCourses();
   }, []);
+
+  useEffect(() => {
+    fetchCourses(true);
+  }, [fetchCourses]);
+
+  useEffect(() => {
+    const courseTransitions = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    const membershipTransitions = new Set(['PROVISIONING', 'DELETE_PENDING']);
+    if (!courses.some(course => (
+      courseTransitions.has(course.status) || membershipTransitions.has(course.membershipStatus)
+    ))) return undefined;
+    const timer = window.setInterval(() => fetchCourses(false), 3000);
+    return () => window.clearInterval(timer);
+  }, [courses, fetchCourses]);
+
+  const waitForJcodeReady = async (jcodeId) => {
+    const deadline = Date.now() + JCODE_READY_TIMEOUT_MS;
+    let consecutiveFailures = 0;
+    while (Date.now() < deadline) {
+      try {
+        const jcodes = await userService.getMyJCodes({ showToast: false });
+        const current = jcodes.find(jcode => String(jcode.jcodeId) === String(jcodeId));
+        consecutiveFailures = 0;
+        if (current?.status === 'READY') return;
+        if (current?.status === 'PROVISION_FAILED') {
+          throw new Error('JCode 환경을 준비하지 못했습니다. 관리자에게 문의해주세요.');
+        }
+        if (current?.status === 'DELETE_PENDING' || current?.status === 'ARCHIVED') {
+          throw new Error('JCode 환경이 종료되어 열 수 없습니다.');
+        }
+      } catch (error) {
+        if (!error.response && error.message?.startsWith('JCode 환경')) throw error;
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= 5) {
+          throw new Error('JCode 준비 상태를 확인할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        }
+      }
+      await sleep(2000);
+    }
+    throw new Error('JCode 준비 시간이 길어지고 있습니다. 잠시 후 다시 시도해주세요.');
+  };
+
+  const getJcodeRedirect = async (redirectData) => {
+    let lastError;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await redirectService.redirectToJCode(redirectData);
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        if (status && status !== 409 && status < 500) throw error;
+        if (attempt < 4) await sleep(1500);
+      }
+    }
+    throw lastError;
+  };
 
   const handleWebIDEOpen = async (courseId, isSnapshot = false, assignmentId = null) => {
     if (actionLoading) return;
+    const ideWindow = window.open('about:blank', '_blank');
+    if (!ideWindow) {
+      toast.error('새 창이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인해주세요.');
+      return;
+    }
+    ideWindow.opener = null;
+    renderJcodeProvisioningPage(ideWindow, {
+      isDarkMode,
+      assetOrigin: window.location.origin
+    });
     setActionLoading(true);
     try {
-      // JCode가 없을 수 있으므로 먼저 생성 시도 (이미 있으면 서버에서 무시)
-      try {
-        await jcodeService.createJCode(courseId, {
-          userEmail: user.email,
-          snapshot: isSnapshot
-        });
-      } catch (jcodeErr) {
-        // 이미 존재하거나 생성 실패해도 redirect 시도는 계속 진행
-        console.log('[WebIDE] JCode 생성 스킵:', jcodeErr.message);
+      const jcode = await jcodeService.createJCode(courseId, {
+        userEmail: user.email,
+        snapshot: isSnapshot,
+        ...(assignmentId && { assignmentId })
+      });
+      if (jcode.status !== 'READY') {
+        toast.info('개인 JCode 실행 환경을 생성하고 있습니다. 완료되면 자동으로 연결됩니다.');
+        await waitForJcodeReady(jcode.jcodeId);
       }
 
-      const redirectData = await redirectService.redirectToJCode({
+      const redirectData = await getJcodeRedirect({
         userEmail: user.email,
         courseId: courseId,
         snapshot: isSnapshot,
@@ -150,26 +211,14 @@ const WebIDECourses = () => {
       });
 
       if (redirectData?.url) {
-        window.open(redirectData.url, '_blank');
+        ideWindow.location.replace(redirectData.url);
       } else {
-        throw new Error("리다이렉트 URL을 찾을 수 없습니다.");
+        throw new Error('JCode 연결 주소를 확인할 수 없습니다.');
       }
 
     } catch (err) {
-      const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.message;
-      let userMsg = '서버 오류가 발생했습니다.';
-      if (!err.response) {
-        userMsg = err.message || '네트워크 연결을 확인해주세요.';
-      } else if (status === 404) {
-        userMsg = 'JCode가 아직 생성되지 않았습니다. 잠시 후 다시 시도해주세요.';
-      } else if (status === 403) {
-        userMsg = '해당 강의에 대한 접근 권한이 없습니다.';
-      } else if (serverMsg) {
-        userMsg = serverMsg;
-      }
-      toast.error(userMsg);
-      console.error(`[WebIDE] ${status || 'JS'}: ${serverMsg || err.message}`);
+      if (!ideWindow.closed) ideWindow.close();
+      toast.error(getErrorMessage(err, 'JCode를 열지 못했습니다. 잠시 후 다시 시도해주세요.'));
     } finally {
       setActionLoading(false);
     }
@@ -197,19 +246,6 @@ const WebIDECourses = () => {
         // 대부분의 경우 자동으로 JCode가 생성되거나 이미 존재할 수 있음
       }
 
-      // 수업 참가 성공 후 참가자가 교수님이라면 Snapshot JCode 생성 시도
-      if (user.role === 'PROFESSOR') {
-        try {
-          await jcodeService.createJCode(courseId, {
-            userEmail: user.email,
-            snapshot: true
-          });
-          //console.log('강의 참가 후 JCode 생성 성공');
-        } catch (jcodeError) {
-          // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
-        }
-      }
-      
       // 수업 목록 새로고침
       const courses = await userService.getMyCourses();
       setCourses(courses);
@@ -288,9 +324,10 @@ const WebIDECourses = () => {
     }
   };
 
-  // 필터링된 강의 목록 (ARCHIVED 강의는 제외)
+  // 종료가 완료된 강의는 현재 수업 목록에서 제외한다. 관리자는 수업 관리
+  // 화면에서 종료 강의를 재개설하거나 아카이브할 수 있다.
   const filteredCourses = courses.filter(course => {
-    if (course.status === 'ARCHIVED') return false;
+    if (['ENDED', 'ARCHIVING', 'ARCHIVED'].includes(course.status) || course.membershipStatus === 'ARCHIVED') return false;
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
@@ -558,12 +595,6 @@ const WebIDECourses = () => {
                         {course.courseName}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                        <Chip
-                          label={course.courseCode}
-                          color="primary"
-                          size="small"
-                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                        />
                         {course.status && course.status !== 'ACTIVE' && (
                           <Chip
                             label={{
@@ -574,6 +605,20 @@ const WebIDECourses = () => {
                               ERROR: '처리 오류'
                             }[course.status] || course.status}
                             color={course.status === 'ERROR' ? 'error' : 'warning'}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          />
+                        )}
+                        {course.membershipStatus && course.membershipStatus !== 'READY' && (
+                          <Chip
+                            label={{
+                              PROVISIONING: '참여 준비 중',
+                              DELETE_PENDING: '탈퇴 처리 중',
+                              PROVISION_FAILED: '참여 준비 오류',
+                              DELETE_FAILED: '탈퇴 처리 오류'
+                            }[course.membershipStatus] || course.membershipStatus}
+                            color={course.membershipStatus.endsWith('FAILED') ? 'error' : 'warning'}
                             size="small"
                             variant="outlined"
                             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
@@ -603,7 +648,7 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
-                      {course.status !== 'ACTIVE' ? (
+                      {course.status !== 'ACTIVE' || (course.membershipStatus && course.membershipStatus !== 'READY') ? (
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -615,6 +660,11 @@ const WebIDECourses = () => {
                           }}
                         >
                           {{
+                            PROVISIONING: '참여 환경을 준비하고 있습니다',
+                            DELETE_PENDING: '강의 탈퇴를 처리하고 있습니다',
+                            PROVISION_FAILED: '참여 환경을 준비하지 못했습니다',
+                            DELETE_FAILED: '강의 탈퇴 처리에 실패했습니다'
+                          }[course.membershipStatus] || {
                             PROVISIONING: '강의 환경을 생성하고 있습니다',
                             TERMINATING: '강의를 종료하고 있습니다',
                             ENDED: '종료된 강의입니다',
@@ -623,34 +673,12 @@ const WebIDECourses = () => {
                           }[course.status] || '현재 사용할 수 없는 강의입니다'}
                         </Typography>
                       ) : (
-                      <>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={expandedCourse === course.courseId ? <ExpandLessIcon sx={{ fontSize: '1rem' }} /> : <ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
-                        onClick={() => handleToggleAssignments(course.courseId)}
-                        size="small"
-                        disabled={actionLoading}
-                        sx={{
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                          fontSize: '0.75rem',
-                          py: 0.5,
-                          px: 1.5,
-                          minHeight: '28px',
-                          borderRadius: '20px',
-                          textTransform: 'none',
-                          flex: isAuthorized ? 1 : 'auto'
-                        }}
-                      >
-                        과제 목록
-                      </Button>
-
-                      {isAuthorized && (
+                      <Stack spacing={0.75} sx={{ width: '100%' }}>
                         <Button
                           fullWidth
-                          variant="outlined"
+                          variant="contained"
                           startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                          onClick={() => handleWebIDEOpen(course.courseId, true)}
+                          onClick={() => handleWebIDEOpen(course.courseId)}
                           size="small"
                           disabled={actionLoading}
                           sx={{
@@ -659,26 +687,55 @@ const WebIDECourses = () => {
                             py: 0.5,
                             px: 1.5,
                             minHeight: '28px',
-                            borderRadius: '20px',
+                            borderRadius: 1,
                             textTransform: 'none',
-                            ml: 1,
-                            flex: 1,
-                            borderColor: (theme) =>
-                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                            color: (theme) =>
-                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                            '&:hover': {
-                              borderColor: (theme) =>
-                                theme.palette.mode === 'dark' ? '#FF92D0' : 'primary.dark',
-                              backgroundColor: (theme) =>
-                                theme.palette.mode === 'dark' ? 'rgba(255, 121, 198, 0.1)' : 'rgba(63, 81, 181, 0.1)'
-                            }
                           }}
                         >
-                          스냅샷 확인
+                          JCode 실행
                         </Button>
-                      )}
-                      </>
+                        <Box sx={{ display: 'flex', gap: 0.75 }}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={expandedCourse === course.courseId ? <ExpandLessIcon sx={{ fontSize: '1rem' }} /> : <ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
+                            onClick={() => handleToggleAssignments(course.courseId)}
+                            size="small"
+                            disabled={actionLoading}
+                            sx={{
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                              px: 1,
+                              minHeight: '28px',
+                              borderRadius: 1,
+                              textTransform: 'none'
+                            }}
+                          >
+                            과제 목록
+                          </Button>
+                          {canViewCourseStudents(course, user) && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                              onClick={() => handleWebIDEOpen(course.courseId, true)}
+                              size="small"
+                              disabled={actionLoading}
+                              sx={{
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                                px: 1,
+                                minHeight: '28px',
+                                borderRadius: 1,
+                                textTransform: 'none'
+                              }}
+                            >
+                              스냅샷 확인
+                            </Button>
+                          )}
+                        </Box>
+                      </Stack>
                       )}
 
                     </CardActions>
@@ -687,13 +744,18 @@ const WebIDECourses = () => {
                       <Box sx={{ px: 2, pb: 2, pt: 0.5 }}>
                         {!courseAssignments[course.courseId] ? (
                           <CircularProgress size={20} sx={{ display: 'block', mx: 'auto', my: 1 }} />
-                        ) : courseAssignments[course.courseId].length === 0 ? (
+                        ) : courseAssignments[course.courseId].filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED').length === 0 ? (
                           <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center', py: 1 }}>
                             등록된 과제가 없습니다
                           </Typography>
                         ) : (
                           <Stack spacing={0.5}>
-                            {courseAssignments[course.courseId].map((assignment) => (
+                            {courseAssignments[course.courseId]
+                              .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
+                              .map((assignment) => {
+                              const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' && assignment.scheduleStatus === 'OPEN';
+                              const assignmentStatus = getAssignmentStatus(assignment);
+                              return (
                               <Box
                                 key={assignment.assignmentId}
                                 sx={{
@@ -708,15 +770,30 @@ const WebIDECourses = () => {
                                   }
                                 }}
                               >
-                                <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif", flex: 1, mr: 1 }}>
-                                  {assignment.assignmentName}
-                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, mr: 1 }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
+                                    {assignment.assignmentName}
+                                  </Typography>
+                                  <Tooltip title={getAssignmentDeadlineTooltip(assignment.deadlineDate)} arrow>
+                                    <Chip
+                                      size="small"
+                                      variant="outlined"
+                                      color={assignmentStatus.color}
+                                      label={(
+                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                                          {assignmentStatus.progress && <CircularProgress size={10} color="inherit" />}
+                                          {assignmentStatus.label}
+                                        </Box>
+                                      )}
+                                    />
+                                  </Tooltip>
+                                </Box>
                                 <Button
                                   size="small"
                                   variant="outlined"
                                   startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
                                   onClick={() => handleWebIDEOpen(course.courseId, false, assignment.assignmentId)}
-                                  disabled={actionLoading}
+                                  disabled={actionLoading || !assignmentReady}
                                   sx={{
                                     fontSize: '0.7rem',
                                     py: 0.25,
@@ -731,7 +808,8 @@ const WebIDECourses = () => {
                                   IDE 열기
                                 </Button>
                               </Box>
-                            ))}
+                              );
+                            })}
                           </Stack>
                         )}
                       </Box>
