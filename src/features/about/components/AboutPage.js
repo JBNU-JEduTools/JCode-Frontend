@@ -42,6 +42,7 @@ import { keyframes } from '@mui/system';
 import CIcon from '../../../assets/icons/cprogramming.svg';
 import PythonIcon from '../../../assets/icons/python.svg';
 import CppIcon from '../../../assets/icons/c++.svg';
+import { announcements, partnerUrls, teamGroups } from '../aboutContent';
 
 const AboutPage = () => {
   const theme = useTheme();
@@ -94,12 +95,12 @@ const AboutPage = () => {
   `;
 
   const partners = [
-    { name: <img src={jcloudLogo} alt="JCloud" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jcloud.jbnu.ac.kr' },
-    { name: <img src={litmusLogo} alt="Litmus" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://litmus.jbnu.ac.kr' },
+    { name: <img src={jcloudLogo} alt="JCloud" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.jcloud },
+    { name: <img src={litmusLogo} alt="Litmus" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.litmus },
     { name: <img src={swunivLogo} alt="SW중심대학" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://swuniv.jbnu.ac.kr' },
     { name: <img src={jbnuLogo} alt="JBNU" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://www.jbnu.ac.kr' },
     { name: <img src={jedutoolsLogo} alt="JEduTools Portal" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jedutools.jbnu.ac.kr' },
-    { name: <img src={jflowLogo} alt="JFlow" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jflow.jbnu.ac.kr' },
+    { name: <img src={jflowLogo} alt="JFlow" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.jflow },
   ];
 
   const features = [
@@ -144,33 +145,6 @@ const AboutPage = () => {
     { name: 'C++', icon: <img src={CppIcon} alt="C++" style={{ width: '40px', height: '40px' }} />, description: '게임 개발 및 그래픽 프로그래밍\n데스크탑 애플리케이션 및 실시간 시스템' }
   ];
 
-  const teamMembers = [
-    {
-      name: '박현찬',
-      role: 'Professor',
-    },
-    {
-      name: '김규호',
-      role: 'Student',
-    },
-    {
-      name: '김은혜',
-      role: 'Student',
-    },
-    {
-      name: '김진석',
-      role: 'Student',
-    },
-    {
-      name: '진순헌',
-      role: 'Student',
-    },
-    {
-      name: '허완',
-      role: 'Student',
-    }
-  ];
-
   const timeline = [
     {
       date: '2020년 3월',
@@ -203,52 +177,22 @@ const AboutPage = () => {
     {
       title: '[학생] JCode 사용법',
       description: 'Web IDE 사용법',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/1studentManual/1jcodeStudentManual'
+      link: 'https://jhelper.jedutools.io/JCode/1studentManual/1jcodeStudentManual'
     },
     {
       title: '[학생] Watcher 사용법',
       description: '통계 확인 및 일일 활동 분석',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/1studentManual/2watcherStudentManual'
+      link: 'https://jhelper.jedutools.io/JCode/1studentManual/2watcherStudentManual'
     },
     {
       title: '[교수] JCode 사용법',
       description: '수업 생성 및 관리',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/2professorManual/1jcodeProfessorManual'
+      link: 'https://jhelper.jedutools.io/JCode/2professorManual/1jcodeProfessorManual'
     },
     {
       title: '[교수] Watcher 사용법',
       description: '과제 생성, 학생 전체 통계',
-      link: 'https://jhelper.jbnu.ac.kr/JCode/2professorManual/2watcherProfessorManual'
-    }
-  ];
-
-
-
-  // 공지사항 데이터
-  const announcements = [
-    {
-      id: 1,
-      title: "v1.2.0 업데이트 안내",
-      date: "2025-07-29",
-      isNew: true,
-      type: "update",
-      content: "대규모 아키텍쳐 리팩토링 및 페이지네이션 기능 추가"
-    },
-    {
-      id: 2,
-      title: "v1.1.0 업데이트 안내",
-      date: "2025-04-27",
-      isNew: false,
-      type: "update",
-      content: "차트 라이브러리를 변경하여 성능이 업그레이드되었습니다."
-    },
-    {
-      id: 3,
-      title: "시스템 점검 안내",
-      date: "2025-01-15",
-      isNew: false,
-      type: "maintenance",
-      content: "1월 20일 오전 2시-4시 시스템 점검이 예정되어 있습니다."
+      link: 'https://jhelper.jedutools.io/JCode/2professorManual/2watcherProfessorManual'
     }
   ];
 
@@ -790,96 +734,99 @@ const AboutPage = () => {
               </motion.div>
             </Box>
             
-            {/* 학생 카드들 */}
-            <Grid container spacing={3} justifyContent="center">
-              {teamMembers.slice(1, 6).map((member, index) => (
-                <Grid item xs={12} sm={6} md={3} lg={2.4} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Card
-                      elevation={0}
+            {teamGroups.map((group) => (
+              <Box key={group.year} sx={{ mt: 6 }}>
+                <Typography
+                  variant="h5"
+                  align="center"
+                  sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}
+                >
+                  {group.year}
+                </Typography>
+                <Grid container spacing={3} justifyContent="center">
+                  {group.members.map((member, index) => (
+                    <Grid item xs={12} sm={6} md={3} lg={2.4} key={member.name}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                      >
+                        <Card
+                          elevation={0}
+                          sx={{
+                            height: '100%',
+                            ...glassCardSx,
+                            borderRadius: theme.shape.borderRadius,
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-5px)',
+                              boxShadow: theme.shadows[4],
+                              borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
+                            }
+                          }}
+                        >
+                          <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                            <Avatar
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                margin: '0 auto',
+                                mb: 2,
+                                border: `2px solid ${theme.palette.primary.main}`
+                              }}
+                            />
+                            <Typography variant="h6" gutterBottom>
+                              {member.name}
+                            </Typography>
+                            <Typography variant="subtitle2" color="primary" gutterBottom>
+                              {member.role}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </Grid>
+                  ))}
+                </Grid>
+
+                {group.contributors.length > 0 && (
+                  <Box sx={{ mt: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 500, mb: 2 }}>
+                      Contributors
+                    </Typography>
+                    <Box
                       sx={{
-                        height: '100%',
-                        ...glassCardSx,
-                        borderRadius: theme.shape.borderRadius,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-5px)',
-                          boxShadow: theme.shadows[4],
-                          borderColor: theme.palette.mode === 'dark' ? '#BD93F9' : theme.palette.primary.main
-                        }
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        gap: 1.5,
+                        maxWidth: '900px',
+                        margin: '0 auto',
+                        py: 1,
                       }}
                     >
-                      <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                        <Avatar
-                          src={member.avatar}
+                      {group.contributors.map((name) => (
+                        <Chip
+                          key={name}
+                          label={name}
+                          variant="outlined"
                           sx={{
-                            width: 80,
-                            height: 80,
-                            margin: '0 auto',
-                            mb: 2,
-                            border: `2px solid ${theme.palette.primary.main}`
+                            borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                            m: 0.7,
+                            px: 1,
+                            py: 2.5,
+                            fontSize: '0.95rem',
+                            '&:hover': {
+                              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                              borderColor: theme.palette.primary.main
+                            }
                           }}
                         />
-                        <Typography variant="h6" gutterBottom>
-                          {member.name}
-                        </Typography>
-                        <Typography variant="subtitle2" color="primary" gutterBottom>
-                          {member.role}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
-            
-            {/* 도움 주신 분들 섹션 */}
-            <Box sx={{ mt: 8, textAlign: 'center' }}>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  color: theme.palette.text.secondary,
-                  fontWeight: 'medium',
-                  mb: 3
-                }}
-              >
-                Contributors
-              </Typography>
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  justifyContent: 'center',
-                  gap: 1.5,
-                  maxWidth: '900px',
-                  margin: '0 auto',
-                  py: 2
-                }}
-              >
-                {['김담은', '노형준', '이진규', '박은송'].map((name, index) => (
-                  <Chip
-                    key={index}
-                    label={name}
-                    variant="outlined"
-                    sx={{
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
-                      m: 0.7,
-                      px: 1,
-                      py: 2.5,
-                      fontSize: '0.95rem',
-                      '&:hover': {
-                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                        borderColor: theme.palette.primary.main
-                      }
-                    }}
-                  />
-                ))}
+                      ))}
+                    </Box>
+                  </Box>
+                )}
               </Box>
-            </Box>
+            ))}
 
             <Box sx={{ textAlign: 'center', mt: 4 }}>
               <Typography 
@@ -1066,4 +1013,4 @@ const AboutPage = () => {
   );
 };
 
-export default AboutPage; 
+export default AboutPage;

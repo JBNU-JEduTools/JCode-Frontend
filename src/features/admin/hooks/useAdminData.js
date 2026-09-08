@@ -6,7 +6,6 @@ export const useAdminData = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState({
     professors: [],
-    assistants: [],
     students: [],
     courses: []
   });
@@ -35,9 +34,6 @@ export const useAdminData = () => {
           case 'PROFESSOR':
             acc.professors.push(userData);
             break;
-          case 'ASSISTANT':
-            acc.assistants.push(userData);
-            break;
           case 'STUDENT':
             acc.students.push(userData);
             break;
@@ -45,7 +41,7 @@ export const useAdminData = () => {
             break;
         }
         return acc;
-      }, { professors: [], assistants: [], students: [] });
+      }, { professors: [], students: [] });
 
       setUsers(prev => ({
         ...prev,
@@ -70,12 +66,17 @@ export const useAdminData = () => {
           courses: courses.map(course => ({
             courseId: course.courseId,
             courseName: course.name,
-            courseCode: course.code,
             term: course.term,
             year: course.year,
             professor: course.professor || '-',
             clss: course.clss || '-',
-            vnc: course.vnc
+            vnc: course.vnc,
+            hwCount: course.hwCount,
+            pracEnabled: course.pracEnabled,
+            pracCount: course.pracCount,
+            status: course.status || 'ACTIVE',
+            endedAt: course.endedAt,
+            canCancelCreation: course.canCancelCreation === true
           }))
         }));
       }
@@ -103,6 +104,13 @@ export const useAdminData = () => {
     fetchCourses();
   }, [fetchUsers, fetchCourses]);
 
+  useEffect(() => {
+    const transitional = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    if (!users.courses.some(course => transitional.has(course.status))) return undefined;
+    const timer = window.setInterval(fetchCourses, 3000);
+    return () => window.clearInterval(timer);
+  }, [users.courses, fetchCourses]);
+
   return {
     loading,
     users,
@@ -110,4 +118,4 @@ export const useAdminData = () => {
     fetchCourses,
     handleRoleChange
   };
-}; 
+};

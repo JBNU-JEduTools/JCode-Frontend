@@ -121,7 +121,7 @@ const adminService = {
     }
 
     // 필수 필드 검증
-    const requiredFields = ['name', 'code', 'professor', 'year', 'term'];
+    const requiredFields = ['name', 'professor', 'year', 'term', 'clss'];
     const missingFields = requiredFields.filter(field => !courseData[field]);
     
     if (missingFields.length > 0) {
@@ -160,6 +160,62 @@ const adminService = {
 
     return apiDelete(`/api/courses/${courseId}`, {
       customErrorMessage: '강의 삭제에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
+   * 강의 종료 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/end
+   */
+  endCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/end`, {}, {
+      customErrorMessage: '강의 종료에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
+   * 강의 아카이브 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/archive
+   */
+  archiveCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/archive`, {}, {
+      customErrorMessage: '강의 아카이브에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
+   * 강의 재개설 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/reopen
+   */
+  reopenCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/reopen`, {}, {
+      customErrorMessage: '강의 재개설에 실패했습니다.',
+      ...options
+    });
+  },
+
+  retryCourseInfrastructure: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPost(`/api/courses/${courseId}/infrastructure/retry`, {}, {
+      customErrorMessage: '강의 인프라 작업 재시도에 실패했습니다.',
       ...options
     });
   },
@@ -255,4 +311,4 @@ const adminService = {
   }
 };
 
-export default adminService; 
+export default adminService;

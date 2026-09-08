@@ -23,6 +23,7 @@ const PromoteStudentDialog = ({
   student = null,
   currentUserRole = null
 }) => {
+  const [loading, setLoading] = useState(false);
   const [promotingStudent, setPromotingStudent] = useState(null);
 
   // student가 변경될 때마다 promotingStudent 업데이트
@@ -34,7 +35,7 @@ const PromoteStudentDialog = ({
       if (prev?.userId === student.userId) return prev; // 이미 사용자가 수정 중이면 보존
       return {
         ...student,
-        newRole: student.newRole ?? student.courseRole ?? student.role ?? 'STUDENT',
+        newRole: student.newRole ?? student.courseRole ?? 'STUDENT',
       };
     });
   }, [open, student?.userId]);
@@ -47,11 +48,15 @@ const PromoteStudentDialog = ({
 
   // 권한 변경 처리
   const handlePromoteStudent = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onPromoteStudent(promotingStudent);
       handleClose();
     } catch (error) {
       //console.error('권한 변경 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,6 +123,7 @@ const PromoteStudentDialog = ({
           onClick={handlePromoteStudent}
           variant="contained"
           color="warning"
+          disabled={loading}
           size="small"
           sx={{ 
             fontFamily: FONT_FAMILY,
@@ -136,4 +142,4 @@ const PromoteStudentDialog = ({
   );
 };
 
-export default PromoteStudentDialog; 
+export default PromoteStudentDialog;

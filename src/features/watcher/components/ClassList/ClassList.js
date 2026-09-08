@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Container, 
   Paper, 
@@ -7,7 +7,6 @@ import {
   ListItem, 
   ListItemText,
   ListItemButton,
-  CircularProgress,
   Box,
   Chip,
   FormControl,
@@ -22,8 +21,6 @@ import {
   TextField,
   Grid,
   InputLabel,
-  IconButton,
-  Card,
   FormControlLabel,
   Checkbox,
 } from '@mui/material';
@@ -32,21 +29,20 @@ import { selectStyles } from '../../../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { LoadingSpinner, Button, GlassPaper } from '../../../../components/ui';
 import { useClassList } from '../../hooks';
+import { toast } from 'react-toastify';
+import { canManageCourse } from '../../utils/coursePermissions';
 
 const ClassList = () => {
   const { user } = useAuth();
   const {
-    classes,
     loading,
     error,
     availableYears,
     availableTerms,
     currentSemester,
-    loadClasses,
     addClass,
     regenerateCourseKey,
     filterClasses,
@@ -58,7 +54,6 @@ const ClassList = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newClass, setNewClass] = useState({
-    code: '',
     name: '',
     professor: '',
     year: new Date().getFullYear(),
@@ -68,14 +63,18 @@ const ClassList = () => {
   });
   const [formErrors, setFormErrors] = useState({
     courseClss: '',
-    courseCode: ''
+    courseName: '',
+    professor: ''
   });
   const [courseKeyDialog, setCourseKeyDialog] = useState({
     open: false,
     courseKey: '',
     courseId: null,
+    operation: null,
   });
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submissionLock = useRef(false);
   const navigate = useNavigate();
 
   // 고유한 연도와 학기 목록 (훅에서 제공)
@@ -103,29 +102,41 @@ const ClassList = () => {
 
   const handleAddClass = async () => {
     if (!validateForm()) return;
-    
-    const result = await addClass(newClass);
-    
-    if (result.success) {
-      setOpenDialog(false);
-      setNewClass({
-        code: '',
-        name: '',
-        professor: '',
-        year: new Date().getFullYear(),
-        term: 1,
-        clss: '',
-        vnc: false,
-      });
-      setFormErrors({ courseClss: '', courseCode: '' });
+    if (submissionLock.current) return;
+    submissionLock.current = true;
+    setSubmitting(true);
 
-      setCourseKeyDialog({
-        open: true,
-        courseKey: result.courseKey,
-        courseId: result.courseId
-      });
-    } else {
-      //console.error('수업 추가 실패:', result.error);
+    try {
+      const result = await addClass(newClass);
+
+      if (result.success) {
+        setOpenDialog(false);
+        setNewClass({
+          name: '',
+          professor: '',
+          year: new Date().getFullYear(),
+          term: 1,
+          clss: '',
+          vnc: false,
+        });
+        setFormErrors({ courseClss: '', courseName: '', professor: '' });
+
+        if (result.courseKey) {
+          setCourseKeyDialog({
+            open: true,
+            courseKey: result.courseKey,
+            courseId: result.courseId,
+            operation: 'create'
+          });
+        } else {
+          toast.info('강의 개설 요청이 접수되었습니다. 참가 코드는 수업 목록에서 재발급해주세요.');
+        }
+      } else {
+        toast.error(result.error || '수업 생성 요청에 실패했습니다.');
+      }
+    } finally {
+      submissionLock.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -138,16 +149,22 @@ const ClassList = () => {
 
   // 재발급 핸들러 (훅에서 제공)
   const handleRegenerateKey = async (courseId) => {
-    const result = await regenerateCourseKey(courseId);
-    
-    if (result.success) {
-      setCourseKeyDialog({
-        open: true,
-        courseKey: result.courseKey,
-        courseId: courseId
-      });
-    } else {
-      //console.error('참가 코드 재발급 실패:', result.error);
+    if (submitting) return;
+    setSubmitting(true);
+
+    try {
+      const result = await regenerateCourseKey(courseId);
+
+      if (result.success) {
+        setCourseKeyDialog({
+          open: true,
+          courseKey: result.courseKey,
+          courseId: courseId,
+          operation: 'regenerate'
+        });
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -178,7 +195,9 @@ const ClassList = () => {
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
-            alignItems: 'center',
+            alignItems: { xs: 'stretch', md: 'center' },
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 2,
             mb: 3 
           }}>
             <Typography 
@@ -188,7 +207,18 @@ const ClassList = () => {
               수업 목록 ({filteredClasses.length})
             </Typography>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+              {user?.role === 'PROFESSOR' && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/courses/new')}
+                  sx={{ whiteSpace: 'nowrap', flexGrow: { xs: 1, sm: 0 } }}
+                >
+                  수업 개설
+                </Button>
+              )}
               <FormControl sx={{ minWidth: 100 }}>
                 <Select
                   value={selectedYear}
@@ -257,35 +287,6 @@ const ClassList = () => {
             </Stack>
           </Box>
 
-          {user?.role === 'PROFESSOR' && (
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 1.5, 
-                mb: 2,
-                bgcolor: 'warning.light', 
-                color: 'warning.contrastText',
-                borderRadius: 1.5,
-                border: (theme) =>
-                  `1px solid ${theme.palette.warning.main}`,
-              }}
-            >
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  fontSize: '0.85rem'
-                }}
-              >
-                <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
-                현재 버전에서의 수업 생성은 jedutools@gmail.com으로 문의바랍니다.
-              </Typography>
-            </Paper>
-          )}
-
           <List>
             {filteredClasses.map((classItem, index) => (
               <ListItem 
@@ -323,7 +324,11 @@ const ClassList = () => {
                     }}
                   >
                     <Box 
-                      onClick={() => navigate(`/watcher/class/${classItem.courseId}`)}
+                      onClick={() => {
+                        if (!classItem.status || classItem.status === 'ACTIVE') {
+                          navigate(`/watcher/class/${classItem.courseId}`);
+                        }
+                      }}
                       sx={{ flex: 1 }}
                     >
                       <ListItemText
@@ -332,12 +337,20 @@ const ClassList = () => {
                             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                               {classItem.courseName}
                             </Typography>
-                            <Chip 
-                              label={classItem.courseCode} 
-                              size="small" 
-                              color="primary"
-                              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                            />
+                            {classItem.status && classItem.status !== 'ACTIVE' && (
+                              <Chip
+                                label={{
+                                  PROVISIONING: '환경 준비 중',
+                                  TERMINATING: '종료 중',
+                                  ENDED: '종료됨',
+                                  ARCHIVING: '보관 중',
+                                  ERROR: '준비 오류'
+                                }[classItem.status] || classItem.status}
+                                size="small"
+                                color={classItem.status === 'ERROR' ? 'error' : 'warning'}
+                                variant="outlined"
+                              />
+                            )}
                           </Box>
                         }
                         secondary={
@@ -362,12 +375,13 @@ const ClassList = () => {
                         }}
                       />
                     </Box>
-                    {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
+                    {canManageCourse(classItem, user) && (
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRegenerateKey(classItem.courseId);
                         }}
+                        disabled={submitting || (classItem.status && classItem.status !== 'ACTIVE')}
                         startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
                         size="small"
                         variant="outlined"
@@ -464,51 +478,31 @@ const ClassList = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="과목 코드"
-                    value={newClass.code}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // 영문자와 숫자만 허용
-                      setNewClass({ ...newClass, code: value });
-                      if (formErrors.courseCode) {
-                        setFormErrors({ ...formErrors, courseCode: '' });
-                      }
-                    }}
-                    onBlur={() => {
-                      if (newClass.code && !/^[A-Za-z][A-Za-z0-9]*$/.test(newClass.code)) {
-                        setFormErrors({
-                          ...formErrors,
-                          courseCode: '영문자로 시작하고 영문자와 숫자만 사용 가능합니다'
-                        });
-                      }
-                    }}
-                    placeholder="ex) CSE1001"
-                    helperText={formErrors.courseCode || "영문자로 시작하고 영문자와 숫자만 입력 가능합니다 | 별칭이므로 오아시스와 상관 없습니다"}
-                    error={Boolean(formErrors.courseCode)}
-                    inputProps={{
-                      style: { textTransform: 'uppercase' } // 자동으로 대문자 변환
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
                     label="과목명"
                     value={newClass.name}
-                    onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
+                    onChange={(e) => {
+                      setNewClass({ ...newClass, name: e.target.value });
+                      if (formErrors.courseName) setFormErrors({ ...formErrors, courseName: '' });
+                    }}
                     placeholder="ex) C++ 프로그래밍"
-                    helperText="과목 이름을 입력하세요 (ex: C++ 프로그래밍)"
+                    helperText={formErrors.courseName || '과목 이름을 입력하세요 (ex: C++ 프로그래밍)'}
+                    error={Boolean(formErrors.courseName)}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                {user?.role === 'ADMIN' && <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="교수명"
                     value={newClass.professor}
-                    onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
+                    onChange={(e) => {
+                      setNewClass({ ...newClass, professor: e.target.value });
+                      if (formErrors.professor) setFormErrors({ ...formErrors, professor: '' });
+                    }}
                     placeholder="ex) 홍길동"
-                    helperText="교수님 성함을 입력해주십시오"
+                    helperText={formErrors.professor || '담당 교수 성함을 입력하세요'}
+                    error={Boolean(formErrors.professor)}
                   />
-                </Grid>
+                </Grid>}
                 <Grid item xs={12}>
                   <Box sx={{ 
                     display: 'flex', 
@@ -524,7 +518,7 @@ const ClassList = () => {
                         size="medium"
                         fullWidth
                       >
-                        {[2024, 2025, 2026].map(year => (
+                        {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
                           <MenuItem key={year} value={year}>
                             {year}년
                           </MenuItem>
@@ -625,19 +619,19 @@ const ClassList = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setOpenDialog(false)}>취소</Button>
-              <Button onClick={handleAddClass} variant="contained">추가</Button>
+              <Button onClick={handleAddClass} variant="contained" disabled={submitting}>추가</Button>
             </DialogActions>
           </Dialog>
 
           <Dialog
             open={courseKeyDialog.open}
-            onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+            onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null, operation: null })}
             maxWidth="sm"
             fullWidth
             PaperComponent={GlassPaper}
           >
             <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-              {courseKeyDialog.courseId ? '참가 코드 재발급 완료' : '강의 개설 완료'}
+              {courseKeyDialog.operation === 'regenerate' ? '참가 코드 재발급 완료' : '강의 개설 요청 접수'}
             </DialogTitle>
             <DialogContent>
               <Box sx={{ mt: 2 }}>
@@ -716,7 +710,7 @@ const ClassList = () => {
             </DialogContent>
             <DialogActions>
               <Button 
-                onClick={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+                onClick={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null, operation: null })}
                 variant="contained"
               >
                 확인
@@ -729,4 +723,4 @@ const ClassList = () => {
   );
 };
 
-export default ClassList; 
+export default ClassList;
