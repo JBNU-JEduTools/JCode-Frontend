@@ -18,14 +18,23 @@ const api = axios.create({
   withCredentials: true
 });
 
+const redirectToLogin = () => {
+  removeToken();
+
+  const { pathname } = window.location;
+  const isAuthRoute = pathname === '/' || pathname === '/login' || pathname.startsWith('/login/');
+  if (!isAuthRoute) {
+    window.location.replace('/login');
+  }
+};
+
 // 토큰 갱신 함수 (에러 처리 minimal - 토스트는 errorHandler에서 처리)
 const refreshToken = async () => {
   try {
     return await refreshTokenRequest();
   } catch (error) {
-    // 토큰 갱신 실패 시 즉시 로그아웃 (토스트는 errorHandler에서)
-    removeToken();
-    window.location.href = '/login';
+    // 공개 인증 화면에서는 현재 화면을 유지하고, 보호 화면에서만 한 번 이동한다.
+    redirectToLogin();
     throw error;
   }
 };
@@ -40,11 +49,7 @@ api.interceptors.request.use(async (config) => {
   
   // 토큰이 있고 곧 만료될 예정이면 미리 갱신
   if (token && isTokenExpiringSoon(token)) {
-    try {
-      await refreshToken();
-    } catch (error) {
-      // 에러 처리는 refreshToken 함수 내에서 수행
-    }
+    await refreshToken();
   }
 
   // 최신 토큰으로 요청
@@ -73,14 +78,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const currentToken = getCurrentToken();
-        if (!currentToken) {
-          // 토큰이 없으면 즉시 로그아웃 (토스트는 errorHandler에서)
-          removeToken();
-          window.location.href = '/login';
-          throw new Error('No token available');
-        }
-        
         const newToken = await refreshToken();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);

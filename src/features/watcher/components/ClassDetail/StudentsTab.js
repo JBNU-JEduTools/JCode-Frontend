@@ -74,8 +74,8 @@ const StudentsTab = ({
         courseId: courseId
       }, { withCredentials: true });
       
-      // 응답에서 최종 URL 추출
-      const finalUrl = response.request?.responseURL || response.data?.url;
+      // responseURL is the API endpoint itself; the backend returns the JCode target in JSON.
+      const finalUrl = response.data?.url;
       
       if (!finalUrl) {
         throw new Error("리다이렉트 URL을 찾을 수 없습니다");
@@ -416,4 +416,4 @@ const StudentsTab = ({
   );
 };
 
-export default StudentsTab; 
+export default StudentsTab;

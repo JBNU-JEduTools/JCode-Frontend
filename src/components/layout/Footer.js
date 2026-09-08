@@ -65,7 +65,7 @@ const Footer = () => {
                 fontSize: '0.7rem',
               }}
             >
-              v1.3.0
+              v2.0.0
             </Typography>
           </Box>
 
@@ -131,4 +131,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;

@@ -6,6 +6,7 @@ import {
   Typography, 
   Grid,
   Card,
+  CardActionArea,
   CardContent,
   CardActions,
   Button,
@@ -22,32 +23,96 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton,
-  Tooltip
+  IconButton
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { userService, jcodeService, redirectService, assignmentService } from '../../../services/api';
 import CodeIcon from '@mui/icons-material/Code';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { selectStyles } from '../../../styles/selectStyles';
-import AddIcon from '@mui/icons-material/Add';
+import GroupAddOutlinedIcon from '@mui/icons-material/GroupAddOutlined';
+import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import { toast } from 'react-toastify';
 import { useTheme } from '../../../contexts/ThemeContext';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
+import AssignmentStatusChip from '../../../components/common/AssignmentStatusChip';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
+import {
+  canCreateCourseForRole,
+  getCourseActionGridOrder,
+  getCourseGridOrder,
+} from '../utils/courseGridLayout';
 import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
-import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../../utils/assignmentStatus';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
+const BASE_COURSE_CARD_HEIGHT = 260;
+
+const courseCardSx = {
+  minHeight: BASE_COURSE_CARD_HEIGHT,
+  display: 'flex',
+  flexDirection: 'column',
+  backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
+  border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
+  boxShadow: 'none',
+  borderRadius: 1,
+};
+
+export const CourseActionTile = ({ icon, label, onClick }) => (
+  <Card
+    variant="outlined"
+    sx={{
+      ...courseCardSx,
+      flex: '1 1 0',
+      minHeight: 0,
+      overflow: 'hidden',
+      borderStyle: 'dashed',
+      borderWidth: '1px',
+      borderColor: (theme) => theme.palette.mode === 'dark' ? '#7E8595' : '#68707D',
+      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+      '&:hover': {
+        borderColor: (theme) => theme.palette.mode === 'dark' ? '#B5BAC7' : '#3F4650',
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#30323F' : '#FAFAFA',
+      },
+    }}
+  >
+    <CardActionArea onClick={onClick} sx={{ height: '100%' }}>
+      <CardContent
+        sx={{
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.25,
+          p: 2,
+          '&:last-child': { pb: 2 },
+        }}
+      >
+        <Box sx={{ display: 'flex', color: 'text.secondary' }}>{icon}</Box>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+            fontWeight: 600,
+            lineHeight: 1.25,
+          }}
+        >
+          {label}
+        </Typography>
+      </CardContent>
+    </CardActionArea>
+  </Card>
+);
 
 const WebIDECourses = () => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,6 +132,7 @@ const WebIDECourses = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseAssignments, setCourseAssignments] = useState({});
+  const canCreateCourse = canCreateCourseForRole(user?.role);
   const handleToggleAssignments = async (courseId) => {
     if (expandedCourse === courseId) {
       setExpandedCourse(null);
@@ -164,7 +230,7 @@ const WebIDECourses = () => {
     throw new Error('JCode 준비 시간이 길어지고 있습니다. 잠시 후 다시 시도해주세요.');
   };
 
-  const getJcodeRedirect = async (redirectData) => {
+  const getJcodeRedirect = async (redirectData, jcodeId) => {
     let lastError;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -172,6 +238,10 @@ const WebIDECourses = () => {
       } catch (error) {
         lastError = error;
         const status = error.response?.status;
+        if (status === 409 && jcodeId) {
+          await waitForJcodeReady(jcodeId);
+          continue;
+        }
         if (status && status !== 409 && status < 500) throw error;
         if (attempt < 4) await sleep(1500);
       }
@@ -208,7 +278,7 @@ const WebIDECourses = () => {
         courseId: courseId,
         snapshot: isSnapshot,
         ...(assignmentId && { assignmentId })
-      });
+      }, jcode.jcodeId);
 
       if (redirectData?.url) {
         ideWindow.location.replace(redirectData.url);
@@ -439,102 +509,39 @@ const WebIDECourses = () => {
             </Typography>
           </Paper>
           
-          {filteredCourses.length === 0 ? (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Card sx={{ 
-                  mb: 3,
-                  backgroundColor: (theme) => 
-                    theme.palette.mode === 'dark' ? '#44475A' : '#FFFFFF',
-                }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" color="text.secondary">
-                      해당하는 강의가 없습니다.
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Card 
-                  onClick={() => setJoinDialog({ ...joinDialog, open: true })}
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: (theme) => 
-                      theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-                    border: (theme) =>
-                      `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-                    boxShadow: 'none',
-                    borderRadius: '12px',
-                    '&:hover': {
-                      borderColor: (theme) =>
-                        theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
-                      backgroundColor: (theme) =>
-                        theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
-                      transform: 'translateY(-2px)'
-                    }
-                  }}
+          <Grid container spacing={3} alignItems="flex-start">
+              {filteredCourses.length === 0 && (
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card sx={{ ...courseCardSx, height: BASE_COURSE_CARD_HEIGHT }}>
+                    <CardContent
+                      sx={{
+                        flexGrow: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <Typography variant="body1" color="text.secondary">
+                        선택한 학기에 활성 수업이 없습니다.
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+              {filteredCourses.map((course, courseIndex) => (
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                  md={4}
+                  key={course.courseId}
+                  sx={{ order: getCourseGridOrder(courseIndex) }}
                 >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography 
-                      variant="h5" 
-                      component="h2" 
-                      gutterBottom
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        color: (theme) => 
-                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
-                      }}
-                    >
-                      새 수업 참가
-                    </Typography>
-                    <Chip 
-                      icon={<AddIcon sx={{ fontSize: '1rem' }} />}
-                      label="수업 참가하기"
-                      color="primary"
-                      size="small"
-                      sx={{ 
-                        mb: 2,
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        backgroundColor: 'transparent',
-                        border: '1px dashed',
-                        borderRadius: '20px',
-                        borderColor: (theme) =>
-                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                        color: (theme) =>
-                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                        '& .MuiChip-icon': {
-                          color: (theme) =>
-                            theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main'
-                        }
-                      }}
-                    />
-                    <Typography 
-                      color="text.secondary" 
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        fontSize: '0.875rem',
-                        color: (theme) => 
-                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
-                      }}
-                    >
-                      교수님으로부터 받은 참가 코드로 새로운 수업에 참가하세요.
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          ) : (
-            <Grid container spacing={3} alignItems="flex-start">
-              {filteredCourses.map((course) => (
-                <Grid item xs={12} sm={6} md={4} key={course.courseId}>
                   <Card
                     sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
+                      ...courseCardSx,
+                      height: expandedCourse === course.courseId ? 'auto' : BASE_COURSE_CARD_HEIGHT,
                       transition: 'all 0.3s ease',
                       animation: 'fadeIn 0.3s ease',
                       '@keyframes fadeIn': {
@@ -547,12 +554,6 @@ const WebIDECourses = () => {
                           transform: 'translateY(0)'
                         }
                       },
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-                      border: (theme) =>
-                        `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-                      boxShadow: 'none',
-                      borderRadius: '12px',
                       '&:hover': {
                         borderColor: (theme) =>
                           theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
@@ -561,7 +562,7 @@ const WebIDECourses = () => {
                       }
                     }}
                   >
-                    <CardContent sx={{ flexGrow: 1, position: 'relative' }}>
+                    <CardContent sx={{ flexGrow: 1, position: 'relative', pr: 6 }}>
                       <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                         <IconButton
                           size="small"
@@ -590,6 +591,8 @@ const WebIDECourses = () => {
                         variant="h5" 
                         component="h2" 
                         gutterBottom
+                        noWrap
+                        title={course.courseName}
                         sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                       >
                         {course.courseName}
@@ -754,15 +757,17 @@ const WebIDECourses = () => {
                               .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
                               .map((assignment) => {
                               const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' && assignment.scheduleStatus === 'OPEN';
-                              const assignmentStatus = getAssignmentStatus(assignment);
                               return (
                               <Box
                                 key={assignment.assignmentId}
                                 sx={{
-                                  display: 'flex',
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(0, 1fr) auto auto',
                                   alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  p: 0.75,
+                                  columnGap: 1,
+                                  minHeight: 36,
+                                  px: 1,
+                                  py: 0.75,
                                   borderRadius: 1,
                                   bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                                   '&:hover': {
@@ -770,23 +775,23 @@ const WebIDECourses = () => {
                                   }
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, mr: 1 }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
-                                    {assignment.assignmentName}
-                                  </Typography>
-                                  <Tooltip title={getAssignmentDeadlineTooltip(assignment.deadlineDate)} arrow>
-                                    <Chip
-                                      size="small"
-                                      variant="outlined"
-                                      color={assignmentStatus.color}
-                                      label={(
-                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                                          {assignmentStatus.progress && <CircularProgress size={10} color="inherit" />}
-                                          {assignmentStatus.label}
-                                        </Box>
-                                      )}
-                                    />
-                                  </Tooltip>
+                                <Typography
+                                  noWrap
+                                  title={assignment.assignmentName}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    minWidth: 0,
+                                    height: 24,
+                                    fontSize: '0.8rem',
+                                    lineHeight: 1,
+                                    fontFamily: "'Noto Sans KR', sans-serif",
+                                  }}
+                                >
+                                  {assignment.assignmentName}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', height: 24 }}>
+                                  <AssignmentStatusChip assignment={assignment} />
                                 </Box>
                                 <Button
                                   size="small"
@@ -796,13 +801,19 @@ const WebIDECourses = () => {
                                   disabled={actionLoading || !assignmentReady}
                                   sx={{
                                     fontSize: '0.7rem',
-                                    py: 0.25,
+                                    py: 0,
                                     px: 1,
+                                    height: '24px',
                                     minHeight: '24px',
-                                    borderRadius: '12px',
+                                    lineHeight: 1,
+                                    borderRadius: 1,
                                     textTransform: 'none',
                                     whiteSpace: 'nowrap',
-                                    flexShrink: 0
+                                    flexShrink: 0,
+                                    '& .MuiButton-startIcon': {
+                                      alignItems: 'center',
+                                      marginRight: 0.5,
+                                    },
                                   }}
                                 >
                                   IDE 열기
@@ -817,80 +828,29 @@ const WebIDECourses = () => {
                   </Card>
                 </Grid>
               ))}
-              <Grid item xs={12} sm={6} md={4}>
-                <Card 
-                  onClick={() => setJoinDialog({ ...joinDialog, open: true })}
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: (theme) => 
-                      theme.palette.mode === 'dark' ? '#282A36' : '#FFFFFF',
-                    border: (theme) =>
-                      `1px solid ${theme.palette.mode === 'dark' ? '#44475A' : '#E0E0E0'}`,
-                    boxShadow: 'none',
-                    borderRadius: '12px',
-                    '&:hover': {
-                      borderColor: (theme) =>
-                        theme.palette.mode === 'dark' ? '#6272A4' : '#BDBDBD',
-                      backgroundColor: (theme) =>
-                        theme.palette.mode === 'dark' ? '#44475A' : '#FAFAFA',
-                      transform: 'translateY(-2px)'
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography 
-                      variant="h5" 
-                      component="h2" 
-                      gutterBottom
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        color: (theme) => 
-                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
-                      }}
-                    >
-                      새 수업 참가
-                    </Typography>
-                    <Chip 
-                      icon={<AddIcon sx={{ fontSize: '1rem' }} />}
-                      label="수업 참가하기"
-                      color="primary"
-                      size="small"
-                      sx={{ 
-                        mb: 2,
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        backgroundColor: 'transparent',
-                        border: '1px dashed',
-                        borderRadius: '20px',
-                        borderColor: (theme) =>
-                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                        color: (theme) =>
-                          theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                        '& .MuiChip-icon': {
-                          color: (theme) =>
-                            theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main'
-                        }
-                      }}
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{ order: getCourseActionGridOrder(filteredCourses.length) }}
+              >
+                <Stack spacing={1.5} sx={{ height: BASE_COURSE_CARD_HEIGHT }}>
+                  <CourseActionTile
+                    icon={<GroupAddOutlinedIcon />}
+                    label="새 수업 참가"
+                    onClick={() => setJoinDialog({ open: true, courseKey: '' })}
+                  />
+                  {canCreateCourse && (
+                    <CourseActionTile
+                      icon={<PostAddOutlinedIcon />}
+                      label="새 수업 생성"
+                      onClick={() => navigate('/courses/new')}
                     />
-                    <Typography 
-                      color="text.secondary" 
-                      sx={{ 
-                        fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                        fontSize: '0.875rem',
-                        color: (theme) => 
-                          theme.palette.mode === 'dark' ? '#F8F8F2' : 'text.secondary'
-                      }}
-                    >
-                      교수님으로부터 받은 참가 코드로 새로운 수업에 참가하세요.
-                    </Typography>
-                  </CardContent>
-                </Card>
+                  )}
+                </Stack>
               </Grid>
             </Grid>
-          )}
 
           <Dialog
             open={joinDialog.open}
